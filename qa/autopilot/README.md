@@ -22,6 +22,11 @@ For every date it ranks the ten sites under each profile and verifies:
 | invalid site | a NaN site must be reported as an error entry, not crash the ranking |
 | randomized sweep | 150 random missions; increasing power/sun/data needs must not improve the matching component |
 
+## Truthfulness audit
+
+`score-audit.mjs` recomputes the site and zone scores from the returned components
+and checks grades, caps, ordering and reason codes; see [FINDINGS.md](FINDINGS.md).
+
 ## Usage
 
 ```bash

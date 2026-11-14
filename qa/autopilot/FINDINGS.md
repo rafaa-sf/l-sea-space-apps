@@ -71,3 +71,26 @@ edge-case missions below. Harness: [`autopilot-mc.mjs`](autopilot-mc.mjs)
   then site id) instead of relying on sort stability.
 - Explain score saturation in the UI (component chips already show 100) and
   consider a non-linear score curve to spread the top of the distribution.
+
+## Truthfulness audit (score statistics)
+
+Run with [`score-audit.mjs`](score-audit.mjs): components, weighted totals, grades,
+ranks, feasibility caps and reason codes are **recomputed independently** from the
+metrics the core returns and compared with what the core reports. Also checked the
+UI: the displayed landing-zone rows are compared with the exported JSON brief from
+the same run (which carries `rankedLandingZones` with components and feasibility),
+and the mission inputs are changed through the real UI to confirm the numbers
+respond.
+
+**Result: 0 mismatches.**
+
+| Area | Checked | Result |
+| --- | --- | --- |
+| Curated-site ranking | 8 mission profiles × 10 sites = **80 scores**: sun/power/comms components from their formulas, weighted total (0.30/0.20/0.25/0.15/0.10), grade thresholds, rank order, ranking summary (average + recommended), reason codes vs metrics | all pass |
+| Landing-zone ranking | **24 zone runs** (6 DEM sets × 4 missions): rawScore = Σ components·landing-weights, feasibility cap 55, `scoreCapApplied`, grade, feasible-first ordering, `Zone N` label, reason presence | all pass |
+| UI vs exported brief | displayed scores and ranks equal `rankedLandingZones`; feasible count matches the “5 of 8 zones feasible” header; brief score recomputed from its components | all pass |
+| Mission responsiveness | changing **POWER NEED (W)** to 600 through the real inputs recomputes the list and collapses infeasible zones to the capped score (`55.0*`) | all pass |
+
+Observation (not a bug): infeasible zones are shown with the capped score plus an
+asterisk (the raw score is in the title tooltip). It is correct, but the asterisk
+deserves a visible legend in the panel.
