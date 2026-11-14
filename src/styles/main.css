@@ -1722,6 +1722,12 @@ body.is-resizing-panes * {
   color: var(--color-text-faint);
 }
 
+/* Narrow screens: let the sunset/earthset chips wrap instead of widening the page. */
+.timeline__events {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+
 .timeline__events {
   display: flex;
   gap: 4px;
