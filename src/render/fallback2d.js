@@ -1,24 +1,25 @@
 /**
- * Canvas 2D fallback renderer for machines without WebGL.
+ * Canvas 2D fallback renderer (rectangular planar DEM).
  *
- * Implements the same setter interface as `moonScene.js`:
+ * Same public API as `moonScene.js`:
  *   setTerrain, setSites, setSelectedSite, setSunDirection, setEarthDirection,
  *   setLayers, setRay, setLabels, resetView, resize, dispose.
  *
- * The map is a top-down polar-stereographic view of the south pole with
- * hillshaded terrain, site markers and Sun/Earth azimuth indicators. The
- * elevation raster is computed once per terrain; only the shading is recomputed
- * when the Sun moves.
+ * The map shows the full rectangular LOLA DEM extent with the same horizontal
+ * scale as the 3D view, a Sun-driven hillshade and the hypsometric tint. Wheel
+ * zoom is supported and the scale is reported through `options.onViewChange`.
  */
 
 import {
   boxBlurGrid,
-  createPolarProjection,
+  createPlanarTerrain,
   hillshadeShade,
+  lonLatToPlanarMeters,
+  planarToLonLat,
   sunDirectionVector,
   terrainColor,
 } from './geo.js'
-import { loadMoonTrekMosaic } from './moontrekTiles.js'
+import { coverageKm, intersectBounds, loadMoonTrekMosaic, parseLayerBounds } from './moontrekTiles.js'
 
 const COLOR_SELECTED = '#6ee7ff'
 const COLOR_COMPARE = '#ffb454'
@@ -33,7 +34,7 @@ export function createFallback2D(canvas, options = {}) {
   const labels = { sun: 'Sun', earth: 'Earth', ...(options.labels ?? {}) }
 
   let terrain = null
-  let projectionData = null
+  let planar = null
   let sites = []
   let selection = { selectedId: null, compareIds: [] }
   let selectedSite = null
@@ -42,14 +43,14 @@ export function createFallback2D(canvas, options = {}) {
   let sunVisible = true
   let earthVisible = true
   let rayInfo = null
-  let mapRadius = 1
-  let center = { x: 0, y: 0 }
-  let dpr = 1
-  let width = 1
-  let height = 1
   let zoom = 1
+  let size = 1
+  let dpr = 1
+  let mapRect = { x: 0, y: 0, w: 1, h: 1 }
+  let scale = 1
   let raster = null
   let overlayEntries = []
+  let overlayFootprints = []
   let overlayToken = 0
   let placedLabels = []
   let drawQueued = false
@@ -64,29 +65,81 @@ export function createFallback2D(canvas, options = {}) {
     return 0
   }
 
-  /** Mask-aware box blur (two passes) for the fallback raster. */
-  function smoothElevations(elevations, valid, size, passes = 2) {
-    let source = Float32Array.from(elevations)
+  function samplePlanar(xMeters, yMeters) {
+    if (!planar) return 0
+    const { bounds, cols, rows, data } = planar
+    const fx = Math.min(cols - 1, Math.max(0, ((xMeters - bounds.minX) / Math.max(1e-9, planar.widthM)) * (cols - 1)))
+    const fy = Math.min(rows - 1, Math.max(0, ((bounds.maxY - yMeters) / Math.max(1e-9, planar.heightM)) * (rows - 1)))
+    const x0 = Math.floor(fx)
+    const y0 = Math.floor(fy)
+    const x1 = Math.min(x0 + 1, cols - 1)
+    const y1 = Math.min(y0 + 1, rows - 1)
+    const tx = fx - x0
+    const ty = fy - y0
+    const top = data[y0 * cols + x0] + (data[y0 * cols + x1] - data[y0 * cols + x0]) * tx
+    const bottom = data[y1 * cols + x0] + (data[y1 * cols + x1] - data[y1 * cols + x0]) * tx
+    return top + (bottom - top) * ty
+  }
+
+  function planarPoint(lat, lon) {
+    return lonLatToPlanarMeters(lat, lon, planar?.datum ?? 1737400)
+  }
+
+  function toScreen(lat, lon) {
+    if (!planar) return { x: 0, y: 0 }
+    const point = planarPoint(lat, lon)
+    return {
+      x: mapRect.x + (point.x - planar.bounds.minX) * scale,
+      y: mapRect.y + (planar.bounds.maxY - point.y) * scale,
+    }
+  }
+
+  function fromScreen(px, py) {
+    if (!planar) return null
+    if (px < mapRect.x || py < mapRect.y || px > mapRect.x + mapRect.w || py > mapRect.y + mapRect.h) return null
+    const xMeters = planar.bounds.minX + (px - mapRect.x) / scale
+    const yMeters = planar.bounds.maxY - (py - mapRect.y) / scale
+    return planarToLonLat(xMeters, yMeters, planar.datum)
+  }
+
+  function updateMapRect() {
+    if (!planar) return
+    const maxExtent = Math.max(planar.widthM, planar.heightM)
+    scale = (size / maxExtent) * zoom
+    const w = planar.widthM * scale
+    const h = planar.heightM * scale
+    mapRect = { x: (size - w) / 2, y: (size - h) / 2, w, h }
+  }
+
+  function notifyView(force = false) {
+    if (!planar || size <= 1) return
+    const visibleMeters = size / scale
+    const next = { visibleMeters, widthPx: size, heightPx: size, azimuthDeg: 0 }
+    if (!force && Number.isFinite(lastViewInfo.visibleMeters)) {
+      if (Math.abs(next.visibleMeters - lastViewInfo.visibleMeters) < next.visibleMeters * 0.01) return
+    }
+    lastViewInfo = next
+    options.onViewChange?.(next)
+  }
+
+  function smoothGrid(values, width, height, passes = 2) {
+    let source = Float32Array.from(values)
     let target = new Float32Array(source.length)
     for (let pass = 0; pass < passes; pass += 1) {
-      for (let py = 0; py < size; py += 1) {
-        for (let px = 0; px < size; px += 1) {
-          const index = py * size + px
-          if (!valid[index] || px === 0 || py === 0 || px === size - 1 || py === size - 1) {
-            target[index] = source[index]
-            continue
-          }
+      for (let row = 0; row < height; row += 1) {
+        for (let col = 0; col < width; col += 1) {
+          const index = row * width + col
           let sum = 0
           let count = 0
           for (let dy = -1; dy <= 1; dy += 1) {
             for (let dx = -1; dx <= 1; dx += 1) {
-              const sample = (py + dy) * size + (px + dx)
-              if (!valid[sample]) continue
-              sum += source[sample]
+              const rr = Math.min(height - 1, Math.max(0, row + dy))
+              const cc = Math.min(width - 1, Math.max(0, col + dx))
+              sum += source[rr * width + cc]
               count += 1
             }
           }
-          target[index] = count > 0 ? sum / count : source[index]
+          target[index] = sum / count
         }
       }
       const swap = source
@@ -97,172 +150,125 @@ export function createFallback2D(canvas, options = {}) {
   }
 
   function buildRaster() {
-    if (!projectionData) return
-    const size = RASTER_SIZE
+    if (!planar) return
+    const rasterSize = RASTER_SIZE
     const offscreen = document.createElement('canvas')
-    offscreen.width = size
-    offscreen.height = size
+    offscreen.width = rasterSize
+    offscreen.height = rasterSize
     const offContext = offscreen.getContext('2d')
-    const image = offContext.createImageData(size, size)
-    const elevations = new Float32Array(size * size)
-    const valid = new Uint8Array(size * size)
+    const image = offContext.createImageData(rasterSize, rasterSize)
+    const factor = rasterSize / size
+    const rasterRect = { x: mapRect.x * factor, y: mapRect.y * factor, w: mapRect.w * factor, h: mapRect.h * factor }
+    const elevations = new Float32Array(rasterSize * rasterSize)
+    const valid = new Uint8Array(rasterSize * rasterSize)
 
-    for (let py = 0; py < size; py += 1) {
-      const sceneZ = (1 - (py + 0.5) / size) * 2 - 1
-      for (let px = 0; px < size; px += 1) {
-        const sceneX = ((px + 0.5) / size) * 2 - 1
-        const index = py * size + px
-        if (Math.hypot(sceneX, sceneZ) > 1.02) continue
-        const { lat, lon } = projectionData.unproject(sceneX * projectionData.radius, sceneZ * projectionData.radius)
-        elevations[index] = sampleElevation(lat, lon)
+    for (let py = 0; py < rasterSize; py += 1) {
+      const yMeters = planar.bounds.maxY - (py - rasterRect.y) / (scale * factor)
+      for (let px = 0; px < rasterSize; px += 1) {
+        if (px < rasterRect.x - 1 || px > rasterRect.x + rasterRect.w + 1 || py < rasterRect.y - 1 || py > rasterRect.y + rasterRect.h + 1) continue
+        const xMeters = planar.bounds.minX + (px - rasterRect.x) / (scale * factor)
+        const index = py * rasterSize + px
+        elevations[index] = samplePlanar(xMeters, yMeters)
         valid[index] = 1
       }
     }
 
-    // De-noise the sampled elevation field before colour and gradient work.
-    const smoothed = smoothElevations(elevations, valid, size, 2)
+    const smoothed = smoothGrid(elevations, rasterSize, rasterSize, 2)
     const stats = options.terrainStats?.(terrain) ?? { minM: 0, maxM: 1 }
-    const spanMeters = projectionData.spanMeters ?? 150000
-    const cellMeters = (2 * spanMeters) / size
-    const gradientX = new Float32Array(size * size)
-    const gradientZ = new Float32Array(size * size)
-    for (let py = 1; py < size - 1; py += 1) {
-      for (let px = 1; px < size - 1; px += 1) {
-        const index = py * size + px
+    const cellMeters = 1 / (scale * factor)
+    const gradientX = new Float32Array(rasterSize * rasterSize)
+    const gradientZ = new Float32Array(rasterSize * rasterSize)
+    for (let py = 1; py < rasterSize - 1; py += 1) {
+      for (let px = 1; px < rasterSize - 1; px += 1) {
+        const index = py * rasterSize + px
         if (!valid[index]) continue
-        const left = valid[index - 1] ? smoothed[index - 1] : smoothed[index]
-        const right = valid[index + 1] ? smoothed[index + 1] : smoothed[index]
-        const up = valid[index - size] ? smoothed[index - size] : smoothed[index]
-        const down = valid[index + size] ? smoothed[index + size] : smoothed[index]
-        gradientX[index] = (right - left) / (2 * cellMeters)
-        gradientZ[index] = (down - up) / (2 * cellMeters)
+        gradientX[index] = (smoothed[index + 1] - smoothed[index - 1]) / (2 * cellMeters)
+        gradientZ[index] = (smoothed[index + rasterSize] - smoothed[index - rasterSize]) / (2 * cellMeters)
       }
     }
-
-    raster = { offscreen, offContext, image, elevations: smoothed, gradientX, gradientZ, valid, stats, size }
+    raster = { offscreen, offContext, image, elevations: smoothed, gradientX, gradientZ, valid, stats, size: rasterSize }
     computeShading()
   }
 
   function computeShading() {
     if (!raster) return
-    const { size, image, valid, gradientX, gradientZ, stats } = raster
+    const { size: rasterSize, image, valid, gradientX, gradientZ, stats } = raster
     const sun = sunDirectionVector(sunDirection?.az ?? 0, sunDirection?.el ?? 0)
     const color = image.data
-    for (let py = 0; py < size; py += 1) {
-      for (let px = 0; px < size; px += 1) {
-        const index = py * size + px
-        const offset = index * 4
-        if (!valid[index]) {
-          color[offset + 3] = 0
-          continue
-        }
-        const elevation = raster.elevations[index]
-        const [r, g, b] = terrainColor(elevation, stats.minM, stats.maxM)
-        const nx = -gradientX[index]
-        const ny = 1
-        const nz = -gradientZ[index]
-        const length = Math.hypot(nx, ny, nz) || 1
-        const normal = { x: nx / length, y: ny / length, z: nz / length }
-        const shade = hillshadeShade(normal, sun, sunVisible, { ambient: 0.3, diffuse: 1.35, flatShade: 0.4 })
-        color[offset] = Math.min(255, r * 255 * shade)
-        color[offset + 1] = Math.min(255, g * 255 * shade)
-        color[offset + 2] = Math.min(255, b * 255 * shade)
-        color[offset + 3] = 255
+    for (let index = 0; index < rasterSize * rasterSize; index += 1) {
+      const offset = index * 4
+      if (!valid[index]) {
+        color[offset + 3] = 0
+        continue
       }
+      const [r, g, b] = terrainColor(raster.elevations[index], stats.minM, stats.maxM)
+      const nx = -gradientX[index]
+      const ny = 1
+      const nz = -gradientZ[index]
+      const length = Math.hypot(nx, ny, nz) || 1
+      const normal = { x: nx / length, y: ny / length, z: nz / length }
+      const shade = hillshadeShade(normal, sun, sunVisible, { ambient: 0.3, diffuse: 1.35, flatShade: 0.4 })
+      color[offset] = Math.min(255, r * 255 * shade)
+      color[offset + 1] = Math.min(255, g * 255 * shade)
+      color[offset + 2] = Math.min(255, b * 255 * shade)
+      color[offset + 3] = 255
     }
     raster.offContext.putImageData(image, 0, 0)
   }
 
-  function toScreen(lat, lon) {
-    const point = projectionData.project(lat, lon, 0)
-    return {
-      x: center.x + (point.x / projectionData.radius) * mapRadius,
-      y: center.y - (point.z / projectionData.radius) * mapRadius,
-    }
-  }
-
-  function fromScreen(px, py) {
-    if (!projectionData) return null
-    const sceneX = ((px - center.x) / mapRadius) * projectionData.radius
-    const sceneZ = (-(py - center.y) / mapRadius) * projectionData.radius
-    if (Math.hypot(sceneX, sceneZ) > projectionData.radius * 1.02) return null
-    return projectionData.unproject(sceneX, sceneZ)
-  }
-
-  /**
-   * Draw a label if its measured box does not overlap any placed label.
-   * Greedy collision detection with a subtle dark halo for legibility.
-   */
   function tryLabel(text, x, y, color, font) {
-    if (!text) return false
-    if (x < 6 || y < 8 || x > width - 6 || y > height - 8) return false
+    if (!text || x < 6 || y < 10 || x > size - 6 || y > size - 10) return false
     context.font = font
-    const metrics = context.measureText(text)
-    const textWidth = metrics.width
-    const boxHeight = 13
-    if (x + textWidth > width - 6) return false
-    const rect = { left: x - 1, top: y - boxHeight / 2, right: x + textWidth + 1, bottom: y + boxHeight / 2 }
+    const textWidth = context.measureText(text).width
+    if (x + textWidth > size - 6) return false
+    const box = { left: x - 1, top: y - 7, right: x + textWidth + 1, bottom: y + 7 }
     for (const placed of placedLabels) {
-      if (
-        rect.left < placed.right + 3 &&
-        rect.right > placed.left - 3 &&
-        rect.top < placed.bottom + 2 &&
-        rect.bottom > placed.top - 2
-      ) {
-        return false
-      }
+      if (box.left < placed.right + 3 && box.right > placed.left - 3 && box.top < placed.bottom + 2 && box.bottom > placed.top - 2) return false
     }
-    placedLabels.push(rect)
+    placedLabels.push(box)
     context.textAlign = 'left'
     context.textBaseline = 'middle'
     context.lineWidth = 3
-    context.strokeStyle = 'rgba(5, 7, 11, 0.72)'
+    context.strokeStyle = 'rgba(5, 7, 11, 0.75)'
     context.strokeText(text, x, y)
     context.fillStyle = color
     context.fillText(text, x, y)
     return true
   }
 
-  /** Try the four natural label positions around a marker, nearest first. */
-  function placeSiteLabel(text, point, radius, color, font) {
+  function placeLabel(text, point, radius, color, font) {
     const candidates = [
       [point.x + radius + 5, point.y - 1],
       [point.x - radius - 5, point.y - 1],
       [point.x + radius + 5, point.y + 13],
       [point.x + radius + 5, point.y - 15],
     ]
-    for (const [x, y] of candidates) {
-      if (tryLabel(text, x, y, color, font)) return true
-    }
+    for (const [x, y] of candidates) if (tryLabel(text, x, y, color, font)) return true
     return false
   }
 
-  function drawSphereBackground() {
-    const gradient = context.createRadialGradient(center.x, center.y, mapRadius * 0.3, center.x, center.y, Math.max(width, height) * 0.72)
+  function drawBackground() {
+    const gradient = context.createLinearGradient(0, 0, 0, size)
     gradient.addColorStop(0, '#0a0d12')
     gradient.addColorStop(1, '#06080b')
     context.fillStyle = gradient
-    context.fillRect(0, 0, width, height)
+    context.fillRect(0, 0, size, size)
   }
 
   function drawMarkers() {
-    if (!projectionData) return
-    const selectedPoint = selectedSite ? toScreen(selectedSite.lat, selectedSite.lon) : { x: center.x, y: center.y }
-    const priority = (site) =>
-      site.id === selection.selectedId ? 0 : (selection.compareIds ?? []).includes(site.id) ? 1 : 2
-    const distance = (site) => {
-      const point = toScreen(site.lat, site.lon)
-      return Math.hypot(point.x - selectedPoint.x, point.y - selectedPoint.y)
-    }
+    if (!planar) return
+    const selectedPoint = selectedSite ? toScreen(selectedSite.lat, selectedSite.lon) : { x: size / 2, y: size / 2 }
+    const priority = (site) => (site.id === selection.selectedId ? 0 : (selection.compareIds ?? []).includes(site.id) ? 1 : 2)
     const ordered = [...sites].sort((a, b) => {
       const rank = priority(a) - priority(b)
-      return rank !== 0 ? rank : distance(a) - distance(b)
+      if (rank !== 0) return rank
+      const pa = toScreen(a.lat, a.lon)
+      const pb = toScreen(b.lat, b.lon)
+      return Math.hypot(pa.x - selectedPoint.x, pa.y - selectedPoint.y) - Math.hypot(pb.x - selectedPoint.x, pb.y - selectedPoint.y)
     })
-
-    // Pass 1: all markers (so later markers never paint over earlier labels).
     for (const site of ordered) {
       const point = toScreen(site.lat, site.lon)
-      if (Math.hypot(point.x - center.x, point.y - center.y) > mapRadius * 1.01) continue
+      if (point.x < mapRect.x || point.x > mapRect.x + mapRect.w || point.y < mapRect.y || point.y > mapRect.y + mapRect.h) continue
       const isSelected = site.id === selection.selectedId
       const isCompared = (selection.compareIds ?? []).includes(site.id)
       const radius = isSelected ? 5.5 : 4
@@ -281,32 +287,27 @@ export function createFallback2D(canvas, options = {}) {
         context.stroke()
       }
     }
-
-    // Pass 2: labels, greedy, selected first, then compare sites, then nearest.
-    // When the cap is dense only the selected site plus its nearest neighbours
-    // are labelled to avoid a wall of text.
     const maxLabels = sites.length > 7 ? 7 : sites.length
     let labelled = 0
     for (const site of ordered) {
+      if (site.id !== selection.selectedId && labelled >= maxLabels) break
+      const point = toScreen(site.lat, site.lon)
+      if (point.x < mapRect.x || point.x > mapRect.x + mapRect.w || point.y < mapRect.y || point.y > mapRect.y + mapRect.h) continue
       const isSelected = site.id === selection.selectedId
       const isCompared = (selection.compareIds ?? []).includes(site.id)
-      if (!isSelected && labelled >= maxLabels) break
-      const point = toScreen(site.lat, site.lon)
-      if (Math.hypot(point.x - center.x, point.y - center.y) > mapRadius * 1.01) continue
       const label = site.displayName ?? site.name
       if (!label) continue
       const color = isSelected ? COLOR_SELECTED : isCompared ? COLOR_COMPARE : '#c6d0e2'
       const font = isSelected ? '600 12px Inter, system-ui, sans-serif' : '11px Inter, system-ui, sans-serif'
-      const radius = isSelected ? 5.5 : 4
-      if (placeSiteLabel(label, point, radius, color, font)) labelled += 1
+      if (placeLabel(label, point, isSelected ? 5.5 : 4, color, font)) labelled += 1
     }
   }
 
   function drawDirectionArrow(direction, color, text, visible, distanceFactor) {
-    if (!selectedSite || !projectionData) return
+    if (!selectedSite) return
     const origin = toScreen(selectedSite.lat, selectedSite.lon)
     const az = (direction.az * Math.PI) / 180
-    const length = mapRadius * distanceFactor * Math.max(0.35, visible ? 1 : 0.7)
+    const length = Math.min(mapRect.w, mapRect.h) * distanceFactor * Math.max(0.35, visible ? 1 : 0.7)
     const dx = Math.sin(az) * length
     const dy = -Math.cos(az) * length
     const tip = { x: origin.x + dx, y: origin.y + dy }
@@ -327,25 +328,22 @@ export function createFallback2D(canvas, options = {}) {
     context.fillStyle = color
     context.fill()
     const font = '600 11px Inter, system-ui, sans-serif'
-    if (!tryLabel(text, tip.x + 6, tip.y + 3, color, font)) {
-      tryLabel(text, tip.x + 6, tip.y - 11, color, font)
-    }
+    if (!tryLabel(text, tip.x + 6, tip.y + 3, color, font)) tryLabel(text, tip.x + 6, tip.y - 11, color, font)
   }
 
   function drawRay() {
-    if (!rayInfo || !selectedSite || !projectionData) return
+    if (!rayInfo || !selectedSite) return
     const origin = toScreen(selectedSite.lat, selectedSite.lon)
     let endpoint
-    if (rayInfo.hit && Number.isFinite(rayInfo.hit.lat)) {
-      endpoint = toScreen(rayInfo.hit.lat, rayInfo.hit.lon)
-    } else {
+    if (rayInfo.hit && Number.isFinite(rayInfo.hit.lat)) endpoint = toScreen(rayInfo.hit.lat, rayInfo.hit.lon)
+    else {
       const az = (rayInfo.azimuth * Math.PI) / 180
-      const length = mapRadius * 0.55
+      const length = Math.min(mapRect.w, mapRect.h) * 0.55
       endpoint = { x: origin.x + Math.sin(az) * length, y: origin.y - Math.cos(az) * length }
     }
     context.setLineDash([4, 4])
     context.strokeStyle = rayInfo.hit ? '#ff9e64' : 'rgba(255, 209, 102, 0.8)'
-    context.lineWidth = 1.4
+    context.lineWidth = 1.3
     context.beginPath()
     context.moveTo(origin.x, origin.y)
     context.lineTo(endpoint.x, endpoint.y)
@@ -353,26 +351,10 @@ export function createFallback2D(canvas, options = {}) {
     context.setLineDash([])
     if (rayInfo.hit) {
       context.beginPath()
-      context.arc(endpoint.x, endpoint.y, 3.5, 0, Math.PI * 2)
+      context.arc(endpoint.x, endpoint.y, 3, 0, Math.PI * 2)
       context.fillStyle = '#ff9e64'
       context.fill()
     }
-  }
-
-  function notifyView(force = false) {
-    if (!projectionData || width <= 1 || mapRadius <= 0) return
-    const rhoMaxM = projectionData.radius / Math.max(1e-9, projectionData.unitsPerMeter)
-    const visibleMeters = (rhoMaxM / mapRadius) * width
-    const next = { visibleMeters, widthPx: width, heightPx: height, azimuthDeg: 0 }
-    if (
-      !force &&
-      Number.isFinite(lastViewInfo.visibleMeters) &&
-      Math.abs(next.visibleMeters - lastViewInfo.visibleMeters) < next.visibleMeters * 0.01
-    ) {
-      return
-    }
-    lastViewInfo = next
-    options.onViewChange?.(next)
   }
 
   function draw() {
@@ -380,36 +362,39 @@ export function createFallback2D(canvas, options = {}) {
     drawQueued = false
     context.setTransform(dpr, 0, 0, dpr, 0, 0)
     placedLabels = []
-    drawSphereBackground()
-    if (raster) {
-      context.save()
-      context.beginPath()
-      context.arc(center.x, center.y, mapRadius, 0, Math.PI * 2)
-      context.clip()
-      context.imageSmoothingEnabled = true
-      context.drawImage(raster.offscreen, center.x - mapRadius, center.y - mapRadius, mapRadius * 2, mapRadius * 2)
-      const rhoMax = projectionData.radius / Math.max(1e-9, projectionData.unitsPerMeter)
+    drawBackground()
+    if (raster) context.drawImage(raster.offscreen, mapRect.x, mapRect.y, mapRect.w, mapRect.h)
+    if (planar) {
       for (const entry of overlayEntries) {
         const bounds = entry.mosaic.boundsM
-        const x0 = center.x + (bounds.minX / rhoMax) * mapRadius
-        const x1 = center.x + (bounds.maxX / rhoMax) * mapRadius
-        const y0 = center.y - (bounds.maxY / rhoMax) * mapRadius
-        const y1 = center.y - (bounds.minY / rhoMax) * mapRadius
+        const x0 = mapRect.x + (bounds.minX - planar.bounds.minX) * scale
+        const x1 = mapRect.x + (bounds.maxX - planar.bounds.minX) * scale
+        const y0 = mapRect.y + (planar.bounds.maxY - bounds.maxY) * scale
+        const y1 = mapRect.y + (planar.bounds.maxY - bounds.minY) * scale
         context.globalAlpha = entry.layer.opacity ?? 0.7
         context.drawImage(entry.mosaic.canvas, x0, y0, x1 - x0, y1 - y0)
       }
       context.globalAlpha = 1
-      context.restore()
-      context.beginPath()
-      context.arc(center.x, center.y, mapRadius, 0, Math.PI * 2)
-      context.strokeStyle = 'rgba(148, 158, 172, 0.4)'
-      context.lineWidth = 1.2
-      context.stroke()
+      for (const footprint of overlayFootprints) {
+        const bounds = footprint.bounds
+        const x0 = mapRect.x + (bounds.minX - planar.bounds.minX) * scale
+        const x1 = mapRect.x + (bounds.maxX - planar.bounds.minX) * scale
+        const y0 = mapRect.y + (planar.bounds.maxY - bounds.maxY) * scale
+        const y1 = mapRect.y + (planar.bounds.maxY - bounds.minY) * scale
+        context.setLineDash([5, 4])
+        context.strokeStyle = 'rgba(190, 202, 216, 0.55)'
+        context.lineWidth = 1
+        context.strokeRect(x0, y0, x1 - x0, y1 - y0)
+        context.setLineDash([])
+      }
+      context.strokeStyle = 'rgba(150, 162, 176, 0.55)'
+      context.lineWidth = 1
+      context.strokeRect(mapRect.x, mapRect.y, mapRect.w, mapRect.h)
     }
     drawRay()
     drawMarkers()
-    if (sunDirection) drawDirectionArrow(sunDirection, COLOR_SUN, labels.sun, sunVisible, 0.28)
-    if (earthDirection) drawDirectionArrow(earthDirection, COLOR_EARTH, labels.earth, earthVisible, 0.22)
+    if (sunDirection) drawDirectionArrow(sunDirection, COLOR_SUN, labels.sun, sunVisible, 0.3)
+    if (earthDirection) drawDirectionArrow(earthDirection, COLOR_EARTH, labels.earth, earthVisible, 0.24)
   }
 
   function requestDraw() {
@@ -422,24 +407,18 @@ export function createFallback2D(canvas, options = {}) {
     dpr = Math.min(window.devicePixelRatio || 1, 2)
     const cssWidth = canvas.clientWidth || 1
     const cssHeight = canvas.clientHeight || 1
-    const size = Math.max(1, Math.min(cssWidth, cssHeight))
-    width = size
-    height = size
+    size = Math.max(1, Math.min(cssWidth, cssHeight))
     canvas.width = Math.round(size * dpr)
     canvas.height = Math.round(size * dpr)
-    canvas.style.width = `${size}px`
-    canvas.style.height = `${size}px`
-    center = { x: size / 2, y: size / 2 }
-    mapRadius = size * 0.46 * zoom
+    updateMapRect()
     notifyView(true)
   }
 
   function onWheel(event) {
     if (disposed) return
     event.preventDefault()
-    const factor = Math.exp(-event.deltaY * 0.0015)
-    zoom = Math.min(2.6, Math.max(0.55, zoom * factor))
-    mapRadius = Math.min(width, height) * 0.46 * zoom
+    zoom = Math.min(2.6, Math.max(0.55, zoom * Math.exp(-event.deltaY * 0.0015)))
+    updateMapRect()
     notifyView(true)
     requestDraw()
   }
@@ -447,18 +426,12 @@ export function createFallback2D(canvas, options = {}) {
   function setTerrain(nextTerrain) {
     if (!nextTerrain || !nextTerrain.data) return
     terrain = nextTerrain
-    projectionData = createPolarProjection(terrain, { radius: 1, exaggeration: 1 })
-    projectionData.spanMeters = terrainSpan(terrain)
+    planar = createPlanarTerrain(nextTerrain, { maxSamples: 65536 })
+    if (!planar) return
+    updateMapRect()
     buildRaster()
     notifyView(true)
     requestDraw()
-  }
-
-  function terrainSpan(nextTerrain) {
-    const extent = projectionData
-      ? 2 * 1737400 * Math.tan(((projectionData.maxColat * Math.PI) / 180) / 2)
-      : 150000
-    return extent
   }
 
   function setSites(nextSites, nextOptions = {}) {
@@ -498,16 +471,23 @@ export function createFallback2D(canvas, options = {}) {
   function setLayers(layers = [], enabledIds = []) {
     const token = (overlayToken += 1)
     overlayEntries = []
+    overlayFootprints = []
     requestDraw()
-    if (!projectionData) return
+    if (!planar) return
     const enabled = new Set(enabledIds)
-    const rhoMax = projectionData.radius / Math.max(1e-9, projectionData.unitsPerMeter)
-    const bounds = { minX: -rhoMax, maxX: rhoMax, minY: -rhoMax, maxY: rhoMax }
+    const region = planar.bounds
     for (const layer of layers) {
       if (!enabled.has(layer.id)) continue
       if (layer.type !== 'wmts' || !layer.available) continue
+      const layerBounds = parseLayerBounds(layer)
+      const visibleBounds = layerBounds ? intersectBounds(layerBounds, region) : region
+      if (!visibleBounds) {
+        options.onLayerStatus?.(layer.id, { available: false, reason: 'no-overlap' })
+        continue
+      }
+      overlayFootprints.push({ layerId: layer.id, bounds: visibleBounds })
       options.onLayerStatus?.(layer.id, { available: false, loading: true })
-      loadMoonTrekMosaic(layer, bounds, { maxTiles: 16 })
+      loadMoonTrekMosaic(layer, region, { maxTiles: 64 })
         .then((mosaic) => {
           if (token !== overlayToken) return
           if (!mosaic) {
@@ -519,6 +499,7 @@ export function createFallback2D(canvas, options = {}) {
             available: true,
             zoom: mosaic.zoom,
             tiles: `${mosaic.loaded}/${mosaic.total}`,
+            coverageKm: mosaic.coverageKm,
           })
           requestDraw()
         })
@@ -564,21 +545,20 @@ export function createFallback2D(canvas, options = {}) {
   }
 
   function onPointerMove(event) {
-    if (!disposed) {
-      const point = pointerPosition(event)
-      canvas.style.cursor = findMarker(point) ? 'pointer' : 'crosshair'
-    }
+    if (disposed) return
+    canvas.style.cursor = findMarker(pointerPosition(event)) ? 'pointer' : 'crosshair'
   }
 
   function resetView() {
     zoom = 1
-    mapRadius = Math.min(width, height) * 0.46
+    updateMapRect()
     notifyView(true)
     requestDraw()
   }
 
   function resize() {
     computeLayout()
+    buildRaster()
     requestDraw()
   }
 
@@ -589,10 +569,10 @@ export function createFallback2D(canvas, options = {}) {
   const resizeObserver = new ResizeObserver(() => resize())
   resizeObserver.observe(canvas)
   computeLayout()
-  requestDraw()
 
   function dispose() {
     disposed = true
+    overlayToken += 1
     resizeObserver.disconnect()
     canvas.removeEventListener('pointerup', onPointerUp)
     canvas.removeEventListener('pointermove', onPointerMove)
@@ -601,7 +581,6 @@ export function createFallback2D(canvas, options = {}) {
     sites = []
     terrain = null
     overlayEntries = []
-    overlayToken += 1
   }
 
   return {

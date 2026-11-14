@@ -218,3 +218,132 @@ export function createPolarProjection(terrain, options = {}) {
     exaggeration,
   }
 }
+
+
+/* -------------------------------------------------------------------------- */
+/* Rectangular planar terrain (LOLA DEM extents, no polar-cap mask)           */
+/* -------------------------------------------------------------------------- */
+
+/** Topocentric lat/lon -> planar polar-stereographic metres (same as LOLA). */
+export function lonLatToPlanarMeters(latDeg, lonDeg, radiusM = MOON_RADIUS_M) {
+  const latRad = (Number(latDeg) * Math.PI) / 180
+  const lonRad = (Number(lonDeg) * Math.PI) / 180
+  const rho = 2 * radiusM * Math.tan(Math.PI / 4 + latRad / 2)
+  return { x: rho * Math.sin(lonRad), y: rho * Math.cos(lonRad) }
+}
+
+/** Inverse of {@link lonLatToPlanarMeters}. */
+export function planarToLonLat(xMeters, yMeters, radiusM = MOON_RADIUS_M) {
+  const rho = Math.hypot(Number(xMeters), Number(yMeters))
+  const latRad = 2 * Math.atan(rho / (2 * radiusM)) - Math.PI / 2
+  return {
+    lat: (latRad * 180) / Math.PI,
+    lon: ((Math.atan2(xMeters, yMeters) * 180) / Math.PI + 360) % 360,
+  }
+}
+
+function sampleLatLonGrid(terrain, latDeg, lonDeg) {
+  const { width, height, lat0, lon0, lat1, lon1, data } = terrain
+  const latSpan = lat1 - lat0
+  const lonSpan = lon1 - lon0
+  const wrap = lonSpan >= 359.5
+  let lonNorm = ((Number(lonDeg) - lon0) % 360 + 360) % 360
+  if (!wrap && lonNorm > lonSpan) lonNorm = lonSpan
+  const fx = Math.min(width - 1, Math.max(0, (lonNorm / Math.max(1e-9, lonSpan)) * (width - 1)))
+  const fy = Math.min(height - 1, Math.max(0, ((Number(latDeg) - lat0) / Math.max(1e-9, latSpan)) * (height - 1)))
+  const x0 = Math.floor(fx)
+  const y0 = Math.floor(fy)
+  const x1 = Math.min(x0 + 1, width - 1)
+  const y1 = Math.min(y0 + 1, height - 1)
+  const tx = fx - x0
+  const ty = fy - y0
+  const top = data[y0 * width + x0] + (data[y0 * width + x1] - data[y0 * width + x0]) * tx
+  const bottom = data[y1 * width + x0] + (data[y1 * width + x1] - data[y1 * width + x0]) * tx
+  return top + (bottom - top) * ty
+}
+
+function samplePlanarGrid(terrain, xMeters, yMeters) {
+  const { width, height, pixelSizeM, minX, maxY, data } = terrain
+  const fx = Math.min(width - 1, Math.max(0, (Number(xMeters) - minX) / pixelSizeM))
+  const fy = Math.min(height - 1, Math.max(0, (maxY - Number(yMeters)) / pixelSizeM))
+  const x0 = Math.floor(fx)
+  const y0 = Math.floor(fy)
+  const x1 = Math.min(x0 + 1, width - 1)
+  const y1 = Math.min(y0 + 1, height - 1)
+  const tx = fx - x0
+  const ty = fy - y0
+  const top = data[y0 * width + x0] + (data[y0 * width + x1] - data[y0 * width + x0]) * tx
+  const bottom = data[y1 * width + x0] + (data[y1 * width + x1] - data[y1 * width + x0]) * tx
+  return top + (bottom - top) * ty
+}
+
+/**
+ * Build a uniform rectangular elevation grid for rendering, from either the
+ * planar LOLA DEM (real data) or the legacy lat/lon fallback grid. The full
+ * rectangular extent is preserved (no polar-cap mask), so 3D and 2D share the
+ * same horizontal scale.
+ *
+ * @param {Object} terrain Planar LOLA terrain or lat/lon fallback grid.
+ * @param {{maxSamples?: number}} [options]
+ * @returns {{bounds: {minX:number,maxX:number,minY:number,maxY:number}, widthM:number, heightM:number, cols:number, rows:number, data:Float32Array, cellWidthM:number, cellHeightM:number, pixelSizeM:number, datum:number}}
+ */
+export function createPlanarTerrain(terrain, options = {}) {
+  if (!terrain || !terrain.data) return null
+  const maxSamples = Math.max(1024, options.maxSamples ?? 65536)
+  const isPlanar =
+    Number.isFinite(Number(terrain.minX)) &&
+    Number.isFinite(Number(terrain.maxY)) &&
+    Number.isFinite(Number(terrain.pixelSizeM))
+  let bounds
+  let datum = Number(terrain.datum ?? terrain.referenceRadiusM ?? MOON_RADIUS_M)
+  let sampler
+
+  if (isPlanar) {
+    bounds = {
+      minX: Number(terrain.minX),
+      maxX: Number(terrain.maxX),
+      minY: Number(terrain.minY),
+      maxY: Number(terrain.maxY),
+    }
+    sampler = (x, y) => samplePlanarGrid(terrain, x, y)
+  } else {
+    const maxColat = Math.max(90 + Number(terrain.lat0), 90 + Number(terrain.lat1))
+    const rhoMax = 2 * datum * Math.tan(((maxColat * Math.PI) / 180) / 2)
+    bounds = { minX: -rhoMax, maxX: rhoMax, minY: -rhoMax, maxY: rhoMax }
+    sampler = (x, y) => {
+      const geo = planarToLonLat(x, y, datum)
+      return sampleLatLonGrid(terrain, geo.lat, geo.lon)
+    }
+  }
+
+  const widthM = bounds.maxX - bounds.minX
+  const heightM = bounds.maxY - bounds.minY
+  if (!(widthM > 0) || !(heightM > 0)) return null
+  const ratio = widthM / heightM
+  let cols = Math.round(Math.sqrt(maxSamples * ratio))
+  let rows = Math.round(maxSamples / Math.max(1, cols))
+  cols = Math.max(8, Math.min(600, cols))
+  rows = Math.max(8, Math.min(600, rows))
+
+  const data = new Float32Array(cols * rows)
+  for (let row = 0; row < rows; row += 1) {
+    const y = bounds.maxY - (heightM * row) / (rows - 1)
+    for (let col = 0; col < cols; col += 1) {
+      const x = bounds.minX + (widthM * col) / (cols - 1)
+      data[row * cols + col] = sampler(x, y)
+    }
+  }
+
+  return {
+    bounds,
+    widthM,
+    heightM,
+    cols,
+    rows,
+    data,
+    cellWidthM: widthM / Math.max(1, cols - 1),
+    cellHeightM: heightM / Math.max(1, rows - 1),
+    pixelSizeM: widthM / Math.max(1, cols - 1),
+    datum,
+  }
+}

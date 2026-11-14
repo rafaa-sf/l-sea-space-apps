@@ -55,6 +55,14 @@ const fallbackReason = computed(() => {
 })
 
 const terrainBadge = computed(() => t(sourceLabelKey(state.data.terrainSource, 'terrain')))
+const isRectangular = computed(() => Boolean(state.terrain && Number.isFinite(Number(state.terrain.minX))))
+const terrainLayout = computed(() => (isRectangular.value ? 'rectangular' : 'polar'))
+const terrainExtent = computed(() => {
+  const terrain = state.terrain
+  if (!isRectangular.value || !terrain) return ''
+  return [terrain.minX, terrain.minY, terrain.maxX, terrain.maxY].map((value) => Number(value).toFixed(1)).join(',')
+})
+const markersAnchored = computed(() => (state.analysis.ready && state.selectedSiteId ? 'true' : 'false'))
 const ephemerisBadge = computed(() => t(sourceLabelKey(state.data.ephemerisSource, 'ephemeris')))
 
 const legendGradient = hypsometricCssGradient()
@@ -104,7 +112,12 @@ function rendererOptions() {
 }
 
 function pushTerrain() {
-  if (api && state.viewTerrain) api.setTerrain(state.viewTerrain)
+  if (!api) return
+  // Rectangular LOLA DEM extents (planar) when available; legacy lat/lon grid
+  // only for the synthetic fallback path.
+  const renderTerrain =
+    state.terrain && Number.isFinite(Number(state.terrain.minX)) ? state.terrain : state.viewTerrain
+  if (renderTerrain) api.setTerrain(renderTerrain)
 }
 
 function pushSites() {
@@ -288,7 +301,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="viewport" :aria-label="t('viewport.regionLabel')">
+  <section class="viewport" :aria-label="t('viewport.regionLabel')" :data-markers-anchored="markersAnchored">
     <div class="viewport__stage">
       <canvas
         :key="canvasKey"
@@ -299,6 +312,8 @@ onBeforeUnmount(() => {
         :aria-label="t('viewport.canvasLabel', { site: selectedName })"
         :title="t('viewport.canvasTitle')"
         data-testid="viewport-canvas"
+        :data-terrain-layout="terrainLayout"
+        :data-terrain-extent="terrainExtent"
         @keydown="onCanvasKeydown"
       />
       <p class="sr-only">{{ t('viewport.keyboardHint') }}</p>

@@ -14,13 +14,15 @@
 
 import {
   boxBlurGrid,
-  createPolarProjection,
+  createPlanarTerrain,
   hillshadeShade,
+  lonLatToPlanarMeters,
+  planarToLonLat,
   sRGBToLinear,
   sunDirectionVector,
   terrainColor,
 } from './geo.js'
-import { loadMoonTrekMosaic } from './moontrekTiles.js'
+import { intersectBounds, loadMoonTrekMosaic, parseLayerBounds } from './moontrekTiles.js'
 
 const COLOR_SPACE = 0x05070c
 const COLOR_SELECTED = 0x6ee7ff
@@ -116,6 +118,8 @@ export async function createMoonScene(canvas, options = {}) {
   scene.add(terrainGroup, markerGroup, overlayGroup, helperGroup)
 
   let projection = null
+  let planarView = null
+  let homeCamera = { x: 0, y: 34, z: 2 }
   let terrainMesh = null
   let terrainGeometry = null
   let terrainNormals = null
@@ -143,6 +147,80 @@ export async function createMoonScene(canvas, options = {}) {
   helperGroup.add(rayGroup)
 
   let lastViewInfo = { azimuthDeg: Number.NaN, visibleMeters: Number.NaN }
+
+  /**
+   * Rectangular planar map: the same extents/horizontal scale as the 2D map,
+   * with elevation extruded for 3D depth. `unitsPerMeter` maps the larger
+   * horizontal extent to `mapSize` world units.
+   */
+  function createRectMap(planar, options2 = {}) {
+    const { bounds, widthM, heightM } = planar
+    const mapSize = options2.mapSize ?? 20
+    const unitsPerMeter = mapSize / Math.max(widthM, heightM)
+    const exaggeration = options2.exaggeration ?? 2.5
+    const elevationScale = unitsPerMeter * exaggeration
+    const centerXM = (bounds.minX + bounds.maxX) / 2
+    const centerYM = (bounds.minY + bounds.maxY) / 2
+    const datum = planar.datum ?? 1737400
+
+    function planarToScene(xMeters, yMeters) {
+      return {
+        x: (xMeters - centerXM) * unitsPerMeter,
+        z: -(yMeters - centerYM) * unitsPerMeter,
+      }
+    }
+
+    function sceneToPlanar(xScene, zScene) {
+      return {
+        x: xScene / unitsPerMeter + centerXM,
+        y: -zScene / unitsPerMeter + centerYM,
+      }
+    }
+
+    function project(lat, lon, elevationM = 0) {
+      const planarPoint = lonLatToPlanarMeters(lat, lon, datum)
+      const point = planarToScene(planarPoint.x, planarPoint.y)
+      return { x: point.x, y: Number(elevationM) * elevationScale, z: point.z }
+    }
+
+    function unproject(xScene, zScene) {
+      const planarPoint = sceneToPlanar(xScene, zScene)
+      return planarToLonLat(planarPoint.x, planarPoint.y, datum)
+    }
+
+    return {
+      kind: 'rectangular',
+      mapSize,
+      bounds,
+      widthM,
+      heightM,
+      unitsPerMeter,
+      elevationScale,
+      exaggeration,
+      datum,
+      centerXM,
+      centerYM,
+      planarToScene,
+      sceneToPlanar,
+      project,
+      unproject,
+      // Legacy consumers use `radius` for the polar cap; keep a safe value.
+      radius: (Math.max(widthM, heightM) * unitsPerMeter) / 2,
+    }
+  }
+
+  function frameCamera() {
+    if (!projection) return
+    // Exact-fit perspective: the larger horizontal extent maps to the viewport
+    // height at the target plane, so the 3D scale matches the 2D map scale.
+    const distance = projection.mapSize / (2 * Math.tan((camera.fov * Math.PI) / 360))
+    // Near-top-down (small southward offset keeps north up on screen).
+    homeCamera = { x: 0, y: distance, z: distance * 0.06 }
+    camera.position.set(homeCamera.x, homeCamera.y, homeCamera.z)
+    controls.target.set(0, 0, 0)
+    controls.update()
+    notifyViewChange(true)
+  }
 
   function computeViewInfo() {
     if (!projection) return null
@@ -172,8 +250,6 @@ export async function createMoonScene(canvas, options = {}) {
     const cssHeight = canvas.clientHeight || 1
     const size = Math.max(1, Math.min(cssWidth, cssHeight))
     renderer.setSize(size, size, false)
-    canvas.style.width = `${size}px`
-    canvas.style.height = `${size}px`
     camera.aspect = 1
     camera.updateProjectionMatrix()
     notifyViewChange(true)
@@ -262,7 +338,7 @@ export async function createMoonScene(canvas, options = {}) {
       endpoint = new THREE.Vector3(
         origin.x + east,
         origin.y + verticalM * projection.elevationScale,
-        origin.z + north,
+        origin.z - north,
       )
     }
     const geometry = new THREE.BufferGeometry().setFromPoints([origin, endpoint])
@@ -291,96 +367,79 @@ export async function createMoonScene(canvas, options = {}) {
    * Returns positions, per-vertex Sun-independent hypsometric tints and smooth
    * surface normals; the colour attribute is filled by `applyHillshade()`.
    */
-  function buildTerrainGeometry(terrain) {
+  /**
+   * Build the rectangular DEM mesh from the uniform planar view grid. True
+   * terrain slopes drive the hillshade; the vertical exaggeration only affects
+   * the 3D depth.
+   */
+  function buildTerrainGeometry() {
     const maxVertices = options.maxVertices ?? 90000
-    const step = Math.max(1, Math.ceil(Math.sqrt((terrain.width * terrain.height) / maxVertices)))
-    const wrap = Math.abs(terrain.lon1 - terrain.lon0) >= 359.5
-    const cols = wrap ? Math.floor((terrain.width - 1) / step) : Math.floor((terrain.width - 1) / step) + 1
-    const rows = Math.floor((terrain.height - 1) / step) + 1
-    const smoothed = boxBlurGrid(terrain.data, terrain.width, terrain.height, 1, 1)
+    const step = Math.max(1, Math.ceil(Math.sqrt((planarView.cols * planarView.rows) / maxVertices)))
+    const cols = Math.floor((planarView.cols - 1) / step) + 1
+    const rows = Math.floor((planarView.rows - 1) / step) + 1
+    const smoothed = boxBlurGrid(planarView.data, planarView.cols, planarView.rows, 1, 1)
     const positions = new Float32Array(cols * rows * 3)
     const colors = new Float32Array(cols * rows * 3)
     const uvs = new Float32Array(cols * rows * 2)
     const normals = new Float32Array(cols * rows * 3)
     const tints = new Float32Array(cols * rows * 3)
-    const latSpan = terrain.lat1 - terrain.lat0
-    const lonSpan = terrain.lon1 - terrain.lon0
+    const bounds = planarView.bounds
+    const spanX = Math.max(1e-9, planarView.widthM)
+    const spanY = Math.max(1e-9, planarView.heightM)
 
     let index = 0
     for (let row = 0; row < rows; row += 1) {
-      const sourceRow = Math.min(row * step, terrain.height - 1)
-      const lat = terrain.lat0 + (latSpan * sourceRow) / (terrain.height - 1)
+      const sourceRow = Math.min(row * step, planarView.rows - 1)
+      const yMeters = bounds.maxY - (planarView.heightM * sourceRow) / (planarView.rows - 1)
       for (let col = 0; col < cols; col += 1) {
-        const sourceCol = Math.min(col * step, terrain.width - 1)
-        const lon = terrain.lon0 + (lonSpan * sourceCol) / (terrain.width - 1)
-        const elevation = smoothed[sourceRow * terrain.width + sourceCol] ?? 0
-        const point = projection.project(lat, lon, elevation)
-        positions[index * 3] = point.x
-        positions[index * 3 + 1] = point.y
-        positions[index * 3 + 2] = point.z
+        const sourceCol = Math.min(col * step, planarView.cols - 1)
+        const xMeters = bounds.minX + (planarView.widthM * sourceCol) / (planarView.cols - 1)
+        const elevation = smoothed[sourceRow * planarView.cols + sourceCol] ?? 0
+        const scenePoint = projection.planarToScene(xMeters, yMeters)
+        positions[index * 3] = scenePoint.x
+        positions[index * 3 + 1] = elevation * projection.elevationScale
+        positions[index * 3 + 2] = scenePoint.z
         const [r, g, b] = terrainColor(elevation, terrainStats.minM, terrainStats.maxM)
         tints[index * 3] = r
         tints[index * 3 + 1] = g
         tints[index * 3 + 2] = b
-        uvs[index * 2] = lonSpan > 0 ? (lon - terrain.lon0) / lonSpan : 0
-        uvs[index * 2 + 1] = latSpan > 0 ? (lat - terrain.lat0) / latSpan : 0
+        uvs[index * 2] = (xMeters - bounds.minX) / spanX
+        uvs[index * 2 + 1] = (bounds.maxY - yMeters) / spanY
         index += 1
       }
     }
 
-    // Smooth vertex normals from the de-noised height field. Shading uses the
-    // *true* terrain slopes (metres per metre), not the exaggerated geometry, so
-    // the 3D hillshade matches the 2D cartographic raster while the vertical
-    // exaggeration only affects the perspective relief.
-    const spacingScene = (2 * projection.radius) / Math.max(1, Math.max(cols - 1, rows - 1))
-    const spacingMeters = spacingScene / Math.max(1e-12, projection.unitsPerMeter)
+    // Smooth normals from true slopes (metres per metre) on the planar grid.
+    const cellX = planarView.widthM / Math.max(1, planarView.cols - 1) * step
+    const cellY = planarView.heightM / Math.max(1, planarView.rows - 1) * step
     for (let row = 0; row < rows; row += 1) {
       for (let col = 0; col < cols; col += 1) {
-        const index3 = (row * cols + col) * 3
-        const leftCol = wrap ? (col === 0 ? cols - 1 : col - 1) : Math.max(0, col - 1)
-        const rightCol = wrap ? (col === cols - 1 ? 0 : col + 1) : Math.min(cols - 1, col + 1)
-        const upRow = Math.max(0, row - 1)
-        const downRow = Math.min(rows - 1, row + 1)
-        const left = (row * cols + leftCol) * 3
-        const right = (row * cols + rightCol) * 3
-        const up = (upRow * cols + col) * 3
-        const down = (downRow * cols + col) * 3
-        const dhdx =
-          (positions[right + 1] - positions[left + 1]) /
-          Math.max(1e-12, projection.elevationScale) /
-          (2 * spacingMeters)
-        const dhdz =
-          (positions[down + 1] - positions[up + 1]) /
-          Math.max(1e-12, projection.elevationScale) /
-          (2 * spacingMeters)
+        const offset = (row * cols + col) * 3
+        const left = (row * cols + Math.max(0, col - 1)) * 3
+        const right = (row * cols + Math.min(cols - 1, col + 1)) * 3
+        const up = (Math.max(0, row - 1) * cols + col) * 3
+        const down = (Math.min(rows - 1, row + 1) * cols + col) * 3
+        const dhdx = (positions[right + 1] - positions[left + 1]) / projection.elevationScale / (2 * cellX)
+        const dhdz = (positions[down + 1] - positions[up + 1]) / projection.elevationScale / (2 * cellY)
         let nx = -dhdx
-        let ny = 1
+        const ny = 1
         let nz = -dhdz
-        const length = Math.hypot(nx, ny, nz)
-        if (length < 1e-9) {
-          nx = 0
-          ny = 1
-          nz = 0
-        } else {
-          nx /= length
-          ny /= length
-          nz /= length
-        }
-        normals[index3] = nx
-        normals[index3 + 1] = ny
-        normals[index3 + 2] = nz
+        const length = Math.hypot(nx, ny, nz) || 1
+        nx /= length
+        nz /= length
+        normals[offset] = nx
+        normals[offset + 1] = ny / length
+        normals[offset + 2] = nz
       }
     }
 
     const indices = []
-    const columnCount = wrap ? cols : cols - 1
     for (let row = 0; row < rows - 1; row += 1) {
-      for (let col = 0; col < columnCount; col += 1) {
-        const nextCol = wrap && col === cols - 1 ? 0 : col + 1
+      for (let col = 0; col < cols - 1; col += 1) {
         const a = row * cols + col
-        const b = row * cols + nextCol
-        const c = (row + 1) * cols + col
-        const d = (row + 1) * cols + nextCol
+        const b = a + 1
+        const c = a + cols
+        const d = c + 1
         indices.push(a, c, b, b, c, d)
       }
     }
@@ -390,37 +449,54 @@ export async function createMoonScene(canvas, options = {}) {
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
     geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
     geometry.setIndex(indices)
-
     return { geometry, positions, normals, tints, rows, cols }
   }
 
-  /** Thin neutral rim that closes the cut edge of the polar cap. */
-  function buildCapRim(positions, rows, cols) {
-    const rimDepth = Math.max(0.25, projection.radius * 0.05)
-    const vertices = []
-    const indices = []
-    const wrap = Math.abs((lastTerrain?.lon1 ?? 0) - (lastTerrain?.lon0 ?? 0)) >= 359.5
-    const columnCount = wrap ? cols : cols - 1
-    for (let col = 0; col < columnCount; col += 1) {
-      const nextCol = wrap && col === cols - 1 ? 0 : col + 1
-      const i = ((rows - 1) * cols + col) * 3
-      const j = ((rows - 1) * cols + nextCol) * 3
-      const base = vertices.length / 3
-      vertices.push(
-        positions[i], positions[i + 1], positions[i + 2],
-        positions[i], positions[i + 1] - rimDepth, positions[i + 2],
-        positions[j], positions[j + 1], positions[j + 2],
-        positions[j], positions[j + 1] - rimDepth, positions[j + 2],
-      )
-      indices.push(base, base + 1, base + 2, base + 2, base + 1, base + 3)
+  /** Clean rectangular border that follows the DEM edge. */
+  function buildRectBorder(positions, rows, cols) {
+    const points = []
+    const pushRow = (row, reverse) => {
+      const start = reverse ? cols - 1 : 0
+      const end = reverse ? -1 : cols
+      const stepDir = reverse ? -1 : 1
+      for (let col = start; col !== end; col += stepDir) {
+        const offset = (row * cols + col) * 3
+        points.push(new THREE.Vector3(positions[offset], positions[offset + 1] + 0.02, positions[offset + 2]))
+      }
     }
-    const geometry = new THREE.BufferGeometry()
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3))
-    geometry.setIndex(indices)
-    return new THREE.Mesh(
-      geometry,
-      new THREE.MeshBasicMaterial({ color: 0x262b31, side: THREE.DoubleSide }),
-    )
+    pushRow(0, false)
+    pushRow(rows - 1, true)
+    const leftEdge = []
+    for (let row = rows - 2; row >= 0; row -= 1) {
+      const offset = (row * cols) * 3
+      leftEdge.push(new THREE.Vector3(positions[offset], positions[offset + 1] + 0.02, positions[offset + 2]))
+    }
+    const rightEdge = []
+    for (let row = 1; row < rows; row += 1) {
+      const offset = (row * cols + cols - 1) * 3
+      rightEdge.push(new THREE.Vector3(positions[offset], positions[offset + 1] + 0.02, positions[offset + 2]))
+    }
+    const ordered = []
+    // Border: top row (south/north order does not matter for a closed line).
+    for (let col = 0; col < cols; col += 1) ordered.push(points[col])
+    // Right edge down.
+    for (let row = 1; row < rows; row += 1) {
+      const offset = (row * cols + cols - 1) * 3
+      ordered.push(new THREE.Vector3(positions[offset], positions[offset + 1] + 0.02, positions[offset + 2]))
+    }
+    // Bottom row right-to-left.
+    for (let col = cols - 2; col >= 0; col -= 1) {
+      const offset = ((rows - 1) * cols + col) * 3
+      ordered.push(new THREE.Vector3(positions[offset], positions[offset + 1] + 0.02, positions[offset + 2]))
+    }
+    // Left edge up.
+    for (let row = rows - 2; row > 0; row -= 1) {
+      const offset = (row * cols) * 3
+      ordered.push(new THREE.Vector3(positions[offset], positions[offset + 1] + 0.02, positions[offset + 2]))
+    }
+    const geometry = new THREE.BufferGeometry().setFromPoints(ordered)
+    const material = new THREE.LineBasicMaterial({ color: 0x8b98a8, transparent: true, opacity: 0.6 })
+    return new THREE.LineLoop(geometry, material)
   }
 
   /** Recompute vertex colours from the smoothed normals and the current Sun. */
@@ -465,10 +541,15 @@ export async function createMoonScene(canvas, options = {}) {
     if (!terrain || !terrain.data) return
     lastTerrain = terrain
     terrainStats = options.terrainStats?.(terrain) ?? { minM: 0, maxM: 1 }
-    projection = createPolarProjection(terrain, { radius: options.radius ?? 10, exaggeration: options.exaggeration ?? 3.5 })
+    planarView = createPlanarTerrain(terrain, { maxSamples: options.maxVertices ?? 90000 })
+    if (!planarView) return
+    projection = createRectMap(planarView, {
+      mapSize: options.mapSize ?? 20,
+      exaggeration: options.exaggeration ?? 2.5,
+    })
     clearTerrain()
 
-    const built = buildTerrainGeometry(terrain)
+    const built = buildTerrainGeometry()
     terrainGeometry = built.geometry
     terrainNormals = built.normals
     terrainTints = built.tints
@@ -480,13 +561,14 @@ export async function createMoonScene(canvas, options = {}) {
     terrainGroup.add(terrainMesh)
     pickables.push(terrainMesh)
 
-    // Close the cut cap edge so the disc does not look like a paper cut-out.
-    terrainGroup.add(buildCapRim(built.positions, built.rows, built.cols))
+    // Clean rectangular border around the true DEM extents.
+    terrainGroup.add(buildRectBorder(built.positions, built.rows, built.cols))
 
     layerToken += 1
     clearOverlays()
     renderSites()
     updateHelpers()
+    frameCamera()
     // The scale depends on the projection, which only exists once the terrain
     // is set: force a view report so the scale bar appears deterministically on
     // load instead of waiting for a resize or a camera interaction.
@@ -593,9 +675,7 @@ export async function createMoonScene(canvas, options = {}) {
   }
 
   function regionBoundsM() {
-    if (!projection) return null
-    const rhoMax = projection.radius / Math.max(1e-9, projection.unitsPerMeter)
-    return { minX: -rhoMax, maxX: rhoMax, minY: -rhoMax, maxY: rhoMax }
+    return projection?.bounds ?? null
   }
 
   function overlayMaterial(layer, texture) {
@@ -627,15 +707,16 @@ export async function createMoonScene(canvas, options = {}) {
     const { minX, maxX, minY, maxY } = mosaic.boundsM
     const spanX = Math.max(1, maxX - minX)
     const spanY = Math.max(1, maxY - minY)
-    const unitsPerMeter = Math.max(1e-12, projection.unitsPerMeter)
     for (let vertex = 0; vertex < uv.length / 2; vertex += 1) {
-      const xMeters = positions.array[vertex * 3] / unitsPerMeter
-      const yMeters = positions.array[vertex * 3 + 2] / unitsPerMeter
-      uv[vertex * 2] = (xMeters - minX) / spanX
-      uv[vertex * 2 + 1] = (maxY - yMeters) / spanY
+      const planarPoint = projection.sceneToPlanar(positions.array[vertex * 3], positions.array[vertex * 3 + 2])
+      uv[vertex * 2] = (planarPoint.x - minX) / spanX
+      uv[vertex * 2 + 1] = (maxY - planarPoint.y) / spanY
     }
     geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
     const texture = new THREE.CanvasTexture(mosaic.canvas)
+    // The mosaic canvas stores row 0 at the north edge and the DSM UVs use
+    // v = (maxY - y)/span, so disable Three's default vertical flip.
+    texture.flipY = false
     const material = overlayMaterial(layer, texture)
     const mesh = new THREE.Mesh(geometry, material)
     mesh.renderOrder = 2
@@ -643,11 +724,52 @@ export async function createMoonScene(canvas, options = {}) {
     overlayEntries.push({ id: layer.id, mesh })
   }
 
+  /** Subtle footprint outline for an enabled layer, draped on the terrain. */
+  function addFootprint(boundsM, layerId) {
+    if (!boundsM || !projection) return
+    const steps = 32
+    const points = []
+    const sampleEdgePoint = (xMeters, yMeters) => {
+      const scenePoint = projection.planarToScene(xMeters, yMeters)
+      const { lat, lon } = planarToLonLat(xMeters, yMeters, projection.datum)
+      const elevation = Number(options.sampleElevation?.(lat, lon)) || 0
+      points.push(new THREE.Vector3(scenePoint.x, elevation * projection.elevationScale + 0.03, scenePoint.z))
+    }
+    const lerp = (a, b, t) => a + (b - a) * t
+    for (let index = 0; index < steps; index += 1) {
+      const t = index / steps
+      sampleEdgePoint(lerp(boundsM.minX, boundsM.maxX, t), boundsM.minY)
+    }
+    for (let index = 0; index < steps; index += 1) {
+      const t = index / steps
+      sampleEdgePoint(boundsM.maxX, lerp(boundsM.minY, boundsM.maxY, t))
+    }
+    for (let index = 0; index < steps; index += 1) {
+      const t = index / steps
+      sampleEdgePoint(lerp(boundsM.maxX, boundsM.minX, t), boundsM.maxY)
+    }
+    for (let index = 0; index < steps; index += 1) {
+      const t = index / steps
+      sampleEdgePoint(boundsM.minX, lerp(boundsM.maxY, boundsM.minY, t))
+    }
+    const geometry = new THREE.BufferGeometry().setFromPoints(points)
+    const material = new THREE.LineBasicMaterial({
+      color: 0xa9b6c8,
+      transparent: true,
+      opacity: 0.6,
+      depthTest: false,
+    })
+    const loop = new THREE.LineLoop(geometry, material)
+    loop.renderOrder = 3
+    loop.userData.footprintId = layerId
+    overlayGroup.add(loop)
+  }
+
   function addWMTSOverlay(layer, token) {
     const bounds = regionBoundsM()
     if (!bounds) return
     options.onLayerStatus?.(layer.id, { available: false, loading: true })
-    loadMoonTrekMosaic(layer, bounds, { maxTiles: 25 })
+    loadMoonTrekMosaic(layer, bounds, { maxTiles: 64 })
       .then((mosaic) => {
         if (token !== layerToken) return
         if (!mosaic) {
@@ -659,6 +781,7 @@ export async function createMoonScene(canvas, options = {}) {
           available: true,
           zoom: mosaic.zoom,
           tiles: `${mosaic.loaded}/${mosaic.total}`,
+          coverageKm: mosaic.coverageKm,
         })
       })
       .catch(() => {
@@ -734,6 +857,14 @@ export async function createMoonScene(canvas, options = {}) {
         continue
       }
       if (layer.type === 'wmts') {
+        const layerBounds = parseLayerBounds(layer)
+        const region = regionBoundsM()
+        const visibleBounds = layerBounds && region ? intersectBounds(layerBounds, region) : region
+        if (!visibleBounds) {
+          options.onLayerStatus?.(layer.id, { available: false, reason: 'no-overlap' })
+          continue
+        }
+        addFootprint(visibleBounds, layer.id)
         addWMTSOverlay(layer, token)
       } else if (['wms', 'xyz', 'image'].includes(layer.type)) {
         addImageOverlay(layer)
@@ -744,7 +875,7 @@ export async function createMoonScene(canvas, options = {}) {
   }
 
   function resetView() {
-    camera.position.set(0, 28, 7)
+    camera.position.set(homeCamera.x, homeCamera.y, homeCamera.z)
     controls.target.set(0, 0, 0)
     controls.update()
     notifyViewChange(true)
