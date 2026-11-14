@@ -36,6 +36,8 @@ export default {
     resizeLeft: 'Redimensionar panel izquierdo',
     resizeRight: 'Redimensionar panel derecho',
     resizeHint: 'Arrastra para redimensionar. Las flechas ajustan, Inicio o doble clic restablece.',
+    resizeVertical: 'Redimensionar la división mapa/cronología',
+    resizeVerticalHint: 'Arrastra para redimensionar el mapa y la cronología. Las flechas ajustan, Inicio o doble clic restablece.',
   },
   dem: {
     area: 'Área {width} x {height} km, {resolution} m/px',
@@ -165,7 +167,8 @@ export default {
       workerOk: 'Worker OK',
       workerError: 'Error del worker',
       workerReady: 'Listo',
-    },
+
+  },
   },
   sites: {
     compareButton: 'Comparar',
@@ -384,7 +387,22 @@ export default {
     source: {
       worker: 'Worker en segundo plano',
       main: 'Hilo principal',
+
     },
+    zoneLabel: 'Zona {rank}: {lat} {lon}',
+    zoneArea: 'Área',
+    zoneSlope: 'Pendiente media/máx',
+    zoneElevation: 'Elevación',
+    zoneRelief: 'Relieve',
+    zonesLabel: 'Zonas de aterrizaje ordenadas',
+    zonesRunning: 'Detectando zonas planas de aterrizaje…',
+    zonesStale: 'El ranking está desactualizado — vuelve a ejecutarlo.',
+    zonesEmpty: 'No se han encontrado zonas planas en esta región.',
+    zonesUnavailable: 'El ranking de zonas de aterrizaje aún no está disponible.',
+    zonesError: 'Error al calcular las zonas de aterrizaje',
+    warningNearestEphemeris: 'Efemérides del sitio curado más cercano {site} (a {distance})',
+    warningNoNearestSite: 'Sin sitio curado para efemérides — se usa una aproximación',
+
     rankingLabel: 'Sitios ordenados',
     metricSunlight: 'Sol',
     metricPower: 'Potencia',
@@ -464,6 +482,10 @@ export default {
     services: 'Servicios',
     workers: 'Workers',
     localFallback: 'Usando alternativa local',
+    autopilotMode: 'Modo de autopiloto',
+    autopilotPoi: 'POIs curados',
+    autopilotZones: 'Zonas de aterrizaje ({source})',
+    autopilotZonesIdle: 'Zonas de aterrizaje',
   },
   fallback: {
     switchHint: 'Cambia entre 3D y 2D desde la barra de herramientas del visor.',

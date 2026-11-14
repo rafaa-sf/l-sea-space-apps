@@ -36,6 +36,8 @@ export default {
     resizeLeft: 'Resize left panel',
     resizeRight: 'Resize right panel',
     resizeHint: 'Drag to resize. Arrow keys adjust, Home or double-click resets.',
+    resizeVertical: 'Resize the map and timeline split',
+    resizeVerticalHint: 'Drag to resize the map and timeline. Arrow keys adjust, Home or double-click resets.',
   },
   dem: {
     area: 'Area {width} x {height} km, {resolution} m/px',
@@ -165,7 +167,8 @@ export default {
       workerOk: 'Worker OK',
       workerError: 'Worker error',
       workerReady: 'Ready',
-    },
+
+  },
   },
   sites: {
     compareButton: 'Compare',
@@ -384,7 +387,22 @@ export default {
     source: {
       worker: 'Background worker',
       main: 'Main thread',
+
     },
+    zoneLabel: 'Zone {rank}: {lat} {lon}',
+    zoneArea: 'Area',
+    zoneSlope: 'Slope mean/max',
+    zoneElevation: 'Elevation',
+    zoneRelief: 'Relief',
+    zonesLabel: 'Ranked landing zones',
+    zonesRunning: 'Detecting flat landing zones…',
+    zonesStale: 'Ranking is out of date — run it again.',
+    zonesEmpty: 'No flat landing zones found for this region.',
+    zonesUnavailable: 'Landing-zone ranking is not available yet.',
+    zonesError: 'Landing-zone ranking failed',
+    warningNearestEphemeris: 'Ephemeris from nearest curated site {site} ({distance} away)',
+    warningNoNearestSite: 'No curated site for ephemeris — approximation used',
+
     rankingLabel: 'Ranked sites',
     metricSunlight: 'Sun',
     metricPower: 'Power',
@@ -464,6 +482,10 @@ export default {
     services: 'Services',
     workers: 'Workers',
     localFallback: 'Local fallback in use',
+    autopilotMode: 'Autopilot mode',
+    autopilotPoi: 'Curated POIs',
+    autopilotZones: 'Landing zones ({source})',
+    autopilotZonesIdle: 'Landing zones',
   },
   fallback: {
     switchHint: 'Switch between 3D and 2D from the viewport toolbar.',

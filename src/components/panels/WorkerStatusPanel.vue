@@ -48,6 +48,16 @@ const serviceModules = computed(() => state.data.detected.services ?? [])
 const workerModules = computed(() => state.data.detected.workers ?? [])
 
 const workerAvailable = computed(() => hasWorker() || state.worker.available)
+
+const autopilotMode = computed(() => {
+  if (state.landingZonesStatus.unavailable) return t('worker.autopilotPoi')
+  if (state.landingZonesStatus.status === 'done') {
+    return t('worker.autopilotZones', {
+      source: state.landingZonesStatus.source === 'worker' ? t('autopilot.source.worker') : t('autopilot.source.main'),
+    })
+  }
+  return t('worker.autopilotZonesIdle')
+})
 </script>
 
 <template>
@@ -60,6 +70,7 @@ const workerAvailable = computed(() => hasWorker() || state.worker.available)
     />
     <StatRow label-key="worker.status" :value="workerStatus" :tone="workerTone" :mono="false" />
     <StatRow label-key="worker.source" :value="state.worker.source === 'worker' ? t('autopilot.source.worker') : t('autopilot.source.main')" :mono="false" />
+    <StatRow label-key="worker.autopilotMode" :value="autopilotMode" :mono="false" />
     <StatRow label-key="worker.lastRun" :value="lastRun" :mono="false" />
     <StatRow label-key="worker.duration" :value="duration" :mono="false" />
     <p v-if="workerSummary === 'error' && state.worker.error" class="panel-note panel-note--warn">{{ state.worker.error }}</p>

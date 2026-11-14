@@ -62,9 +62,21 @@ const sitesInRegion = computed(() => {
   })
 })
 const sitesOutsideCount = computed(() => Math.max(0, state.sites.length - sitesInRegion.value.length))
-const sceneSites = computed(() =>
-  sitesInRegion.value.map((site) => ({ ...site, displayName: siteDisplayName(t, te, site) })),
-)
+const sceneSites = computed(() => {
+  const list = [...sitesInRegion.value]
+  const zoneSite = state.landingZoneSite
+  if (zoneSite && !list.some((site) => site.id === zoneSite.id)) {
+    const bounds = terrainBounds.value
+    const inside =
+      !bounds ||
+      (() => {
+        const point = lonLatToPlanarMeters(zoneSite.lat, zoneSite.lon, bounds.datum)
+        return point.x >= bounds.minX && point.x <= bounds.maxX && point.y >= bounds.minY && point.y <= bounds.maxY
+      })()
+    if (inside) list.push({ ...zoneSite, displayName: zoneSite.name })
+  }
+  return list.map((site) => ({ ...site, displayName: site.displayName ?? siteDisplayName(t, te, site) }))
+})
 
 function regionLabel(region) {
   if (region.id === 'south-pole-875s-20m') return t('dem.highDetail')
