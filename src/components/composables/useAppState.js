@@ -39,6 +39,18 @@ export const DEFAULT_MISSION = Object.freeze({
   mastM: 10,
   bitrateMbps: 2,
   panelAreaM2: 2.4,
+  batteryCapacityWh: null,
+  batteryRoundTripEfficiency: 0.9,
+  batteryDepthOfDischarge: 0.8,
+  heaterMaxW: 400,
+  heaterWPerK: 2,
+  minOperatingTemperatureC: -40,
+  maxOperatingTemperatureC: 50,
+  landingEllipseRadiusM: 500,
+  craterHazardMinDiameterM: 500,
+  craterHazardReachM: 5000,
+  scienceReachM: 5000,
+  dataNeedMb: 1200,
 })
 
 /** View mode requested through `?mode=2d|3d|auto` (handy for demos/tests). */
