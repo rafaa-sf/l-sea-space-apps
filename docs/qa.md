@@ -227,6 +227,9 @@ The same end-to-end run covers the cartographic and layout behaviour:
   `Coverage 152 x 152 km` and `Zoom 6, 36/36 tiles`, and the E2E check fails if the
   coverage label or the claimed zoom/tile count regresses.
 
+Evidence: [layer-coverage-3d.png](screenshots/layer-coverage-3d.png) shows the LOLA
+5 m colour-hillshade footprint and its coverage/zoom label over the rectangular DEM.
+
 ## 8. Historical baseline (superseded)
 
 The first Gate S baseline was executed at the initial scaffold commit `263d724`, when
