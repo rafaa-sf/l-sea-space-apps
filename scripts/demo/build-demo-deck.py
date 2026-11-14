@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate the L-SEA Space Apps Project Demo deck (7 slides, English).
 
-Content mirrors docs/demo-script.md and uses the screenshots in docs/screenshots/.
+Content mirrors docs/demo.md and uses the screenshots in docs/screenshots/.
 Requires: python-pptx.
 
 Usage:

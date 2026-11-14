@@ -3,8 +3,8 @@
 PowerPoint deck for the NASA Space Apps **Project Demo** (7 slides including the
 cover, per the participant guide).
 
-- File: `demo/L-SEA-Project-Demo.pptx` (16:9, English)
-- Content: mirrors [docs/demo-script.md](../docs/demo-script.md)
+- Files: `demo/L-SEA-Project-Demo.pptx` (16:9, English) and its PDF export
+- Content: mirrors [docs/demo.md](../docs/demo.md) (7-slide deck outline and 30-second video script)
 - Screenshots: [docs/screenshots/](../docs/screenshots/)
 - Speaker notes are included in each slide's notes pane.
 
@@ -29,6 +29,6 @@ libreoffice --headless --convert-to pdf --outdir demo demo/L-SEA-Project-Demo.pp
 
 ## Alternative
 
-A 30-second video script is in
-[docs/demo-script.md](../docs/demo-script.md#option-b--30-second-video-script).
+A 30-second video script is in the "Option B" section of
+[docs/demo.md](../docs/demo.md).
 The project demo can be the slides **or** the video, not both.
