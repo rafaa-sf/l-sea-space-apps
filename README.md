@@ -86,6 +86,7 @@ docs/          Project documentation
 | [`docs/scalability.md`](docs/scalability.md) | Impact assessment and scalability analysis: beneficiaries, measurable impact, growth, scale limits and roadmap |
 | [`docs/qa.md`](docs/qa.md) | Test strategy and executed QA evidence |
 | [`qa/README.md`](qa/README.md) | Reproducible QA test bench: Monte Carlo logic bench and device/resolution UI matrix |
+| [`qa/REPORT.md`](qa/REPORT.md) | Executed test-bench runs: numbers, findings and reproduction |
 | [`docs/deployment.md`](docs/deployment.md) | Vercel deployment, verification and rollback |
 | [`docs/contributing.md`](docs/contributing.md) | Conventions and the two-machine collaboration protocol |
 | [`docs/security.md`](docs/security.md) | Secrets policy and repository safety |
@@ -113,6 +114,32 @@ Production is deployed on Vercel at
 <https://l-sea-space-apps.vercel.app>. The Vercel project is connected to this
 repository, so every push to `main` deploys automatically. Deployment details,
 verification steps and rollback are in [`docs/deployment.md`](docs/deployment.md).
+
+## Quality and verification
+
+The application ships with an automated test bench under [`qa/`](qa/README.md):
+
+- **Unit and contract tests** — Vitest suites for the scientific core and the
+  data services (`npm test`).
+- **Monte Carlo logic bench** — seeded randomised site/date/mission scenarios
+  over the real core with 13 invariants (no `NaN`, bounds, coordinate
+  round-trip, horizon consistency, visibility, set events, windows, power,
+  comms, scoring, ranking, cache neutrality). A 20,000-case run found one real
+  terrain-boundary defect, fixed in #6 with a regression test.
+- **Device/resolution matrix** — headless Chrome emulation of 51 viewports
+  (desktop, laptop, tablet, mobile, foldable and TV; portrait and landscape) in
+  English and Spanish, plus the no-WebGL fallback, measuring layout boxes,
+  overflow, console errors, control sizes and font sizes.
+- **Tagged, filterable results** — every case carries tags (`@inv/*`, `@ui/*`,
+  `@device/*`, `@res/*`, `@status/*`) and the results are aggregated into a
+  self-contained, offline HTML report.
+- **Reproduce** — commands, tag taxonomy and the executed runs are documented in
+  [`qa/README.md`](qa/README.md) and [`qa/REPORT.md`](qa/REPORT.md); the test
+  strategy is in [`docs/qa.md`](docs/qa.md).
+
+Production verification: <https://l-sea-space-apps.vercel.app> returns HTTP 200,
+serves the pre-computed NASA datasets and the AI-use declaration at
+`/data/ai-usage.md`.
 
 ## AI usage
 
