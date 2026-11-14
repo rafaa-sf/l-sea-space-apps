@@ -32,6 +32,11 @@ export default {
     close: 'Close',
     tabsLabel: 'Tool sections',
   },
+  layout: {
+    resizeLeft: 'Resize left panel',
+    resizeRight: 'Resize right panel',
+    resizeHint: 'Drag to resize. Arrow keys adjust, Home or double-click resets.',
+  },
   common: {
     open: 'Open',
     loading: 'Loading…',
@@ -297,6 +302,8 @@ export default {
     openExternal: 'Open layer source',
     empty: 'No layer catalogue loaded.',
     overlayNote: 'Overlays are stitched from live Moon Trek WMTS tiles and draped on the DEM; availability depends on the NASA service.',
+    coverage: 'Coverage {width} x {height} km',
+    zoomTiles: 'Zoom {zoom}, {tiles} tiles',
     status: {
       loading: 'Loading tiles…',
       available: 'Loaded',

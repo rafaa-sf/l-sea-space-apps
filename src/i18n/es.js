@@ -32,6 +32,11 @@ export default {
     close: 'Cerrar',
     tabsLabel: 'Secciones de herramientas',
   },
+  layout: {
+    resizeLeft: 'Redimensionar panel izquierdo',
+    resizeRight: 'Redimensionar panel derecho',
+    resizeHint: 'Arrastra para redimensionar. Las flechas ajustan, Inicio o doble clic restablece.',
+  },
   common: {
     open: 'Abrir',
     loading: 'Cargando…',
@@ -297,6 +302,8 @@ export default {
     openExternal: 'Abrir fuente de la capa',
     empty: 'No hay catálogo de capas cargado.',
     overlayNote: 'Las capas se montan con teselas WMTS de Moon Trek en vivo y se proyectan sobre el MDE; su disponibilidad depende del servicio NASA.',
+    coverage: 'Cobertura {width} x {height} km',
+    zoomTiles: 'Zoom {zoom}, {tiles} teselas',
     status: {
       loading: 'Cargando teselas…',
       available: 'Cargada',
