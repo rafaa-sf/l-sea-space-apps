@@ -207,6 +207,26 @@ The end-to-end script also asserts the viewer geometry and the map scale:
   square or if the scale label/caption does not change on zoom, so aspect-ratio and
   scale regressions fail QA instead of passing silently.
 
+### 7.2 Terrain geometry, layout and layer-scale checks
+
+The same end-to-end run covers the cartographic and layout behaviour:
+
+- **Rectangular DEM, real extents.** The 3D and 2D views expose the real grid extent
+  through `data-terrain-layout="rectangular"`, `data-terrain-extent` and
+  `data-markers-anchored="true"`; site, custom and pointer markers are anchored to the
+  sampled terrain surface (no floating at the datum), and the 3D view uses the same
+  planar layout and horizontal scale as the 2D view (metres-per-pixel parity is
+  asserted within 2%: e.g. 745 m/px vs 743 m/px at the same map width).
+- **Resizable split panes.** The left and right rails expose
+  `resize-handle-left`/`resize-handle-right` handles: dragging and the ArrowLeft/
+  ArrowRight keys change the rail width, double-click or Home resets it, the value
+  persists in `localStorage` across a reload, and the centre canvas stays square after
+  the resize.
+- **Per-layer Moon Trek scale.** Layer coverage is derived from each layer's own
+  `boundsM` rather than the whole region: the catalogue reports e.g.
+  `Coverage 152 x 152 km` and `Zoom 6, 36/36 tiles`, and the E2E check fails if the
+  coverage label or the claimed zoom/tile count regresses.
+
 ## 8. Historical baseline (superseded)
 
 The first Gate S baseline was executed at the initial scaffold commit `263d724`, when
