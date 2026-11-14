@@ -16,6 +16,7 @@ committed (see `README.md` to reproduce them).
 | Invariant failures | **1 case** (see finding L-1) |
 | Warnings | 93 (see finding L-2) |
 | Skipped checks | degraded paths: no-ephemeris 311, no-terrain 348, both 220 (checks that need that data are skipped, as designed) |
+| Check totals | pass 255,600 · fail 3 · warn 93 · skip 4,304 (sum 260,000 = 20,000 cases × 13 invariants) |
 
 ### Coverage
 
@@ -23,6 +24,14 @@ committed (see `README.md` to reproduce them).
 | --- | --- |
 | Region | `south-pole-80s-80m` 12,547 · `south-pole-875s-20m` 7,453 |
 | Edge cases | pole 1,050 · region-edge 1,967 · longitude-wrap 2,032 · longitude-360 input 215 · date-off-grid 18,024 · date-on-sample 1,976 · inside known POI 5,981 |
+
+Second validation run: **10,000 trials, quick profile (36 azimuths)**, 238.8 s — same single defect (`case 6000`), 44 warnings; the quick path is validated.
+
+The 100,000-trial quick run was **not** executed because of the time budget (≈22 min idle, ≈40 min under the parallel UI-matrix load). The CLI has no trial cap:
+
+```bash
+cd qa/logic && node logic-mc.mjs --trials 100000 --profile quick --workers 10 --chunk 100
+```
 
 ### Invariants (13)
 
@@ -34,18 +43,24 @@ All passed for 19,999 of 20,000 cases, except the single boundary case below:
 
 ### Findings
 
-**L-1 (harness edge, low severity).** Case `seed 20261114`, `case 6000`
-reproduces a `NaN` in `sampleElevation`/slope/aspect. The scenario generator
-placed a site at **lat −87.428°** (north of the high-resolution region, which
-covers 87.5 S–90 S) but forced the high-resolution region. The application's
-loader selects the region that contains the site and falls back to the wide-area
-grid, so this is a **test-bench scenario-generation bug**, not a product defect —
-but it also suggests the low-level sampler could fail more gracefully if asked
-for a point outside the provided grid.
+**L-1 (application defect, medium severity — for the team to fix).** Case
+`seed 20261114`, `case 6000` reproduces a `NaN` in `sampleElevation`, slope and
+aspect for a site at **lat −87.428°, lon 346.541°**. Root cause is in
+`src/core/terrain.js`: `isInsideTerrain()` / `pointInsideBounds()` accept a
+**half-pixel margin beyond the grid edge** (this site is 0.26 px outside
+`maxY`), while `sampleElevationXY()` uses the pixel-centre convention and
+rejects the same point (`row ≈ −0.76`) → `NaN`. Consequence: any site in that
+outer half-pixel band is reported *inside* the terrain yet silently degrades
+elevation, slope, horizon and autopilot scoring to `NaN`. Suggested fix: make
+the two conventions agree — clamp sampling for points inside the accepted
+margin (edge-clamped, as the terrain module claims) or reject sites beyond
+`maxX/maxY − 0.5 px`. Not fixed by the test bench (it does not modify the
+application).
 
 ```bash
 node qa/logic/logic-mc.mjs --seed 20261114 --case 6000
 ```
+
 
 **L-2 (accepted behaviour).** 93 `@inv/horizon-monotonicity` warnings: the
 terrain-aware horizon computed with a denser azimuth sampling differs from the
@@ -119,6 +134,8 @@ node qa/ui/run-all.mjs --tag @device/mobile
 ## 5. Status
 
 Findings are **reported, not fixed**: this test bench does not modify the
-application. UI-1/UI-2 are design-token fixes; L-1 is a test-bench scenario fix;
+application. **L-1 is a real application defect** in the terrain boundary
+convention and should be fixed in `src/core/terrain.js` (it silently produces
+`NaN` for sites in the outer half-pixel band). UI-1/UI-2 are design-token fixes;
 UI-3 deserves a real-device check. The harness itself is deterministic
 (seed + case reproduction) and records the repository git SHA in every report.
