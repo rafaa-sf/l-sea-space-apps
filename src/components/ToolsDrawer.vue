@@ -81,6 +81,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onWindowKeydown))
             <LayersPanel />
           </div>
           <div v-show="activeTab === 'terrain'" role="tabpanel" :aria-label="t('tabs.terrain')">
+            <p class="panel-note dem-hint-note">{{ t('dem.hint') }}</p>
             <TopographyPanel />
             <OrbitalVariationPanel />
           </div>

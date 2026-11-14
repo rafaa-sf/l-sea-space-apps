@@ -38,11 +38,13 @@ export default {
     resizeHint: 'Drag to resize. Arrow keys adjust, Home or double-click resets.',
   },
   dem: {
+    area: 'Area {width} x {height} km, {resolution} m/px',
     title: 'LOLA DEM area',
     highDetail: 'High detail - 152 km, 74 m/px',
     wide: 'Wide area - 608 km, 594 m/px',
-    custom: 'Custom - {width} x {height} km, {resolution} m/px',
+    customFull: 'Custom - {width} x {height} km, {resolution} m/px - X: {minX}..{maxX} km, Y: {minY}..{maxY} km',
  
+    hint: 'Build any extent locally with npm run data:lola -- --extent-km=400x300 --size=1024x768 --center-x=-50000 --center-y=40000; every region in public/data/terrain/index.json appears here after reload.',
   },
   common: {
     open: 'Open',

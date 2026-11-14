@@ -38,10 +38,12 @@ export default {
     resizeHint: 'Arrastra para redimensionar. Las flechas ajustan, Inicio o doble clic restablece.',
   },
   dem: {
+    area: 'Área {width} x {height} km, {resolution} m/px',
     title: 'Área del MDE LOLA',
     highDetail: 'Alta resolución - 152 km, 74 m/px',
     wide: 'Área amplia - 608 km, 594 m/px',
-    custom: 'Personalizado - {width} x {height} km, {resolution} m/px',
+    customFull: 'Personalizada - {width} x {height} km, {resolution} m/px - X: {minX}..{maxX} km, Y: {minY}..{maxY} km',
+    hint: 'Genera cualquier extensión en local con npm run data:lola -- --extent-km=400x300 --size=1024x768 --center-x=-50000 --center-y=40000; cada región de public/data/terrain/index.json aparece aquí tras recargar.',
  
   },
   common: {
