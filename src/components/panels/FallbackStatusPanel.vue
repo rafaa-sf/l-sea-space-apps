@@ -66,6 +66,6 @@ const exportLabel = computed(() => {
       :value="state.export.lastAt ? formatUtc(state.export.lastAt) : t('common.notAvailable')"
       :mono="false"
     />
-    <p v-if="state.export.error" class="panel-note panel-note--warn">{{ state.export.error }}</p>
+    <p v-if="state.export.error" class="panel-note panel-note--warn" :title="state.export.error">{{ t('export.errorHint') }}</p>
   </PanelCard>
 </template>

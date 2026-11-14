@@ -112,6 +112,19 @@ function openDocsIndex() {
         </div>
       </section>
 
+      <section class="landing__section" :aria-label="t('landing.howto.title')">
+        <h2 class="landing__h2">{{ t('landing.howto.title') }}</h2>
+        <ol class="landing__steps">
+          <li v-for="n in 3" :key="n" class="landing__step">
+            <span class="landing__step-num" aria-hidden="true">{{ n }}</span>
+            <div>
+              <h3>{{ t(`landing.howto.s${n}t`) }}</h3>
+              <p>{{ t(`landing.howto.s${n}b`) }}</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
       <section class="landing__section" :aria-label="t('landing.challenge.title')">
         <h2 class="landing__h2">{{ t('landing.challenge.title') }}</h2>
         <div class="landing__two-col">
@@ -274,7 +287,7 @@ function openDocsIndex() {
   background: transparent;
   color: var(--color-text-dim);
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -311,7 +324,7 @@ function openDocsIndex() {
   max-width: 62ch;
   margin: 14px 0 0;
   color: var(--color-text-dim);
-  font-size: clamp(14px, 1.5vw, 17px);
+  font-size: clamp(16px, 1.5vw, 18px);
   line-height: 1.55;
 }
 
@@ -383,6 +396,7 @@ function openDocsIndex() {
 .landing__lead {
   margin: 0;
   color: var(--color-text-dim);
+  font-size: 16px;
   line-height: 1.6;
 }
 
@@ -473,6 +487,13 @@ function openDocsIndex() {
   font-size: 13px;
 }
 
+.landing__section-link a,
+.landing__footer-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
 .landing__section-link a {
   color: var(--color-accent-strong);
   text-decoration: none;
@@ -512,6 +533,50 @@ function openDocsIndex() {
   text-decoration: underline;
 }
 
+.landing__steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.landing__step {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.landing__step-num {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-accent-soft);
+  color: var(--color-accent-strong);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.landing__step h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.landing__step p {
+  margin: 0;
+  color: var(--color-text-dim);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
 @media (max-width: 1024px) {
   .landing__grid--features,
   .landing__grid--docs {
@@ -531,7 +596,8 @@ function openDocsIndex() {
 
   .landing__two-col,
   .landing__two-col--cards,
-  .landing__grid--three {
+  .landing__grid--three,
+  .landing__steps {
     grid-template-columns: 1fr;
   }
 

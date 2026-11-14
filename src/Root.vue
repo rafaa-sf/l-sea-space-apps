@@ -67,7 +67,7 @@ onBeforeUnmount(() => window.removeEventListener('hashchange', syncRoute))
   background: rgba(13, 16, 22, 0.92);
   color: var(--color-text-dim);
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: 12px;
   text-decoration: none;
   backdrop-filter: blur(6px);
 }
