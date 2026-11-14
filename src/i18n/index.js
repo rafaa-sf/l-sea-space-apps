@@ -5,7 +5,18 @@ import es from './es'
 const STORAGE_KEY = 'lsea.locale'
 const supported = ['en', 'es']
 
+function urlLocale() {
+  try {
+    const requested = new URLSearchParams(window.location.search).get('lang')
+    return requested && supported.includes(requested.toLowerCase()) ? requested.toLowerCase() : null
+  } catch {
+    return null
+  }
+}
+
 function initialLocale() {
+  const fromUrl = urlLocale()
+  if (fromUrl) return fromUrl
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved && supported.includes(saved)) return saved

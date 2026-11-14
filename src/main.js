@@ -3,4 +3,11 @@ import App from './App.vue'
 import i18n from './i18n'
 import './styles/main.css'
 
-createApp(App).use(i18n).mount('#app')
+const app = createApp(App)
+
+app.config.errorHandler = (error, instance, info) => {
+  // Keep the mission console usable even if one component fails: log and move on.
+  console.error('[lsea] UI error:', info, error)
+}
+
+app.use(i18n).mount('#app')
