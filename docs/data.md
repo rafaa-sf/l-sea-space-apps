@@ -247,6 +247,8 @@ Measured elevation ranges of the web grids: -4,378 to +2,369 m (high resolution)
 
 ### Local DEM downloader (before the first render)
 
+The DEM area selector is populated from `public/data/terrain/index.json`. The repository ships four extra area presets generated with this downloader (100, 200, 300 and 400 km at 1024 px) besides the two standard regions, and the selector sorts them by extent: 100 km, 152 km high detail, 200 km, 300 km, 400 km, 608 km wide area. Any additional local region created with the commands below appears in the same selector after a reload.
+
 `scripts/nasa/download-lola.mjs` is the user-facing local download step: it
 acquires the official PDS products, verifies them, caches them under
 `.cache/lola/` (gitignored) and builds browser terrain regions at the size the
@@ -370,7 +372,7 @@ Every test used `Origin: http://localhost:5173`.
 | `public/data/pois.json` | 10 curated lunar south-pole sites of interest | about 8 KB |
 | `public/data/layers.json` | 21 verified Moon Trek WMTS layers | about 39 KB |
 | `public/data/ephemeris/` | 10 files x 2,928 topocentric Sun/Earth samples, plus index and schema | about 2.8 MB |
-| `public/data/terrain/` | 2 LOLA polar-stereographic int16 grids, plus index | about 10.5 MB |
+| `public/data/terrain/` | 6 LOLA polar-stereographic int16 grids (2 standard regions + 4 area presets: 100, 200, 300 and 400 km at 1024 px), plus index | about 19 MB |
 | `public/data/ai-usage.md` | AI use declaration served by the application | about 7 KB |
 | **Total** | | **about 13.4 MB** (copied into `dist/data/`) |
 
