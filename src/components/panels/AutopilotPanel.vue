@@ -570,7 +570,7 @@ const ranking = computed(() => state.scores)
           >{{ t('autopilot.zoneSelected') }}</span>
           <button type="button" class="rank-item__head" @click="actions.selectLandingZone(entry)">
             <span class="rank-item__rank">#{{ entry.rank }}</span>
-            <span class="rank-item__name">{{ t('autopilot.zoneLabel', { rank: entry.rank, lat: formatLat(entry.zone.lat), lon: formatLon(entry.zone.lon) }) }}</span>
+            <span class="rank-item__name">{{ t('autopilot.zoneLabel', { lat: formatLat(entry.zone.lat), lon: formatLon(entry.zone.lon) }) }}</span>
             <span
               v-if="feasibilityBadge(entry)"
               class="tag"

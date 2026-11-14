@@ -391,7 +391,7 @@ export default {
       main: 'Main thread',
 
     },
-    zoneLabel: 'Landing zone {rank}: {lat} {lon}',
+    zoneLabel: 'Landing zone: {lat} {lon}',
     zoneSiteName: 'Landing zone {rank}',
     zoneSelected: 'Selected landing zone',
     zoneArea: 'Area',
@@ -473,7 +473,7 @@ export default {
     computedAt: 'Computed',
     signature: 'Input signature',
     recalculate: 'Recalculate',
-    zoneLabel: 'Landing zone {rank}: {lat} {lon}',
+    zoneLabel: 'Landing zone: {lat} {lon}',
     zoneSiteName: 'Landing zone {rank}',
     zoneSelected: 'Selected landing zone',
     zoneArea: 'Area',
