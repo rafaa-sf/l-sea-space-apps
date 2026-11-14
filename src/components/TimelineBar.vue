@@ -7,7 +7,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Sparkline from './ui/Sparkline.vue'
-import { actions, ephemerisRange, state } from './composables/useAppState.js'
+import { actions, ephemerisRange, state, workerSummary } from './composables/useAppState.js'
 import { getCompute } from './composables/useCompute.js'
 import { formatDuration, formatUtc, toTimestamp } from './composables/format.js'
 
