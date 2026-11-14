@@ -406,7 +406,7 @@ report.zoneDuplicateLabels = await evaluate(`(() => {
 report.zoneSignatureBefore = await signatureOf()
 
 const setPowerNeed = (value) => evaluate(`(() => {
-  const input = [...document.querySelectorAll('input[type="number"]')].find((el) => el.value === '120' || el.value === '1200' || el.value === '2000');
+  const input = document.querySelector('[data-testid="mission-power-need"]');
   if (!input) return false;
   const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
   setter.call(input, ${JSON.stringify(String(value))});
@@ -446,8 +446,117 @@ for (let attempt = 0; attempt < 30 && restoredRows.count === 0; attempt += 1) {
   await sleep(500)
   restoredRows = await rowStates()
 }
+for (let attempt = 0; attempt < 30 && restoredRows.feasible === 0; attempt += 1) {
+  await sleep(500)
+  restoredRows = await rowStates()
+}
 report.restoredRows = restoredRows
 report.restoredFeasible = restoredRows.feasible > 0 && feasibleFirst(restoredRows)
+
+// Task-25: RTG power source feasibility (sufficient then insufficient).
+await evaluate(`(() => {
+  const tab = document.querySelector('[data-testid="analysis-tab-autopilot"]');
+  if (tab) tab.click();
+  return Boolean(tab);
+})()`)
+await sleep(800)
+const setPowerSource = (value) =>
+  evaluate(`(() => {
+    const select = document.querySelector('[data-testid="mission-power-source"]');
+    if (!select) return false;
+    select.value = ${JSON.stringify(value)};
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`)
+const setRtgPower = (value) =>
+  evaluate(`(() => {
+    const input = document.querySelector('[data-testid="mission-rtg-power"]');
+    if (!input) return false;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    setter.call(input, ${JSON.stringify(String(value))});
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`)
+const waitSignature = async (previous) => {
+  let current = previous
+  for (let attempt = 0; attempt < 40 && current === previous; attempt += 1) {
+    await sleep(500)
+    current = await signatureOf()
+  }
+  return current
+}
+report.powerNeedRestored = await evaluate(`document.querySelector('[data-testid="mission-power-need"]')?.value ?? null`)
+const sigBeforeRtg = await signatureOf()
+report.rtgSourceChanged = await setPowerSource('rtg')
+let sigRtgSource = await waitSignature(sigBeforeRtg)
+report.rtgPowerSet = await setRtgPower(1000)
+const sigRtg1000 = await waitSignature(sigRtgSource)
+await sleep(900)
+let rtgRows2 = await rowStates()
+for (let attempt = 0; attempt < 40 && !(rtgRows2.count > 0 && rtgRows2.feasible === rtgRows2.count); attempt += 1) {
+  await sleep(500)
+  rtgRows2 = await rowStates()
+}
+report.rtgFeasibleRows = rtgRows2
+report.rtgFeasible = rtgRows2.count > 0 && rtgRows2.feasible === rtgRows2.count
+await evaluate(`(() => {
+  if (!document.querySelector('.zone-detail')) {
+    const details = document.querySelector('[data-testid="landing-zone-row"] .rank-item__details');
+    if (details) details.click();
+  }
+  return Boolean(document.querySelector('.zone-detail'));
+})()`)
+await sleep(600)
+let rtgPanel = await zonePanelText()
+for (let attempt = 0; attempt < 20 && !/RTG mission|eclipse|continuous-sun/i.test(rtgPanel); attempt += 1) {
+  await sleep(500)
+  rtgPanel = await zonePanelText()
+}
+report.rtgNote = /RTG mission|eclipse|continuous-sun/i.test(rtgPanel)
+report.rtgInsufficientPowerSet = await setRtgPower(50)
+const sigRtgLow = await waitSignature(sigRtg1000)
+await sleep(900)
+let rtgBadRows2 = await rowStates()
+for (let attempt = 0; attempt < 40 && !(rtgBadRows2.count > 0 && rtgBadRows2.notFeasible > 0); attempt += 1) {
+  await sleep(500)
+  rtgBadRows2 = await rowStates()
+}
+report.rtgInsufficientRows = rtgBadRows2
+report.rtgInsufficient = rtgBadRows2.notFeasible > 0
+let rtgBadPanel = await zonePanelText()
+for (let attempt = 0; attempt < 20 && !/RTG|insufficient|no cubre/i.test(rtgBadPanel); attempt += 1) {
+  await sleep(500)
+  rtgBadPanel = await zonePanelText()
+}
+report.rtgViolationText = /RTG|insufficient|no cubre/i.test(rtgBadPanel)
+await setPowerSource('solar')
+await sleep(800)
+report.rtgRestored = (await evaluate(`document.querySelector('[data-testid="mission-power-source"]')?.value ?? null`)) === 'solar'
+
+// Mission cycles: weekly sunlight and link/relay strips.
+report.cyclesTab = await click('Cycles', true)
+let cyclesReady = 0
+for (let attempt = 0; attempt < 30 && cyclesReady === 0; attempt += 1) {
+  await sleep(400)
+  cyclesReady = await evaluate(`document.querySelectorAll('[data-testid="cycles-sun"] button').length`)
+}
+report.cyclesSunSegments = cyclesReady
+report.cyclesDirectSegments = await evaluate(`document.querySelectorAll('[data-testid="cycles-direct"] button').length`)
+report.cyclesRelaySegments = await evaluate(`document.querySelectorAll('[data-testid="cycles-relay"] button').length`)
+report.cyclesWeeks = await evaluate(`document.querySelectorAll('.cycles-week-label').length`)
+report.cyclesSummaryBefore = await evaluate(`document.querySelector('[data-testid="cycles-summary"]')?.textContent ?? null`)
+const clockValue = () => evaluate(`document.body.innerText.match(/MISSION TIME \\(UTC\\)\\s*\\n?([^\\n]+)/)?.[1] ?? null`)
+report.cyclesRelayToggled = await evaluate(`(() => { const el=document.querySelector('[data-testid="cycles-relay-toggle"]'); if(!el) return false; el.click(); return true; })()`)
+await sleep(2200)
+report.cyclesSummaryAfter = await evaluate(`document.querySelector('[data-testid="cycles-summary"]')?.textContent ?? null`)
+report.cyclesRelayRowText = await evaluate(`document.querySelector('[data-testid="cycles-relay"]')?.textContent ?? null`)
+const timeBeforeCycles = await clockValue()
+report.cyclesTimeBeforeSeek = timeBeforeCycles
+report.cyclesSeekClicked = await evaluate(`(() => { const els=[...document.querySelectorAll('[data-testid="cycles-direct"] .cycles-segment--link, [data-testid="cycles-sun"] .cycles-segment')]; const el=els[els.length-1]; if(!el) return false; el.click(); return true; })()`)
+await sleep(1200)
+report.cyclesTimeAfterSeek = await clockValue()
+report.cyclesSeekWorks = Boolean(report.cyclesSeekClicked && report.cyclesTimeAfterSeek && report.cyclesTimeAfterSeek !== timeBeforeCycles)
 
 report.export = await click('Export JSON brief')
 await sleep(4000)
@@ -464,6 +573,7 @@ if (briefFile) {
     report.briefSites = Array.isArray(brief.rankedSites) ? brief.rankedSites.length : 'MISSING'
     report.briefZones = Array.isArray(brief.rankedLandingZones) ? brief.rankedLandingZones.length : -1
     report.briefZoneMetrics = Boolean(brief.rankedLandingZones?.[0]?.metrics?.power?.averageW != null && brief.rankedLandingZones?.[0]?.metrics?.thermal != null)
+  report.briefCycles = Boolean(brief.cycles && brief.cycles.sunlight && brief.cycles.direct)
   } catch (error) {
     report.briefParseError = String(error)
   }
@@ -586,6 +696,13 @@ const failed =
   !report.defaultFeasible || !Array.isArray(report.zoneDuplicateLabels) || report.zoneDuplicateLabels.length > 0 ||
   !report.infeasibleState || !report.infeasibleBadge || !report.infeasibleAlert ||
   !report.restorePower || !report.restoredFeasible ||
+  !(report.cyclesSunSegments >= 1) || !(report.cyclesDirectSegments >= 1) ||
+  !(report.cyclesWeeks >= 2) || !report.cyclesRelayToggled ||
+  report.cyclesSummaryAfter === report.cyclesSummaryBefore ||
+  !report.cyclesSeekWorks ||
+  !report.rtgSourceChanged || !report.rtgPowerSet ||
+  !report.rtgFeasible || !report.rtgNote ||
+  !report.rtgInsufficient || !report.rtgViolationText || !report.rtgRestored ||
   report.layerCoverage === 'MISSING' ||
   !/Zoom\s+[5-9],/.test(report.layerZoom ?? '') ||
   report.consoleErrors.length > 0
