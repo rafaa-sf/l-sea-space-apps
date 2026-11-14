@@ -187,6 +187,11 @@ await send('Browser.setDownloadBehavior', {
 })
 await sleep(9000)
 
+// Start the run from the default pane widths so drag/keyboard assertions are deterministic.
+await evaluate(`localStorage.removeItem('lsea.layout.leftWidth'); localStorage.removeItem('lsea.layout.rightWidth')`)
+await send('Page.reload')
+await sleep(9000)
+
 const report = { errors: [] }
 let text = await bodyText()
 report.workerBadge = (text.match(/Worker: [^\n]+/) || [])[0] ?? 'MISSING'
@@ -235,12 +240,6 @@ await sleep(800)
 text = await bodyText()
 report.ranking = (text.match(/#1[^\n]*\n?[^\n]*/) || [])[0]?.replace(/\n/g, ' ') ?? 'MISSING'
 
-report.railLeftBefore = await railWidth('layout-left-rail')
-report.resizeHandleDragged = await dragHandle('resize-handle-left', 90)
-report.railLeftAfterDrag = await railWidth('layout-left-rail')
-report.canvasAfterDrag = await readCanvas()
-report.scaleAfterDrag = await waitForScaleLabel()
-
 report.export = await click('Export JSON brief')
 await sleep(4000)
 const downloads = readdirSync(DOWNLOAD_DIR)
@@ -250,6 +249,12 @@ if (downloads.length > 0) {
   report.briefSchema = brief.schema
   report.briefSites = Array.isArray(brief.rankedSites) ? brief.rankedSites.length : 'MISSING'
 }
+
+report.railLeftBefore = await railWidth('layout-left-rail')
+report.resizeHandleDragged = await dragHandle('resize-handle-left', 90)
+report.railLeftAfterDrag = await railWidth('layout-left-rail')
+report.canvasAfterDrag = await readCanvas()
+report.scaleAfterDrag = await waitForScaleLabel()
 
 await sleep(3000)
 report.storagePersisted = await evaluate(`localStorage.getItem('lsea.layout.leftWidth')`)
@@ -266,20 +271,31 @@ if (focusHandle) {
   await sleep(500)
 }
 report.railLeftAfterKeyboard = await railWidth('layout-left-rail')
-// Moon Trek layer coverage/zoom check using the ?layers= pre-enable hook.
+// Moon Trek layer coverage/zoom check: open the layer panel and toggle the
+// first WMTS layer like a user would, then poll until the renderer reports the
+// per-layer zoom and tile count.
 const origin = await evaluate('location.origin')
 if (origin) {
-  await send('Page.navigate', { url: `${origin}/?lang=en&layers=lola-color-hillshade-5m` })
-  await sleep(11000)
+  await send('Page.navigate', { url: `${origin}/?lang=en` })
+  await sleep(9000)
   await click('Layers')
   await sleep(1500)
-  const layerDialog = await evaluate(`(() => { const d = document.querySelector('[role="dialog"]'); return d ? d.innerText : ''; })()`)
-  report.layerCoverage = (/Coverage\s+152\s*x\s+152\s*km/.exec(layerDialog) || [])[0] ?? 'MISSING'
-  report.layerZoom = (/Zoom\s+\d+,[^\n]*/.exec(layerDialog) || [])[0] ?? 'MISSING'
+  await evaluate(`(() => {
+    const box = document.querySelector('[role="dialog"] input[type="checkbox"]');
+    if (box && !box.checked) box.click();
+    return Boolean(box);
+  })()`)
+  let coverage = null
+  let zoom = null
+  for (let attempt = 0; attempt < 60 && !(coverage && zoom); attempt += 1) {
+    const layerDialog = await evaluate(`(() => { const d = document.querySelector('[role="dialog"]'); return d ? d.innerText : ''; })()`)
+    coverage = /Coverage\s+152\s*x\s+152\s*km/.exec(layerDialog)
+    zoom = /Zoom\s+\d+,[^\n]*/.exec(layerDialog)
+    if (!(coverage && zoom)) await sleep(500)
+  }
+  report.layerCoverage = coverage ? coverage[0] : 'MISSING'
+  report.layerZoom = zoom ? zoom[0] : 'MISSING'
 }
-
-report.consoleErrors = consoleErrors.slice(0, 10)
-console.log(JSON.stringify(report, null, 2))
 
 ws.close()
 await fetch(`${CDP}/json/close/${target.id}`)
@@ -295,6 +311,12 @@ const scaleParity = (() => {
   const extent2d = mpp2d * width2d
   return Math.abs(extent3d - extent2d) / extent2d < 0.02
 })()
+
+report.scaleParity = scaleParity
+report.consoleErrors = consoleErrors.slice(0, 10)
+console.log(JSON.stringify(report, null, 2))
+
+report.consoleErrors = consoleErrors.slice(0, 10)
 
 const failed =
   consoleErrors.length > 0 ||
