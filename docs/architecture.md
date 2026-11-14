@@ -5,16 +5,11 @@ all teammates; changes to a public interface are coordinated through the Lead.
 
 ## Stack
 
-| Layer | Technology |
-| --- | --- |
-| UI framework | Vue 3 (Composition API, `<script setup>`) |
-| 3D view | Three.js |
-| Build tool | Vite |
-| i18n | vue-i18n (English and Spanish) |
-| Tests | Vitest |
-| Deployment | Static build (`dist/`) on Vercel |
-
-No TypeScript: plain JavaScript ES modules.
+Vue 3 and Vite for the interface, Three.js for the 3D viewport, plain JavaScript ES
+modules for the domain core, a single Web Worker for background compute, vue-i18n for
+English and Spanish, Vitest for tests, and a static Vite build deployed on Vercel. No
+TypeScript. The developer workflow and commands are in the [README](../README.md) and
+[contributing.md](contributing.md).
 
 ## Runtime constraints
 
@@ -26,25 +21,26 @@ No TypeScript: plain JavaScript ES modules.
   queries during development only.
 - The application must work **without WebGL** (two-dimensional fallback).
 
-## Repository layout and ownership
+## Repository layout
 
-| Path | Owner | Contents |
-| --- | --- | --- |
-| `src/core/` | coder | Pure domain logic: geometry, engine, terrain, ephemeris, power, comms, autopilot |
-| `src/services/` | coder | Data access and integration adapters (Horizons data, LOLA, Moon Trek, export, sites) |
-| `src/workers/` | coder | Background Web Worker (single CPU thread) |
-| `src/components/` | ui | Vue components and feature panels |
-| `src/render/` | ui | Three.js scene and no-WebGL fallback renderer |
-| `src/i18n/` | ui | English and Spanish message catalogues |
-| `src/styles/` | ui | Global styles and design tokens |
-| `src/App.vue`, `src/main.js`, `index.html` | ui | Application shell and bootstrap |
-| `docs/` | commander + Lead | Project documentation |
-| `scripts/nasa/` | commander | Data acquisition scripts for NASA sources |
-| `public/data/` | commander | Pre-computed datasets (ephemeris, terrain, POIs, layers) |
-| `.github/`, `docs/deployment.md` | reviewer-pusher | CI and deployment documentation |
-| `package.json`, `vite.config.js` | Lead | Build configuration (changes coordinated with the Lead) |
+| Path | Contents |
+| --- | --- |
+| `src/core/` | Pure domain logic: geometry, engine, terrain, ephemeris, power, comms, autopilot |
+| `src/services/` | Data access and integration adapters (Horizons, LOLA, Moon Trek, export, sites, storage) |
+| `src/workers/` | Background Web Worker (single CPU thread) |
+| `src/components/` | Vue components and feature panels |
+| `src/render/` | Three.js scene and no-WebGL fallback renderer |
+| `src/i18n/` | English and Spanish message catalogues |
+| `src/styles/` | Global styles and design tokens |
+| `src/App.vue`, `src/main.js`, `index.html` | Application shell and bootstrap |
+| `public/data/` | Pre-computed NASA datasets (ephemeris, terrain, POIs, layers) |
+| `scripts/` | NASA data pipeline, deployment verification, QA and demo tooling |
+| `docs/` | Project documentation (index in the [README](../README.md)) |
+| `mcp/miro/` | Miro Model Context Protocol server ([miro.md](miro.md)) |
+| `demo/` | Project Demo deck and generator ([demo.md](demo.md)) |
 
-Only `reviewer-pusher` runs git write commands (`add`, `commit`, `push`).
+Changes to a public interface are coordinated through the Lead; the contribution
+workflow is in [contributing.md](contributing.md).
 
 ## Domain model
 
@@ -95,7 +91,7 @@ file wraps a `samples` array of the objects above with its site and range:
 Azimuth is degrees east of selenographic (true) north (`0..360`), elevation is
 degrees above the local horizontal (airless). The exact contract and the
 generation script are documented in `public/data/ephemeris/README.md`; the API
-details are in [api-integrations.md](api-integrations.md).
+details are in [data.md](data.md).
 
 ### Pre-computed datasets
 
@@ -109,8 +105,7 @@ details are in [api-integrations.md](api-integrations.md).
 
 The static build copies `public/data/` to `dist/data/`, so the app fetches
 `/data/...` at runtime; the dev server proxy for live Horizons queries exists
-only for development. Data provenance, licensing and known limitations are in
-[data-sources.md](data-sources.md).
+only for development. Data endpoints, provenance, licensing and known limitations are in [data.md](data.md).
 
 ### Terrain grid (LOLA DEM, polar stereographic)
 
@@ -245,8 +240,13 @@ Single background CPU thread. Message protocol:
 | 14 | English/Spanish UI | i18n |
 | 15 | JSON brief export (QuickMap, Moon Trek) | export |
 
-## Conventions
+## Testing and conventions
 
-- All code, comments, documentation and commit messages in **English**.
-- Absolute imports via the `@/` alias are **not** configured; use relative paths.
-- No secrets: NASA API keys live in `.env` (see `docs/security.md`).
+- Tests: Vitest unit and contract suites for the domain core and services; the
+  strategy and executed results are in [qa.md](qa.md).
+- Language: all code, comments, documentation and commit messages in English.
+- Imports: absolute imports via the `@/` alias are not configured; use relative paths.
+- Security: no secrets in the repository; keys live in a local `.env` (see
+  [security.md](security.md)).
+- Collaboration workflow, commit conventions and branch rules:
+  [contributing.md](contributing.md).

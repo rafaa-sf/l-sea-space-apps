@@ -1,11 +1,12 @@
 # Miro MCP server
 
 A small [Model Context Protocol](https://modelcontextprotocol.io/) server that
-exposes the **Miro** REST API v2 to AI agents, so they can read and build Miro
-boards (sticky notes, text, shapes, frames, connectors) during the hackathon.
+exposes the Miro REST API v2 to AI agents, so they can read and build Miro boards
+(sticky notes, text, shapes, frames, connectors). The team uses Miro as a
+collaboration platform; this server lets an agent work on the same boards as the
+humans.
 
-The team uses Miro as a collaboration platform; this server lets an agent work
-on the same boards as the humans.
+Code: [`mcp/miro/`](../mcp/miro/).
 
 ## Layout
 
@@ -27,29 +28,25 @@ The server authenticates with a **Miro access token** read from the
 `MIRO_ACCESS_TOKEN` environment variable.
 
 1. Create a Miro app at <https://miro.com/app/settings/user-profile/apps>.
-2. Request the scopes you need: `boards:read` (read-only tools) and
-   `boards:write` (tools that create, update or delete items).
+2. Request the scopes needed: `boards:read` for read-only tools and `boards:write`
+   for tools that create, update or delete items.
 3. Install the app on a team and get an access token.
-4. Store the token locally only — never commit it:
+4. Store the token locally only; never commit it:
 
-The token comes from the Miro developer app, not from Miro's "AI integrations"
-list. The bridge runs on our side: our agent calls the Miro REST API with the
-app token. DeepSeek does not need to appear in Miro's AI list for this to work.
+   ```bash
+   cp .env.example .env   # if not present yet
+   # edit .env and set MIRO_ACCESS_TOKEN=...
+   ```
 
-Alternative: Miro also offers its own official MCP server
-(<https://developers.miro.com/docs/miro-mcp>). Our custom server is used because
-it works with a plain access token and a local stdio process; Miro's official
-MCP requires an OAuth-capable client. Both can coexist.
+`.env` is ignored by git. The token is passed to the server through the MCP client
+configuration and is never written into the repository.
 
-
-
-```bash
-cp .env.example .env   # if not present yet
-# edit .env and set MIRO_ACCESS_TOKEN=...
-```
-
-`.env` is ignored by git. The token is passed to the server through the MCP
-client configuration, not written anywhere in the repository.
+The token comes from the Miro developer app, not from Miro's AI integrations list.
+The bridge runs on our side: the agent calls the Miro REST API with the app token.
+Miro also offers an official MCP server (<https://developers.miro.com/docs/miro-mcp>);
+the custom server is used because it works with a plain access token and a local
+stdio process, while Miro's official MCP requires an OAuth-capable client. Both can
+coexist.
 
 ## Run
 
@@ -61,11 +58,10 @@ npm --prefix mcp/miro start
 MIRO_ACCESS_TOKEN='<token>' node mcp/miro/src/server.js
 ```
 
-The process speaks MCP JSON-RPC over **stdout**; diagnostics go to **stderr**.
-
-If `MIRO_ACCESS_TOKEN` is not present in the process environment, the server
-falls back to reading it from the repository-root `.env` file (gitignored), so
-local MCP clients do not need to duplicate the secret in their configuration.
+The process speaks MCP JSON-RPC over **stdout**; diagnostics go to **stderr**. If
+`MIRO_ACCESS_TOKEN` is not present in the process environment, the server falls back
+to reading it from the repository-root `.env` file, so local MCP clients do not need
+to duplicate the secret in their configuration.
 
 ## Test
 
@@ -73,7 +69,8 @@ local MCP clients do not need to duplicate the secret in their configuration.
 npm --prefix mcp/miro test
 ```
 
-The suite uses mocked HTTP responses and does not need a token or network access.
+The suite uses mocked HTTP responses and does not need a token or network access
+(8 tests).
 
 ## Tools
 
@@ -89,7 +86,7 @@ The suite uses mocked HTTP responses and does not need a token or network access
 | `miro_create_shape` | Create a shape with optional text | boards:write |
 | `miro_create_frame` | Create a frame container | boards:write |
 | `miro_create_connector` | Connect two items | boards:write |
-| `miro_update_item` | Update data/style/position of an item | boards:write |
+| `miro_update_item` | Update data, style or position of an item | boards:write |
 | `miro_delete_item` | Delete an item | boards:write |
 | `miro_list_members` | List board members | boards:read |
 
@@ -97,9 +94,9 @@ The suite uses mocked HTTP responses and does not need a token or network access
 
 ### DeepSeek Harness (this project's agent team)
 
-Registered in `~/.dsh/profiles/web/cordis.patch.yml` (insert list entry
-`mcp-miro`). It takes effect on the next profile recomposition or harness
-restart. If you re-create the profile, add this entry:
+Registered in `~/.dsh/profiles/web/cordis.patch.yml` (insert list entry `mcp-miro`).
+It takes effect on the next profile recomposition or harness restart. If the profile
+is re-created, add this entry:
 
 ```yaml
 - id: mcp-miro
@@ -114,10 +111,10 @@ restart. If you re-create the profile, add this entry:
       MIRO_ACCESS_TOKEN: !!js process.env.MIRO_ACCESS_TOKEN
 ```
 
-The tools then appear to the model as `mcp__miro__<tool>`
-(e.g. `mcp__miro__miro_create_sticky_note`).
+The tools then appear to the model as `mcp__miro__<tool>`, for example
+`mcp__miro__miro_create_sticky_note`.
 
-### Claude Desktop / other MCP clients
+### Claude Desktop and other MCP clients
 
 ```json
 {
@@ -133,24 +130,18 @@ The tools then appear to the model as `mcp__miro__<tool>`
 }
 ```
 
-## Two machines
-
-The primary and commercial machines use the same Miro team but keep **separate
-local tokens**: each machine creates/installs its own Miro app (or uses its own
-OAuth token) and stores it in its local `.env`. Tokens are never committed nor
-shared through git. Both machines can work on the same boards; coordinate
-editing with Miro presence/comments and keep one board per workstream.
-
 ## Limitations
 
 - The server uses a single access token from the environment; OAuth refresh flows
   are not implemented yet. If the token expires, provide a fresh one.
-- Miro rate limits are handled with retries only for `429`/`5xx` responses (up to
+- Miro rate limits are handled with retries only for `429` and `5xx` responses (up to
   three attempts, honouring `Retry-After`).
-- `miro_update_item` and `miro_delete_item` require the correct `itemType`
-  (e.g. `sticky_note`, `text`, `shape`, `frame`) because Miro exposes
-  type-specific endpoints.
+- `miro_update_item` and `miro_delete_item` require the correct `itemType` (for
+  example `sticky_note`, `text`, `shape`, `frame`) because Miro exposes type-specific
+  endpoints.
 - The server is a local stdio process; it does not host an HTTP endpoint.
+- Two machines can use the same Miro team with separate local tokens; the token is
+  never shared through git.
 
 ## Attribution
 

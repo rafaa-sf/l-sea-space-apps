@@ -3,7 +3,7 @@
 // Coordinates are selenographic (IAU Moon 2000) latitude in degrees (-90..90,
 // negative south) and east longitude in degrees (0..360). Sources are recorded
 // per site so that the provenance of every coordinate is auditable; see
-// docs/data-sources.md for the full discussion.
+// docs/data.md for the full discussion.
 //
 // Elevations are NOT stored here: scripts/nasa/build-pois.mjs samples them from
 // the real LOLA DEM subsets in public/data/terrain/ so that the point elevation

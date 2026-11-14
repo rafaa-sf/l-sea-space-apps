@@ -16,7 +16,9 @@
 
 | Variable | Purpose | Where |
 | --- | --- | --- |
-| `NASA_API_KEY` | NASA API access key (<https://api.nasa.gov/>) | Local `.env` only |
+| `NASA_API_KEY` | Optional NASA API access key (<https://api.nasa.gov/>); not required by the services this application uses | Local `.env` only |
+| `MIRO_ACCESS_TOKEN` | Miro REST API access token for the MCP server (see [miro.md](miro.md)) | Local `.env` or process environment |
+| `VERCEL_TOKEN` | Optional Vercel CLI token for manual deployments | Local `.env` or shell environment |
 
 The local `.env` file is created from `.env.example` and never committed.
 

@@ -4,7 +4,7 @@ Model Context Protocol server for the Miro REST API v2 (boards, items, sticky
 notes, text, shapes, frames, connectors).
 
 Setup, authentication, tool list and client registration are documented in
-[`docs/miro-mcp.md`](../../docs/miro-mcp.md).
+[`docs/miro.md`](../../docs/miro.md).
 
 Quick start:
 

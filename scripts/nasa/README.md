@@ -32,10 +32,8 @@ the project. It also supports `--force`, `--only=<id[,id]>` and `--dry-run`.
 
 ## Data source documentation
 
-- Endpoints, exact queries, CORS behaviour and rate limits:
-  [`docs/api-integrations.md`](../../docs/api-integrations.md)
-- Provenance, licensing, limitations and dead ends:
-  [`docs/data-sources.md`](../../docs/data-sources.md)
+- Endpoints, exact queries, CORS behaviour, rate limits, provenance, licensing,
+  limitations and dead ends: [`docs/data.md`](../../docs/data.md)
 - Ephemeris JSON contract: [`public/data/ephemeris/README.md`](../../public/data/ephemeris/README.md)
 
 Do not edit files under `public/data/` by hand: regenerate them with these

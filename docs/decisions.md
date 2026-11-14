@@ -15,14 +15,17 @@ Record of decisions made about this repository, in chronological order.
 | D-009 | 2026-11-14 | Documentation is organized under `docs/`, with the README as index | Keeps project documentation structured and easy to maintain |
 | D-010 | 2026-11-14 | Documentation focuses on project knowledge; installation/run instructions are added only once the technology stack is defined | The stack is not defined yet, so setup instructions would be speculative |
 | D-011 | 2026-11-14 | Two machines with distinct roles: primary (development) and commercial (business side) | Team structure agreed at project start |
-| D-012 | 2026-11-14 | The organization's Drive folder is the shared source for the participant guide and event resources; files are linked from `docs/resources.md` and not copied into the repository | The repository is public, the files are binary/large, and NASA brand-restricted material should not be redistributed |
-| D-013 | 2026-11-14 | `docs/guide.md` is an English working summary of the official Spanish participant guide | Team documentation is written in English, while the original guide remains the authoritative rules source |
+| D-012 | 2026-11-14 | The organization's Drive folder is the shared source for the participant guide and event resources; files are linked from `docs/challenge.md` and not copied into the repository | The repository is public, the files are binary/large, and NASA brand-restricted material should not be redistributed |
+| D-013 | 2026-11-14 | `docs/challenge.md` is the English working summary of the official Spanish participant guide | Team documentation is written in English, while the original guide remains the authoritative rules source |
 | D-014 | 2026-11-14 | `main` remains the stable/submission branch; `develop` is the integration branch during the hackathon | Allows parallel work from several agents and the two machines without destabilizing `main` |
 | D-015 | 2026-11-14 | The application ships as a static build and uses pre-computed NASA datasets instead of live API calls | JPL Horizons sends no CORS headers and Vercel hosts static files; pre-computed data keeps the demo offline-safe |
 | D-016 | 2026-11-14 | Terrain uses real LOLA polar DEM products in polar stereographic projection (74 m and 594 m grids) | The real PDS products are not regular lat/lon grids; metric projection keeps ray tracing and curvature correct |
 | D-017 | 2026-11-14 | A Miro MCP server (`mcp/miro/`) exposes the Miro REST API v2 to AI agents | The team uses Miro as a collaboration platform; the MCP lets agents read and edit the same boards |
-| D-018 | 2026-11-14 | All NASA-derived data, endpoints and their verification are documented in `docs/api-integrations.md` and `docs/data-sources.md` | Traceability is required for the submission and the jury checks the real use of NASA resources |
+| D-018 | 2026-11-14 | All NASA-derived data, endpoints and their verification are documented in `docs/data.md` | Traceability is required for the submission and the jury checks the real use of NASA resources |
 | D-019 | 2026-11-14 | The static build is deployed on **Vercel** instead of GoDaddy | Vercel provides free static hosting with CDN, automatic HTTPS and Git-based deploys; GoDaddy was the first option but Vercel is simpler for a Vite SPA |
+
+| D-020 | 2026-11-14 | Documentation consolidated from 26 files into a focused set of 13: `challenge`, `architecture`, `data`, `submission`, `demo`, `ai-usage`, `deployment`, `contributing`, `security`, `decisions`, `commercial`, `qa`, `miro` | The repository was reviewed as cluttered with repeated content; a single canonical document per topic reads as a professional project and removes duplicated event, test and pitch material. `submission.md` holds the Project page content and `demo.md` is the only demo document |
+| D-021 | 2026-11-14 | The Project Demo is a single public link to at most 7 slides or a 30-second video, produced from `demo/L-SEA-Project-Demo.pptx` and described in `docs/demo.md` | One demo document avoids drift between the slide plan, video script and submission page |
 
 ## How to add a decision
 

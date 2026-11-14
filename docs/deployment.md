@@ -55,33 +55,19 @@ VERCEL_TOKEN='<token>' npx vercel --prod --yes
 The token is a secret: keep it in the local `.env` or the shell environment,
 never in the repository.
 
-## 3. What gets deployed
+## 3. Build output
 
-`npm run build` (Vite) produces `dist/`:
+`npm run build` produces the static site in `dist/`: `index.html`, `favicon.svg`,
+hashed JavaScript and CSS bundles with sourcemaps, and a verbatim copy of
+`public/data/` (POIs, ephemerides, layers, terrain and the AI usage declaration) under
+`dist/data/`. No API keys are embedded: Vite only exposes `VITE_*` variables and the
+application reads pre-computed datasets instead of calling NASA APIs at runtime.
 
-```text
-dist/
-├── index.html          # entry point (includes the favicon link)
-├── favicon.svg         # copied from public/
-├── assets/             # hashed JS/CSS (and .map sourcemaps)
-├── data/               # copied from public/data/ (POIs, ephemeris, layers, terrain)
-└── ...                 # anything else placed in public/
-```
-
-Notes:
-
-- Vite's `base` is `/` (see `vite.config.js`): the app is served from the root of
-  the Vercel project. For a subpath deployment, build with `--base=/subpath/` and
-  adjust the rewrite in `vercel.json`.
-- `vercel.json` rewrites unknown paths to `index.html` (SPA fallback). Existing
-  static files — `/assets/*`, `/data/*`, `/favicon.svg` — are served untouched.
-- Cache headers: `/assets/*` is immutable for one year; `/data/*` is cached for
-  one day with `must-revalidate`. Markdown files are served as `text/markdown`.
-- Sourcemaps are published (the source is public); acceptable for the hackathon.
-- No API keys are embedded: Vite only exposes `VITE_*` variables, and the
-  production app reads pre-computed datasets instead of calling NASA APIs. The
-  local `NASA_API_KEY` in `.env` is never part of the build.
-- The GoDaddy `.htaccess` file is no longer shipped (Vercel does not need it).
+Deployment configuration lives in [`vercel.json`](../vercel.json): Vite preset, SPA
+rewrite to `index.html` for unknown paths, immutable caching for `/assets/*`, one-day
+caching for `/data/*`, and Markdown served as `text/markdown`. Vite's `base` is `/`
+(see `vite.config.js`), so the app is served from the root of the Vercel project; a
+subpath deployment would need `--base=/subpath/` plus a matching rewrite.
 
 ## 4. Pre-deploy checklist
 
