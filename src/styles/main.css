@@ -31,6 +31,30 @@
   --shadow-drawer: -12px 0 32px rgba(0, 0, 0, 0.45);
 }
 
+/* CR-02 — touch/click targets: never below 24 px (44 px on phones). The whole
+   control responds, not only its label. Separation comes from flex gaps (8 px). */
+button,
+[role='button'],
+.segmented__button,
+.locale-switcher__button,
+.event-chip,
+.icon-button,
+.site-item__head,
+.site-item__compare,
+.rank-item__head,
+.panel-card__toggle {
+  min-height: 24px;
+}
+
+.icon-button,
+.site-item__compare {
+  min-width: 24px;
+}
+
+.input {
+  min-height: 32px;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Base                                                                       */
 /* -------------------------------------------------------------------------- */
@@ -412,7 +436,7 @@ body.is-resizing-panes * {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.06em;
-  padding: 3px 7px;
+  padding: 6px 10px;
   cursor: pointer;
 }
 
@@ -438,7 +462,7 @@ body.is-resizing-panes * {
   border-radius: var(--radius-xs);
   background: var(--color-surface-2);
   color: var(--color-text-dim);
-  padding: 4px 9px;
+  padding: 6px 10px;
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -487,12 +511,12 @@ body.is-resizing-panes * {
 }
 
 .button--small {
-  padding: 4px 8px;
+  padding: 5px 9px;
   font-size: 11px;
 }
 
 .button--tiny {
-  padding: 2px 6px;
+  padding: 4px 7px;
   font-size: 10.5px;
 }
 
@@ -513,7 +537,7 @@ body.is-resizing-panes * {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .icon-button {
@@ -523,7 +547,7 @@ body.is-resizing-panes * {
   border: 0;
   background: transparent;
   color: var(--color-text-faint);
-  padding: 2px 4px;
+  padding: 6px;
   cursor: pointer;
   font-size: 11px;
 }
@@ -1159,7 +1183,7 @@ body.is-resizing-panes * {
   gap: 6px;
   border: 0;
   background: transparent;
-  padding: 0;
+  padding: 6px 0;
   color: var(--color-text);
   cursor: pointer;
   text-align: left;
@@ -1424,7 +1448,7 @@ body.is-resizing-panes * {
   color: var(--color-text-faint);
   font-size: 10px;
   font-weight: 500;
-  padding: 3px 7px;
+  padding: 6px 10px;
   cursor: pointer;
 }
 
@@ -1712,7 +1736,7 @@ body.is-resizing-panes * {
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-xs);
   background: transparent;
-  padding: 2px 7px;
+  padding: 6px 9px;
   cursor: pointer;
   color: var(--color-text);
 }
@@ -2394,5 +2418,14 @@ body.is-resizing-panes * {
 @media (prefers-reduced-motion: reduce) {
   .drawer {
     animation: none;
+  }
+}
+
+/* Phones: the guide's recommended 44 px target for the primary/secondary actions. */
+@media (max-width: 720px) {
+  .button,
+  .segmented__button,
+  .locale-switcher__button {
+    min-height: 44px;
   }
 }
