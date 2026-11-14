@@ -341,6 +341,33 @@ report.compare = await click('Compare', true)
 await sleep(2000)
 text = await bodyText()
 report.comparator = section(text, 'COMPARATOR', 120)
+report.presetChanged = await evaluate(`(() => {
+  const select = document.querySelector('[data-testid="mission-preset-select"]');
+  if (!select) return false;
+  const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set;
+  setter.call(select, 'apollo11');
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+  return true;
+})()`)
+await sleep(4500)
+report.presetSelected = await evaluate(`document.querySelector('[data-testid="mission-preset-select"]')?.value ?? null`)
+const presetText = await bodyText()
+report.presetNote = /Apollo 11/.test(presetText) && /fuel-cell|celdas de combustible/i.test(presetText)
+await click('Autopilot', true)
+await sleep(1500)
+report.presetPowerSource = await evaluate(`document.querySelector('[data-testid="mission-power-source"]')?.value ?? null`)
+report.presetRtgPower = await evaluate(`document.querySelector('[data-testid="mission-rtg-power"]')?.value ?? null`)
+await click('Compare', true)
+await sleep(1200)
+report.presetRestored = await evaluate(`(() => {
+  const select = document.querySelector('[data-testid="mission-preset-select"]');
+  if (!select) return false;
+  const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set;
+  setter.call(select, '');
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+  return true;
+})()`)
+await sleep(3500)
 
 report.toggle2d = await click('2D', true)
 await sleep(3000)
@@ -703,6 +730,8 @@ const failed =
   !report.rtgSourceChanged || !report.rtgPowerSet ||
   !report.rtgFeasible || !report.rtgNote ||
   !report.rtgInsufficient || !report.rtgViolationText || !report.rtgRestored ||
+  !report.presetChanged || report.presetSelected !== 'apollo11' || !report.presetNote ||
+  report.presetPowerSource !== 'rtg' || report.presetRtgPower !== '1500' || !report.presetRestored ||
   report.layerCoverage === 'MISSING' ||
   !/Zoom\s+[5-9],/.test(report.layerZoom ?? '') ||
   report.consoleErrors.length > 0
