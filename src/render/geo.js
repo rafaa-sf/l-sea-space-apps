@@ -134,6 +134,36 @@ export function sunDirectionVector(azimuthDeg, elevationDeg) {
 }
 
 /**
+ * Scene-space offset of a ray cast at a topocentric az/el, in the same frame
+ * used by {@link sunDirectionVector} and the polar projection: **+Z is north,
+ * +X is east, +Y is up**. The horizontal direction therefore matches the
+ * Sun/Earth arrows exactly (issue: the 3D line previously used the opposite
+ * north sign while the arrows used +Z).
+ *
+ * @param {{azimuthDeg?: number, elevationDeg?: number, distanceM?: number,
+ *   unitsPerMeter: number, elevationScale: number, radiusM?: number}} options
+ * @returns {{x: number, y: number, z: number}} Scene-space offset in scene units.
+ */
+export function azElRayOffset({
+  azimuthDeg = 0,
+  elevationDeg = 0,
+  distanceM = 240000,
+  unitsPerMeter = 1,
+  elevationScale = 1,
+  radiusM = MOON_RADIUS_M,
+} = {}) {
+  const az = (Number(azimuthDeg) * Math.PI) / 180
+  const el = (Number(elevationDeg) * Math.PI) / 180
+  const horizontalM = distanceM * Math.cos(el)
+  const verticalM = distanceM * Math.sin(el) - (distanceM * distanceM) / (2 * radiusM)
+  return {
+    x: Math.sin(az) * horizontalM * unitsPerMeter,
+    y: verticalM * elevationScale,
+    z: Math.cos(az) * horizontalM * unitsPerMeter,
+  }
+}
+
+/**
  * Cartographic hillshade multiplier for a surface normal.
  *
  * Standard slope illumination: `N . L` where `L` is the Sun vector. The result

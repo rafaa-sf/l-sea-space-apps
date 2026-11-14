@@ -23,6 +23,7 @@ import {
   loadTerrain,
 } from './useData.js'
 import { toTimestamp } from './format.js'
+import { createPlaybackClock } from './playbackClock.js'
 
 const STORAGE_MISSION = 'lsea.mission'
 const STORAGE_SITE = 'lsea.selectedSite'
@@ -227,7 +228,6 @@ let instantToken = 0
 let instantTimer = null
 let missionTimer = null
 let persistTimer = null
-let playbackTimer = null
 
 function reportError(scope, error) {
   const message = error instanceof Error ? error.message : String(error)
@@ -504,8 +504,8 @@ export function shiftTime(minutes) {
 }
 
 export function setNow() {
+  // setTime() stops playback; the transport button returns to "Play".
   setTime(Date.now())
-  state.playback.playing = false
 }
 
 /** Jump to the next set/rise event time, when one exists. */
@@ -545,32 +545,28 @@ export function setRenderer(kind) {
 /* Playback                                                                   */
 /* -------------------------------------------------------------------------- */
 
+function advancePlayback() {
+  const current = toTimestamp(state.time)
+  const range = ephemerisRange.value
+  let next = current + state.playback.speedMinutes * 60 * 1000
+  if (range) {
+    const end = toTimestamp(range.end)
+    if (next >= end) next = toTimestamp(range.start)
+  }
+  state.time = new Date(next).toISOString()
+}
+
+const playbackClock = createPlaybackClock({ onTick: advancePlayback, intervalMs: 220 })
+
 export function startPlayback() {
   if (state.playback.playing) return
-  // Defensive: never leave a previous interval running alongside a new one.
-  if (playbackTimer) {
-    clearInterval(playbackTimer)
-    playbackTimer = null
-  }
+  playbackClock.start()
   state.playback.playing = true
-  playbackTimer = setInterval(() => {
-    const current = toTimestamp(state.time)
-    const range = ephemerisRange.value
-    let next = current + state.playback.speedMinutes * 60 * 1000
-    if (range) {
-      const end = toTimestamp(range.end)
-      if (next >= end) next = toTimestamp(range.start)
-    }
-    state.time = new Date(next).toISOString()
-  }, 220)
 }
 
 export function stopPlayback() {
+  playbackClock.stop()
   state.playback.playing = false
-  if (playbackTimer) {
-    clearInterval(playbackTimer)
-    playbackTimer = null
-  }
 }
 
 export function togglePlayback() {

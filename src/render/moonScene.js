@@ -20,6 +20,7 @@ import {
   planarToLonLat,
   sRGBToLinear,
   sunDirectionVector,
+  azElRayOffset,
   terrainColor,
 } from './geo.js'
 import { intersectBounds, loadMoonTrekMosaic, parseLayerBounds } from './moontrekTiles.js'
@@ -30,6 +31,8 @@ const COLOR_COMPARE = 0xffb454
 const COLOR_SITE = 0x6ea8ff
 const COLOR_SUN = 0xffd166
 const COLOR_EARTH = 0x7fd1ff
+const COLOR_SUN_DIM = 0x6b5a2a
+const COLOR_EARTH_DIM = 0x2f4c5e
 
 /** Recursively release geometries, materials and textures. */
 function disposeObject(object) {
@@ -280,16 +283,13 @@ export async function createMoonScene(canvas, options = {}) {
   function updateHelpers() {
     const origin = selectedSite ? sitePosition(selectedSite) : new THREE.Vector3(0, 0.3, 0)
     if (sunDirection) {
-      const vector = new THREE.Vector3(
-        Math.sin((sunDirection.az * Math.PI) / 180) * Math.cos((sunDirection.el * Math.PI) / 180),
-        Math.sin((sunDirection.el * Math.PI) / 180),
-        Math.cos((sunDirection.az * Math.PI) / 180) * Math.cos((sunDirection.el * Math.PI) / 180),
-      ).normalize()
+      const dir = sunDirectionVector(sunDirection.az, sunDirection.el)
+      const vector = new THREE.Vector3(dir.x, dir.y, dir.z).normalize()
       const length = sunVisible ? 3.2 : 2.2
       sunArrow.position.copy(origin)
       sunArrow.setDirection(vector)
       sunArrow.setLength(length, 0.7, 0.34)
-      sunArrow.setColor(new THREE.Color(COLOR_SUN))
+      sunArrow.setColor(new THREE.Color(sunVisible ? COLOR_SUN : COLOR_SUN_DIM))
       sunArrow.visible = true
       sunLabel.position.copy(origin.clone().add(vector.clone().multiplyScalar(length + 0.8)))
       sunLabel.visible = true
@@ -299,15 +299,15 @@ export async function createMoonScene(canvas, options = {}) {
     }
 
     if (earthDirection) {
-      const vector = new THREE.Vector3(
-        Math.sin((earthDirection.az * Math.PI) / 180) * Math.cos((earthDirection.el * Math.PI) / 180),
-        Math.max(0.02, Math.sin((earthDirection.el * Math.PI) / 180)),
-        Math.cos((earthDirection.az * Math.PI) / 180) * Math.cos((earthDirection.el * Math.PI) / 180),
-      ).normalize()
+      // No upward clamp: when Earth is below the local horizon the arrow must
+      // point below it (issue: the old clamp pushed it slightly above).
+      const dir = sunDirectionVector(earthDirection.az, earthDirection.el)
+      const vector = new THREE.Vector3(dir.x, dir.y, dir.z).normalize()
       const length = earthVisible ? 2.4 : 1.8
       earthArrow.position.copy(origin)
       earthArrow.setDirection(vector)
       earthArrow.setLength(length, 0.6, 0.3)
+      earthArrow.setColor(new THREE.Color(earthVisible ? COLOR_EARTH : COLOR_EARTH_DIM))
       earthArrow.visible = true
       earthLabel.position.copy(origin.clone().add(vector.clone().multiplyScalar(length + 0.7)))
       earthLabel.visible = true
@@ -339,15 +339,16 @@ export async function createMoonScene(canvas, options = {}) {
       endpoint = new THREE.Vector3(point.x, point.y + 0.08, point.z)
     } else {
       const distanceM = Math.min(Number(rayInfo.distanceM ?? 240000), 300000)
-      const horizontalM = distanceM * Math.cos(((rayInfo.elevation ?? 0) * Math.PI) / 180)
-      const verticalM = distanceM * Math.sin(((rayInfo.elevation ?? 0) * Math.PI) / 180) - (distanceM * distanceM) / (2 * 1737400)
-      const east = Math.sin(((rayInfo.azimuth ?? 0) * Math.PI) / 180) * horizontalM * projection.unitsPerMeter
-      const north = Math.cos(((rayInfo.azimuth ?? 0) * Math.PI) / 180) * horizontalM * projection.unitsPerMeter
-      endpoint = new THREE.Vector3(
-        origin.x + east,
-        origin.y + verticalM * projection.elevationScale,
-        origin.z - north,
-      )
+      const offset = azElRayOffset({
+        azimuthDeg: rayInfo.azimuth ?? 0,
+        elevationDeg: rayInfo.elevation ?? 0,
+        distanceM,
+        unitsPerMeter: projection.unitsPerMeter,
+        elevationScale: projection.elevationScale,
+      })
+      // +Z is north in this scene frame (same as the Sun/Earth arrows); the old
+      // code subtracted the north component, mirroring the line of sight.
+      endpoint = new THREE.Vector3(origin.x + offset.x, origin.y + offset.y, origin.z + offset.z)
     }
     const geometry = new THREE.BufferGeometry().setFromPoints([origin, endpoint])
     const material = new THREE.LineBasicMaterial({
