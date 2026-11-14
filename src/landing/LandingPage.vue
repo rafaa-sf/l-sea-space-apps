@@ -229,7 +229,7 @@ function openDocsIndex() {
       <span class="landing__footer-links">
         <a :href="REPO" target="_blank" rel="noopener noreferrer">{{ t('landing.footer.repo') }}</a>
         <a :href="docUrl('docs/ai-usage.md')" target="_blank" rel="noopener noreferrer">{{ t('landing.footer.ai') }}</a>
-        <a href="https://l-sea-space-apps.vercel.app" target="_blank" rel="noopener noreferrer">{{ t('landing.footer.live') }}</a>
+        <a href="https://rafaa-sf.github.io/l-sea-space-apps/" target="_blank" rel="noopener noreferrer">{{ t('landing.footer.live') }}</a>
       </span>
     </footer>
   </div>

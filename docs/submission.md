@@ -119,11 +119,11 @@ Method in one pass over a scenario:
 - Domain core, services, Web Worker, Three.js renderer and no-WebGL 2D fallback
   implemented and unit-tested.
 - Real NASA datasets shipped and consumed by the application: 10 curated POIs, 10
-  JPL Horizons ephemeris files (2,928 samples each), two LOLA polar DEM regions and 21
+  JPL Horizons ephemeris files (2,928 samples each), two LOLA source polar DEM regions (plus four derived DEM area presets) and 21
   verified Moon Trek WMTS layers.
-- Automated test suite: 104 application tests in 7 files plus 8 MCP tests, all
+- Automated test suite: 190 application tests in 12 files plus 8 MCP tests, all
   passing; CI green; production build green.
-- Live deployment on Vercel with post-deploy verification (entry point, favicon, NASA
+- Live deployment on GitHub Pages with post-deploy verification (entry point, favicon, NASA
   data files, terrain binary, SPA rewrite, cache headers) and an interactive live
   end-to-end check (worker, site selection, comparator, 2D fallback, autopilot,
   JSON brief export) recorded in [qa.md](qa.md).
