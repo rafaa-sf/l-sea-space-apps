@@ -1,0 +1,23 @@
+{
+  "name": "l-sea-space-apps",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "L-SEA Space Apps: lunar south-pole site selection and mission briefing tool for NASA Space Apps Challenge Malaga 2026.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "three": "^0.187.0",
+    "vue": "^3.5.45",
+    "vue-i18n": "^11.4.20"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.11",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}
