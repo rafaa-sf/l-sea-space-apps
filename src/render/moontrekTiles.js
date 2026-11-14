@@ -76,6 +76,56 @@ function zoomLayout(zoom, boundsM, tileSize) {
 }
 
 /**
+ * Parse the `boundsM` block of a layer catalogue entry into planar metres.
+ * Accepts the `{ lower, upper }` string form used by `public/data/layers.json`
+ * as well as explicit min/max fields.
+ */
+export function parseLayerBounds(layer) {
+  const bounds = layer?.boundsM
+  if (!bounds) return null
+  const parsePair = (value) => {
+    if (Array.isArray(value)) {
+      const [a, b] = value.map(Number)
+      return Number.isFinite(a) && Number.isFinite(b) ? [a, b] : null
+    }
+    if (typeof value === 'string') {
+      const parts = value.trim().split(/[\s,]+/).map(Number)
+      return parts.length >= 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1]) ? [parts[0], parts[1]] : null
+    }
+    return null
+  }
+  const lower = parsePair(bounds.lower ?? bounds.min)
+  const upper = parsePair(bounds.upper ?? bounds.max)
+  if (!lower || !upper) return null
+  const minX = Math.min(lower[0], upper[0])
+  const maxX = Math.max(lower[0], upper[0])
+  const minY = Math.min(lower[1], upper[1])
+  const maxY = Math.max(lower[1], upper[1])
+  if (!(maxX > minX) || !(maxY > minY)) return null
+  return { minX, maxX, minY, maxY }
+}
+
+/** Overlap of two planar bounds, or null when they do not intersect. */
+export function intersectBounds(a, b) {
+  if (!a || !b) return null
+  const minX = Math.max(a.minX, b.minX)
+  const maxX = Math.min(a.maxX, b.maxX)
+  const minY = Math.max(a.minY, b.minY)
+  const maxY = Math.min(a.maxY, b.maxY)
+  if (!(maxX > minX) || !(maxY > minY)) return null
+  return { minX, maxX, minY, maxY }
+}
+
+/** Rounded coverage in km for a planar bounds rectangle. */
+export function coverageKm(bounds) {
+  if (!bounds) return null
+  return {
+    width: Math.max(1, Math.round((bounds.maxX - bounds.minX) / 1000)),
+    height: Math.max(1, Math.round((bounds.maxY - bounds.minY) / 1000)),
+  }
+}
+
+/**
  * Stitch a mosaic of Moon Trek WMTS tiles covering `boundsM`.
  *
  * @param {{url?: string, template?: string, maxZoom?: number}} layer
@@ -86,21 +136,29 @@ function zoomLayout(zoom, boundsM, tileSize) {
 export async function loadMoonTrekMosaic(layer, boundsM, options = {}) {
   const template = layer?.url ?? layer?.template
   if (!template || typeof document === 'undefined' || !boundsM) return null
-  const maxTiles = options.maxTiles ?? 25
+  const maxTiles = options.maxTiles ?? 64
+  const maxCanvasSize = options.maxCanvasSize ?? 2048
   const maxZoom = Math.min(Number(options.maxZoom ?? layer?.maxZoom ?? 9), 12)
+  const tileSize = NORTH_POLE_STEREOGRAPHIC_TILE_MATRIX.tileSize
+
+  // Only the portion of the layer that intersects the rendered region is
+  // fetched, and the zoom is chosen from that footprint. A limited-coverage
+  // layer (e.g. LOLA 87.5S-90S) therefore gets a much sharper zoom than when
+  // the whole 608 km terrain region was used as the tile-layout extent.
+  const layerBounds = parseLayerBounds(layer)
+  const visibleBounds = layerBounds ? intersectBounds(layerBounds, boundsM) : boundsM
+  if (!visibleBounds) return null
 
   let layout = null
   for (let zoom = maxZoom; zoom >= 0; zoom -= 1) {
-    const candidate = zoomLayout(zoom, boundsM, NORTH_POLE_STEREOGRAPHIC_TILE_MATRIX.tileSize)
+    const candidate = zoomLayout(zoom, visibleBounds, tileSize)
     if (!candidate) continue
-    if (!layout || candidate.count <= maxTiles) {
-      layout = candidate
-      if (candidate.count <= maxTiles) break
-    }
+    if (candidate.cols * tileSize > maxCanvasSize || candidate.rows * tileSize > maxCanvasSize) continue
+    layout = candidate
+    if (candidate.count <= maxTiles) break
   }
-  if (!layout) return null
+  if (!layout || layout.count > maxTiles) return null
 
-  const { tileSize } = NORTH_POLE_STEREOGRAPHIC_TILE_MATRIX
   const canvas = document.createElement('canvas')
   canvas.width = layout.cols * tileSize
   canvas.height = layout.rows * tileSize
@@ -134,6 +192,8 @@ export async function loadMoonTrekMosaic(layer, boundsM, options = {}) {
   return {
     canvas,
     boundsM: mosaicBounds,
+    footprintBounds: layerBounds,
+    coverageKm: coverageKm(visibleBounds),
     zoom: layout.zoom,
     loaded,
     total: layout.count,

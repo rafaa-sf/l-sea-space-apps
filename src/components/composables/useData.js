@@ -390,9 +390,16 @@ function normalizeLayer(raw, index) {
     description: raw.description ?? null,
     kind: raw.kind ?? null,
     bounds: raw.bounds ?? null,
+    // Layer georeferencing: the renderer needs the real coverage and the WMTS
+    // zoom range to pick a per-layer zoom (otherwise limited-coverage layers
+    // are fetched at the whole-region zoom and look mis-scaled).
+    boundsM: raw.boundsM ?? null,
+    maxZoom: Number.isFinite(Number(raw.maxZoom)) ? Number(raw.maxZoom) : null,
+    minZoom: Number.isFinite(Number(raw.minZoom)) ? Number(raw.minZoom) : null,
+    template: raw.template ?? raw.url ?? null,
+    tileMatrixSet: raw.tileMatrixSet ?? null,
     opacity: Number.isFinite(Number(raw.opacity)) ? Number(raw.opacity) : 0.65,
     available: raw.available ?? Boolean(url),
-    description: raw.description ?? null,
   }
 }
 

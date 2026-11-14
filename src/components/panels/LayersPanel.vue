@@ -8,6 +8,7 @@ import { useI18n } from 'vue-i18n'
 import PanelCard from '../ui/PanelCard.vue'
 import { actions, state } from '../composables/useAppState.js'
 import { layerDisplayName, sourceLabelKey } from '../composables/labels.js'
+import { coverageKm, parseLayerBounds } from '../../render/moontrekTiles.js'
 
 const { t, te } = useI18n()
 
@@ -31,6 +32,11 @@ function typeLabel(layer) {
 
 function statusOf(layer) {
   return state.layerStatus[layer.id] ?? null
+}
+
+function coverageOf(layer) {
+  const bounds = parseLayerBounds(layer)
+  return bounds ? coverageKm(bounds) : null
 }
 
 function statusLabel(layer) {
@@ -62,6 +68,15 @@ function statusLabel(layer) {
             <span class="layer-item__name">{{ layerDisplayName(t, te, layer) }}</span>
             <span class="layer-item__meta">
               <span class="chip chip--tiny">{{ typeLabel(layer) }}</span>
+              <span v-if="coverageOf(layer)" class="chip chip--tiny">
+                {{ t('layers.coverage', { width: coverageOf(layer).width, height: coverageOf(layer).height }) }}
+              </span>
+              <span
+                v-if="state.layerEnabled[layer.id] && statusOf(layer)?.available && statusOf(layer)?.zoom != null"
+                class="chip chip--tiny chip--ok"
+              >
+                {{ t('layers.zoomTiles', { zoom: statusOf(layer).zoom, tiles: statusOf(layer).tiles }) }}
+              </span>
               <span
                 v-if="state.layerEnabled[layer.id] && statusLabel(layer)"
                 class="chip chip--tiny"
