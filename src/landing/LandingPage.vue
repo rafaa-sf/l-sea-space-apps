@@ -274,7 +274,7 @@ function openDocsIndex() {
   background: transparent;
   color: var(--color-text-dim);
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -311,7 +311,7 @@ function openDocsIndex() {
   max-width: 62ch;
   margin: 14px 0 0;
   color: var(--color-text-dim);
-  font-size: clamp(14px, 1.5vw, 17px);
+  font-size: clamp(16px, 1.5vw, 18px);
   line-height: 1.55;
 }
 
@@ -383,6 +383,7 @@ function openDocsIndex() {
 .landing__lead {
   margin: 0;
   color: var(--color-text-dim);
+  font-size: 16px;
   line-height: 1.6;
 }
 

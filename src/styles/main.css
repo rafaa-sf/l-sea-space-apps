@@ -80,7 +80,7 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-ui);
-  font-size: 12.5px;
+  font-size: 16px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
@@ -348,7 +348,7 @@ body.is-resizing-panes * {
 .brand-product {
   padding-left: 10px;
   border-left: 1px solid var(--color-border-strong);
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--color-text-faint);
   white-space: nowrap;
 }
@@ -363,7 +363,7 @@ body.is-resizing-panes * {
 }
 
 .context-event {
-  font-size: 10.5px;
+  font-size: 12px;
   color: var(--color-text-faint);
   white-space: nowrap;
 }
@@ -383,7 +383,7 @@ body.is-resizing-panes * {
 }
 
 .context-label {
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-text-faint);
@@ -391,7 +391,7 @@ body.is-resizing-panes * {
 }
 
 .context-value {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--color-text);
   white-space: nowrap;
@@ -402,7 +402,7 @@ body.is-resizing-panes * {
 
 .context-value--mono {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-dim);
 }
 
@@ -433,7 +433,7 @@ body.is-resizing-panes * {
   border: 0;
   background: transparent;
   color: var(--color-text-faint);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.06em;
   padding: 6px 10px;
@@ -463,7 +463,7 @@ body.is-resizing-panes * {
   background: var(--color-surface-2);
   color: var(--color-text-dim);
   padding: 6px 10px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
@@ -512,12 +512,12 @@ body.is-resizing-panes * {
 
 .button--small {
   padding: 5px 9px;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .button--tiny {
   padding: 4px 7px;
-  font-size: 10.5px;
+  font-size: 12px;
 }
 
 .button--link {
@@ -525,7 +525,7 @@ body.is-resizing-panes * {
   border: 0;
   color: var(--color-accent);
   padding: 0;
-  font-size: 10.5px;
+  font-size: 12px;
 }
 
 .button--link:hover:not(:disabled) {
@@ -549,7 +549,7 @@ body.is-resizing-panes * {
   color: var(--color-text-faint);
   padding: 6px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .icon-button:hover {
@@ -561,7 +561,7 @@ body.is-resizing-panes * {
   border: 0;
   padding: 0;
   color: var(--color-text);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
   text-align: left;
   cursor: pointer;
@@ -638,7 +638,7 @@ body.is-resizing-panes * {
 }
 
 .field__label {
-  font-size: 9.5px;
+  font-size: 12px;
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--color-text-faint);
@@ -648,7 +648,7 @@ body.is-resizing-panes * {
   flex-direction: row;
   align-items: center;
   gap: 6px;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--color-text-dim);
 }
 
@@ -681,7 +681,7 @@ body.is-resizing-panes * {
   background: var(--color-bg);
   color: var(--color-text);
   padding: 4px 7px;
-  font-size: 11.5px;
+  font-size: 12px;
 }
 
 .input:hover {
@@ -697,7 +697,7 @@ body.is-resizing-panes * {
 .input[type='date'],
 .input[type='time'] {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .input[type='checkbox'] {
@@ -708,7 +708,7 @@ body.is-resizing-panes * {
 
 .field-error {
   color: var(--color-danger);
-  font-size: 10.5px;
+  font-size: 12px;
 }
 
 .tag {
@@ -717,7 +717,7 @@ body.is-resizing-panes * {
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-xs);
   padding: 0 5px;
-  font-size: 9.5px;
+  font-size: 12px;
   letter-spacing: 0.04em;
   color: var(--color-text-dim);
   white-space: nowrap;
@@ -731,13 +731,13 @@ body.is-resizing-panes * {
   border-radius: var(--radius-xs);
   background: var(--color-surface-2);
   color: var(--color-text-dim);
-  font-size: 10px;
+  font-size: 12px;
   padding: 1px 6px;
   white-space: nowrap;
 }
 
 .chip--tiny {
-  font-size: 9.5px;
+  font-size: 12px;
   padding: 0 4px;
 }
 
@@ -757,7 +757,7 @@ body.is-resizing-panes * {
 }
 
 .section-label {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -766,7 +766,7 @@ body.is-resizing-panes * {
 
 .empty {
   color: var(--color-text-faint);
-  font-size: 11px;
+  font-size: 12px;
   padding: 6px 0;
 }
 
@@ -793,7 +793,7 @@ body.is-resizing-panes * {
 }
 
 .surface__title {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -801,7 +801,7 @@ body.is-resizing-panes * {
 }
 
 .surface__meta {
-  font-size: 10.5px;
+  font-size: 12px;
   color: var(--color-text-faint);
   white-space: nowrap;
   overflow: hidden;
@@ -839,7 +839,7 @@ body.is-resizing-panes * {
   border-bottom: 2px solid transparent;
   background: transparent;
   color: var(--color-text-faint);
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 500;
   padding: 5px 6px 6px;
   cursor: pointer;
@@ -858,7 +858,7 @@ body.is-resizing-panes * {
 .tabs__count {
   margin-left: 4px;
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 12px;
   color: var(--color-text-faint);
 }
 
@@ -898,7 +898,7 @@ body.is-resizing-panes * {
 
 .surface__body .panel-card__title,
 .drawer__body .panel-card__title {
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.1em;
 }
 
@@ -923,12 +923,12 @@ body.is-resizing-panes * {
 }
 
 .plain-panel__intro {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-dim);
 }
 
 .plain-panel__foot {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-text-faint);
 }
 
@@ -948,12 +948,12 @@ body.is-resizing-panes * {
 }
 
 .readout__row dt {
-  font-size: 10.5px;
+  font-size: 12px;
   color: var(--color-text-faint);
 }
 
 .readout__row dd {
-  font-size: 11px;
+  font-size: 12px;
   text-align: right;
 }
 
@@ -1006,7 +1006,7 @@ body.is-resizing-panes * {
 }
 
 .site-item__name {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--color-text);
   white-space: nowrap;
@@ -1020,7 +1020,7 @@ body.is-resizing-panes * {
 
 .site-item__meta {
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 12px;
   color: var(--color-text-faint);
   letter-spacing: 0.01em;
 }
@@ -1031,7 +1031,7 @@ body.is-resizing-panes * {
   border-radius: var(--radius-xs);
   background: transparent;
   color: var(--color-text-faint);
-  font-size: 9.5px;
+  font-size: 12px;
   padding: 2px 5px;
   cursor: pointer;
   opacity: 0;
@@ -1069,7 +1069,7 @@ body.is-resizing-panes * {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   overflow: hidden;
-  font-size: 10.5px;
+  font-size: 12px;
 }
 
 .compare-table__row {
@@ -1088,7 +1088,7 @@ body.is-resizing-panes * {
 .compare-table__head {
   background: var(--color-surface-2);
   color: var(--color-text-faint);
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -1101,7 +1101,7 @@ body.is-resizing-panes * {
 
 .compare-table__meta {
   font-family: var(--font-mono);
-  font-size: 8.5px;
+  font-size: 12px;
   color: var(--color-text-faint);
   white-space: nowrap;
   overflow: hidden;
@@ -1110,7 +1110,7 @@ body.is-resizing-panes * {
 
 .compare-table__score {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--color-text);
   text-align: right;
@@ -1137,7 +1137,7 @@ body.is-resizing-panes * {
 .compare-detail__name {
   flex: 1;
   min-width: 0;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -1152,7 +1152,7 @@ body.is-resizing-panes * {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  font-size: 9.5px;
+  font-size: 12px;
   color: var(--color-text-faint);
 }
 
@@ -1203,7 +1203,7 @@ body.is-resizing-panes * {
 }
 
 .panel-card__title {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1244,13 +1244,13 @@ body.is-resizing-panes * {
 }
 
 .stat-row__label {
-  font-size: 10.5px;
+  font-size: 12px;
   color: var(--color-text-dim);
   white-space: nowrap;
 }
 
 .stat-row__hint {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--color-text-faint);
   border: 1px solid var(--color-border);
   border-radius: 50%;
@@ -1260,7 +1260,7 @@ body.is-resizing-panes * {
 }
 
 .stat-row__value {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   text-align: right;
   min-width: 0;
@@ -1271,7 +1271,7 @@ body.is-resizing-panes * {
 
 .stat-row__value.is-mono {
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 12px;
 }
 
 .stat-row__unit {
@@ -1292,7 +1292,7 @@ body.is-resizing-panes * {
 }
 
 .panel-subtitle {
-  font-size: 9.5px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1301,12 +1301,12 @@ body.is-resizing-panes * {
 }
 
 .panel-hint {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-text-faint);
 }
 
 .panel-note {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-text-faint);
   margin-top: 6px;
 }
@@ -1324,7 +1324,7 @@ body.is-resizing-panes * {
 .panel-link {
   display: inline-block;
   margin-top: 6px;
-  font-size: 10.5px;
+  font-size: 12px;
   color: var(--color-accent);
 }
 
@@ -1394,7 +1394,7 @@ body.is-resizing-panes * {
   border-radius: var(--radius-xs);
   background: rgba(13, 16, 22, 0.78);
   color: var(--color-text-faint);
-  font-size: 9.5px;
+  font-size: 12px;
   letter-spacing: 0.02em;
   padding: 2px 6px;
   white-space: nowrap;
@@ -1417,7 +1417,7 @@ body.is-resizing-panes * {
 .dem-select__control {
   max-width: 190px;
   height: 24px;
-  font-size: 10px;
+  font-size: 12px;
   padding: 0 5px;
   background: var(--color-bg);
 }
@@ -1446,7 +1446,7 @@ body.is-resizing-panes * {
   border: 0;
   background: transparent;
   color: var(--color-text-faint);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   padding: 6px 10px;
   cursor: pointer;
@@ -1471,7 +1471,7 @@ body.is-resizing-panes * {
   gap: 10px;
   background: rgba(5, 7, 11, 0.8);
   color: var(--color-text-dim);
-  font-size: 11.5px;
+  font-size: 12px;
   z-index: 5;
 }
 
@@ -1493,7 +1493,7 @@ body.is-resizing-panes * {
   border-radius: var(--radius-sm);
   background: rgba(32, 26, 15, 0.92);
   color: var(--color-warn);
-  font-size: 10.5px;
+  font-size: 12px;
   z-index: 4;
 }
 
@@ -1526,7 +1526,7 @@ body.is-resizing-panes * {
 .map-compass__letter {
   position: absolute;
   top: 2px;
-  font-size: 8px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--color-text-faint);
 }
@@ -1561,7 +1561,7 @@ body.is-resizing-panes * {
   border-radius: var(--radius-xs);
   background: rgba(13, 16, 22, 0.85);
   color: var(--color-warn);
-  font-size: 9.5px;
+  font-size: 12px;
   pointer-events: none;
   max-width: calc(100% - 300px);
 }
@@ -1587,7 +1587,7 @@ body.is-resizing-panes * {
 }
 
 .map-legend__title {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1612,7 +1612,7 @@ body.is-resizing-panes * {
   flex-direction: column;
   justify-content: space-between;
   font-family: var(--font-mono);
-  font-size: 8.5px;
+  font-size: 12px;
   color: var(--color-text-faint);
 }
 
@@ -1634,7 +1634,7 @@ body.is-resizing-panes * {
 
 .map-scale__label {
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 12px;
   color: var(--color-text-dim);
 }
 
@@ -1664,7 +1664,7 @@ body.is-resizing-panes * {
 
 .map-scale__caption {
   font-family: var(--font-mono);
-  font-size: 8.5px;
+  font-size: 12px;
   color: var(--color-text-faint);
 }
 
@@ -1717,7 +1717,7 @@ body.is-resizing-panes * {
 }
 
 .timeline__utc {
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.06em;
   color: var(--color-text-faint);
 }
@@ -1751,7 +1751,7 @@ body.is-resizing-panes * {
 }
 
 .event-chip__label {
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-text-faint);
@@ -1759,7 +1759,7 @@ body.is-resizing-panes * {
 
 .event-chip__value {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-text-dim);
 }
 
@@ -1772,7 +1772,7 @@ body.is-resizing-panes * {
 }
 
 .status-text {
-  font-size: 9.5px;
+  font-size: 12px;
   color: var(--color-text-faint);
   white-space: nowrap;
 }
@@ -1824,7 +1824,7 @@ body.is-resizing-panes * {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  font-size: 9.5px;
+  font-size: 12px;
   color: var(--color-text-faint);
   margin-top: 4px;
 }
@@ -1854,7 +1854,7 @@ body.is-resizing-panes * {
 }
 
 .countdown-card__label {
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-text-faint);
@@ -1867,7 +1867,7 @@ body.is-resizing-panes * {
 }
 
 .countdown-card__meta {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--color-text-faint);
 }
 
@@ -1918,7 +1918,7 @@ body.is-resizing-panes * {
 }
 
 .layer-item__name {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -1926,7 +1926,7 @@ body.is-resizing-panes * {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 9.5px;
+  font-size: 12px;
   color: var(--color-text-faint);
   flex-wrap: wrap;
 }
@@ -1954,11 +1954,11 @@ body.is-resizing-panes * {
 
 .crater-item__name {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .crater-item__meta {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--color-text-faint);
 }
 
@@ -1995,14 +1995,14 @@ body.is-resizing-panes * {
   width: 18px;
   flex: 0 0 auto;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-text-faint);
 }
 
 .rank-item__name {
   flex: 1;
   min-width: 0;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -2011,7 +2011,7 @@ body.is-resizing-panes * {
 
 .rank-item__score {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--color-text);
 }
@@ -2034,7 +2034,7 @@ body.is-resizing-panes * {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  font-size: 9px;
+  font-size: 12px;
   color: var(--color-text-faint);
 }
 
@@ -2048,7 +2048,7 @@ body.is-resizing-panes * {
 .reason {
   position: relative;
   padding-left: 8px;
-  font-size: 9.5px;
+  font-size: 12px;
   color: var(--color-text-faint);
 }
 
@@ -2096,7 +2096,7 @@ body.is-resizing-panes * {
 }
 
 .module-row__label {
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-text-faint);
@@ -2159,7 +2159,7 @@ body.is-resizing-panes * {
 }
 
 .drawer__title {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -2194,13 +2194,13 @@ body.is-resizing-panes * {
   border-top: 1px solid var(--color-border);
   background: var(--color-surface);
   color: var(--color-text-faint);
-  font-size: 10px;
+  font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
 }
 
 .app-footer__label {
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-text-faint);
@@ -2270,7 +2270,7 @@ body.is-resizing-panes * {
   background: rgba(38, 20, 18, 0.96);
   color: #f0cbc7;
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 12px;
 }
 
 /* -------------------------------------------------------------------------- */
