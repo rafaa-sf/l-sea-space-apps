@@ -60,6 +60,7 @@ Architecture and module contracts: [docs/architecture.md](docs/architecture.md).
 | [docs/guide.md](docs/guide.md) | English summary of the official participant guide and event rules |
 | [docs/submission.md](docs/submission.md) | Project page submission draft (name, summary, description, NASA data, AI declaration) |
 | [docs/demo-script.md](docs/demo-script.md) | Project Demo script (7 slides or 30-second video) |
+| [demo/L-SEA-Project-Demo.pptx](demo/L-SEA-Project-Demo.pptx) | Project Demo deck: 7 slides, English (generated from docs/demo-script.md) |
 | [docs/resources.md](docs/resources.md) | Shared Drive folder, official links and NASA data resources |
 | [docs/architecture.md](docs/architecture.md) | Technical architecture, data flow and module contracts |
 | [docs/api-integrations.md](docs/api-integrations.md) | NASA endpoints, exact queries, CORS status and attribution |
@@ -72,6 +73,22 @@ Architecture and module contracts: [docs/architecture.md](docs/architecture.md).
 | [docs/deployment.md](docs/deployment.md) | GoDaddy static deployment plan |
 | [docs/miro-mcp.md](docs/miro-mcp.md) | Miro MCP server for agent–board collaboration |
 | [docs/decisions.md](docs/decisions.md) | Decision log for the repository |
+
+### Commercial workstream
+
+Produced by the commercial machine; they cover the business, impact, pitch and
+QA side of the submission.
+
+| Document | Contents |
+| --- | --- |
+| [docs/business-case.md](docs/business-case.md) | Business case: problem, users, value proposition and sustainability |
+| [docs/impact-scalability.md](docs/impact-scalability.md) | Impact and scalability dossier: audiences, measurable impact, growth and risks |
+| [docs/judging-criteria.md](docs/judging-criteria.md) | Judging criteria and evidence map with proven/unproven status |
+| [docs/pitch.md](docs/pitch.md) | Pitch and Project Demo package: slides, oral pitch, video script and Q&A |
+| [docs/project-page.md](docs/project-page.md) | NASA Project page copy (summary, detailed description, NASA data, references, AI declaration) |
+| [docs/submission-readiness.md](docs/submission-readiness.md) | Submission checklist mapped to the participant guide, requirement baseline and verification snapshot |
+| [docs/test-plan.md](docs/test-plan.md) | QA test plan: levels, cases, evidence and gates |
+| [docs/test-report.md](docs/test-report.md) | Test report: baseline and delta results, evidence and limitations |
 
 ## Repository layout
 
@@ -86,6 +103,7 @@ Architecture and module contracts: [docs/architecture.md](docs/architecture.md).
 ├── public/data/          # Pre-computed NASA datasets (ephemeris, terrain, POIs, layers)
 ├── scripts/nasa/         # Data acquisition and processing scripts
 ├── mcp/miro/             # Miro MCP server (separate package)
+├── demo/                 # Project Demo deck (pptx) and regeneration notes
 ├── docs/                 # Project documentation
 └── .github/workflows/    # CI: tests and production build
 ```
