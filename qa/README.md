@@ -137,3 +137,14 @@ node qa/playback/playback-sim.mjs --sequences 20000 --seed 20261114
 ```
 
 See [`playback/README.md`](playback/README.md).
+
+## Autopilot / ranking Monte Carlo (`qa/autopilot/`)
+
+Mission-need stress test for the autopilot: 11 mission profiles (baseline,
+comms-heavy/extreme, relay, power-heavy/extreme, sun-hungry, short/long,
+multi-need) × dates × the ten curated sites, plus 150 randomized missions and
+degenerate edge cases. See [`autopilot/FINDINGS.md`](autopilot/FINDINGS.md).
+
+```bash
+node qa/autopilot/autopilot-mc.mjs --dates 3 --seed 20261114
+```
