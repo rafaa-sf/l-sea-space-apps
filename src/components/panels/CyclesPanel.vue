@@ -66,7 +66,7 @@ function seek(segment) {
   const start = Number(segment.startMs)
   const end = Number(segment.endMs)
   if (!Number.isFinite(start) || !Number.isFinite(end)) return
-  actions.setTime(new Date(start).toISOString())
+  actions.setTime(new Date(start + (end - start) / 2).toISOString())
 }
 
 const sunIntervals = computed(() => cycles.value?.sunlight?.intervals ?? [])

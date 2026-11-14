@@ -2117,6 +2117,33 @@ body.is-resizing-panes * {
   color: var(--color-warn);
 }
 
+.zone-date {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  font-size: 9.5px;
+}
+
+.zone-date__value {
+  color: var(--color-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.zone-date__score {
+  color: var(--color-text-muted);
+}
+
+.zone-date__missing {
+  color: var(--color-warn);
+}
+
+.date-search-meta {
+  margin: 2px 0 4px;
+  font-size: 9px;
+}
+
 .reason--approx {
   display: inline-block;
   margin-top: 2px;

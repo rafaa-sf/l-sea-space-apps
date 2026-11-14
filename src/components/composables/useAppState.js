@@ -54,6 +54,8 @@ export const DEFAULT_MISSION = Object.freeze({
   craterHazardReachM: 5000,
   scienceReachM: 5000,
   dataNeedMb: 1200,
+  dateSearchEnabled: true,
+  dateSearchStepHours: 12,
 })
 
 /** View mode requested through `?mode=2d|3d|auto` (handy for demos/tests). */
@@ -801,6 +803,11 @@ export async function runLandingZones() {
     sites: state.sites.map((site) => ({ ...site })),
     mission: autopilotMission,
     maxZones: 8,
+    searchDates: state.mission.dateSearchEnabled !== false,
+    dateSearch: {
+      enabled: state.mission.dateSearchEnabled !== false,
+      stepHours: Number(state.mission.dateSearchStepHours) || 12,
+    },
     ephemeris: state.ephemeris
       ? {
           siteId: state.ephemeris.siteId,
@@ -835,7 +842,14 @@ export async function runLandingZones() {
         ephemeris: state.ephemeris,
         sites: state.sites,
         mission: autopilotMission,
-        options: { maxZones: 8 },
+        options: {
+          maxZones: 8,
+          searchDates: state.mission.dateSearchEnabled !== false,
+          dateSearch: {
+            enabled: state.mission.dateSearchEnabled !== false,
+            stepHours: Number(state.mission.dateSearchStepHours) || 12,
+          },
+        },
       })
       zones = Array.isArray(result) ? result : result?.zones ?? null
       state.landingZonesMeta = Array.isArray(result) ? null : result?.meta ?? null
@@ -871,6 +885,10 @@ export async function runLandingZones() {
 export async function selectLandingZone(entry) {
   const zone = entry?.zone ?? entry
   if (!zone || !Number.isFinite(Number(zone.lat)) || !Number.isFinite(Number(zone.lon))) return
+  if (entry?.feasibleDate) {
+    const feasibleMs = Date.parse(entry.feasibleDate)
+    if (Number.isFinite(feasibleMs)) setTime(new Date(feasibleMs).toISOString())
+  }
   const site = await zoneToSite(zone, { mastM: state.mission.mastM })
   const displayRank = entry?.rank ?? zone.rank ?? null
   site.id = `zone-${zone.id}`
@@ -1150,9 +1168,11 @@ watch(
   () => state.mission,
   () => {
     if (state.autopilot.status === 'done') state.autopilot.status = 'stale'
-    if (state.landingZonesStatus.status === 'done') {
+    if (!state.landingZonesStatus.unavailable) {
+      // Recompute on every mission edit, including date-search step/toggle and
+      // power/thermal inputs, even if a previous run is still pending/stale.
       state.landingZonesStatus = { ...state.landingZonesStatus, status: 'stale' }
-      scheduleLandingZonesRefresh(2200)
+      scheduleLandingZonesRefresh(700)
     }
     persistMissionSoon()
     scheduleMission(400)

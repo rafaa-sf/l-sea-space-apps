@@ -675,6 +675,17 @@ export default {
     feasibilityBatteryNotSpecified: 'Capacidad de batería no especificada — se asume el valor documentado de {defaultWh} Wh (se requieren {requiredWh} Wh)',
     feasibilityRtgInsufficient: 'Potencia del RTG insuficiente: {rtgW} W disponibles frente a {demandW} W de demanda',
 
+    dateSearch: {
+      enable: 'Buscar fecha viable',
+      step: 'Paso de búsqueda de fecha',
+      meta: 'Búsqueda {start} – {end}, paso {step} h · {withDate} zonas con fecha viable, {withoutDate} sin fecha',
+      feasibleDate: 'Fecha de misión viable',
+      dateScore: 'Puntuación en la fecha',
+      goToDate: 'Ir a la fecha viable',
+      noDate: 'No hay fecha viable en la ventana buscada',
+      noDateAlert: 'Ninguna zona tiene una fecha de misión viable en la ventana buscada — cambia el perfil de misión o el paso de búsqueda.',
+    },
+
 
   },
   worker: {

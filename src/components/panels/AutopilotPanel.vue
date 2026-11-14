@@ -18,6 +18,14 @@ const activeStatus = computed(() => (landingAvailable.value ? state.landingZones
 const running = computed(() => activeStatus.value.status === 'running')
 const selectedZoneId = computed(() => state.landingZoneEntry?.zone?.id ?? null)
 
+function isZoneSelected(entry) {
+  return (
+    entry?.zone?.id === selectedZoneId.value ||
+    state.selectedSiteId === `zone-${entry?.zone?.id}` ||
+    state.landingZoneSite?.zoneId === entry?.zone?.id
+  )
+}
+
 async function runRanking() {
   if (running.value) return
   if (landingAvailable.value) await actions.runLandingZones()
@@ -503,6 +511,29 @@ const sunDaysNeeded = missionField('sunDaysNeeded')
 const perimeterM = missionField('perimeterM')
 const mastM = missionField('mastM')
 
+const dateSearchEnabled = computed({
+  get: () => state.mission.dateSearchEnabled !== false,
+  set: (value) => actions.updateMission({ dateSearchEnabled: Boolean(value) }),
+})
+const dateSearchStepHours = computed({
+  get: () => Number(state.mission.dateSearchStepHours) || 12,
+  set: (value) => actions.updateMission({ dateSearchStepHours: Number(value) }),
+})
+const dateSearchMeta = computed(() => state.landingZonesMeta?.dateSearch ?? null)
+const noFeasibleDate = computed(() => {
+  if (!dateSearchMeta.value || !zones.value.length) return false
+  return Number(dateSearchMeta.value.zonesWithFeasibleDate) === 0
+})
+async function goToFeasibleDate(entry) {
+  if (!entry?.feasibleDate) return
+  await actions.selectLandingZone(entry)
+  actions.setTime(new Date(entry.feasibleDate).toISOString())
+}
+function formatFeasibleDate(value) {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? String(value) : formatUtc(date.toISOString())
+}
+
 const batteryCapacityWh = missionField('batteryCapacityWh')
 const heaterMaxW = missionField('heaterMaxW')
 const heaterWPerK = missionField('heaterWPerK')
@@ -569,6 +600,18 @@ const ranking = computed(() => state.scores)
         <input v-model="relayInOrbit" type="checkbox" />
         <span>{{ t('autopilot.relay') }}</span>
       </label>
+      <label class="field field--inline">
+        <input v-model="dateSearchEnabled" type="checkbox" data-testid="ap-date-search-toggle" />
+        <span>{{ t('autopilot.dateSearch.enable') }}</span>
+      </label>
+      <label class="field">
+        <span class="field__label">{{ t('autopilot.dateSearch.step') }}</span>
+        <select v-model.number="dateSearchStepHours" class="input" data-testid="ap-date-step" :aria-label="t('autopilot.dateSearch.step')">
+          <option :value="6">6 h</option>
+          <option :value="12">12 h</option>
+          <option :value="24">24 h</option>
+        </select>
+      </label>
       <label class="field">
         <span class="field__label">{{ t('autopilot.powerSource') }}</span>
         <select v-model="powerSource" class="input" data-testid="mission-power-source" :aria-label="t('autopilot.powerSource')">
@@ -623,10 +666,23 @@ const ranking = computed(() => state.scores)
       {{ t('autopilot.fallbackNote') }}: {{ state.autopilot.error }}
     </p>
 
+    <p v-if="noFeasibleDate" class="feasibility-alert" data-testid="ap-no-feasible-date" role="status">
+      {{ t('autopilot.dateSearch.noDateAlert') }}
+    </p>
+    <p v-if="dateSearchMeta" class="panel-hint date-search-meta" :title="`${dateSearchMeta.rangeStart ?? ''} – ${dateSearchMeta.rangeEnd ?? ''}`">
+      {{ t('autopilot.dateSearch.meta', {
+        start: dateSearchMeta.rangeStart ? formatFeasibleDate(dateSearchMeta.rangeStart) : t('common.notAvailable'),
+        end: dateSearchMeta.rangeEnd ? formatFeasibleDate(dateSearchMeta.rangeEnd) : t('common.notAvailable'),
+        step: dateSearchMeta.stepHours ?? dateSearchStepHours,
+        withDate: dateSearchMeta.zonesWithFeasibleDate ?? 0,
+        withoutDate: dateSearchMeta.zonesWithoutFeasibleDate ?? 0,
+      }) }}
+    </p>
+
     <p v-if="noFeasibleZone" class="feasibility-alert" role="status">
       {{ t('autopilot.noFeasibleZone') }}
     </p>
-    <div v-if="landingAvailable && zones.length" class="zone-meta">
+    <div v-if="landingAvailable && zones.length" class="zone-meta" data-testid="landing-zone-signature">
       <p class="panel-hint zone-meta__text" :title="zoneSignature || undefined">
         <template v-if="feasibleCount !== null"> {{ t('autopilot.feasibleCount', { count: feasibleCount, total: zones.length }) }} · </template>
         {{ t('autopilot.computedAt') }}: {{ computedAt }}<template v-if="computeMs !== null"> · {{ formatDuration(computeMs / 1000) }}</template>
@@ -654,13 +710,13 @@ const ranking = computed(() => state.scores)
           v-for="entry in zones"
           :key="entry.zone.id"
           class="rank-item"
-          :class="{ 'is-selected': entry.zone.id === selectedZoneId, 'is-infeasible': isInfeasible(entry) }"
+          :class="{ 'is-selected': isZoneSelected(entry), 'is-infeasible': isInfeasible(entry) }"
           data-testid="landing-zone-row"
           :data-zone-rank="entry.rank"
           :data-zone-id="entry.zone.id"
         >
           <span
-            v-if="entry.zone.id === selectedZoneId"
+            v-if="isZoneSelected(entry)"
             class="sr-only"
             data-testid="landing-zone-selected"
           >{{ t('autopilot.zoneSelected') }}</span>
@@ -685,6 +741,16 @@ const ranking = computed(() => state.scores)
             <span>{{ t('autopilot.zoneSlope') }} {{ formatAngle(entry.zone.meanSlopeDeg, 1) }} / {{ formatAngle(entry.zone.maxSlopeDeg, 1) }}</span>
             <span>{{ t('autopilot.zoneElevation') }} {{ formatMeters(entry.zone.elevationM) }}</span>
             <span>{{ t('autopilot.zoneRelief') }} {{ formatMeters(entry.zone.reliefM) }}</span>
+          </div>
+          <div class="zone-date" :data-testid="`ap-date-${entry.rank}`">
+            <template v-if="entry.hasFeasibleDate && entry.feasibleDate">
+              <span class="zone-date__value">{{ t('autopilot.dateSearch.feasibleDate') }}: {{ formatFeasibleDate(entry.feasibleDate) }}</span>
+              <span v-if="entry.feasibleDateScore != null" class="zone-date__score">{{ t('autopilot.dateSearch.dateScore') }}: {{ formatNumber(entry.feasibleDateScore, 1) }}</span>
+              <button type="button" class="rank-item__details" @click.stop="goToFeasibleDate(entry)">
+                {{ t('autopilot.dateSearch.goToDate') }}
+              </button>
+            </template>
+            <span v-else class="zone-date__missing">{{ t('autopilot.dateSearch.noDate') }}</span>
           </div>
           <button
             type="button"

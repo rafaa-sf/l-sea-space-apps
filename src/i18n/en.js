@@ -681,6 +681,17 @@ export default {
     feasibilityBatteryNotSpecified: 'Battery capacity not specified — the documented default of {defaultWh} Wh is assumed (required {requiredWh} Wh)',
     feasibilityRtgInsufficient: 'RTG power insufficient: {rtgW} W available vs {demandW} W demand',
 
+    dateSearch: {
+      enable: 'Search feasible date',
+      step: 'Date search step',
+      meta: 'Search {start} – {end}, step {step} h · {withDate} zones with a feasible date, {withoutDate} without',
+      feasibleDate: 'Feasible mission date',
+      dateScore: 'Score at date',
+      goToDate: 'Go to feasible date',
+      noDate: 'No feasible date in the searched window',
+      noDateAlert: 'No landing zone has a feasible mission date in the searched window — change the mission profile or search step.',
+    },
+
 
   },
   worker: {

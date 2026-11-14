@@ -761,6 +761,8 @@ export function computeInputSignature({ terrain, mission, ephemeris, options } =
           maxZones: options.maxZones,
           downsample: options.downsample ?? null,
           maxCells: options.maxCells,
+          searchDates: options.searchDates ?? null,
+          dateSearch: options.dateSearch ?? null,
         }
       : null,
   })

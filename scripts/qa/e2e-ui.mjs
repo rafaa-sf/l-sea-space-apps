@@ -391,15 +391,33 @@ report.ranking = (text.match(/#1[^\n]*\n?[^\n]*/) || [])[0]?.replace(/\n/g, ' ')
 report.zoneRows = await evaluate(`document.querySelectorAll('[data-testid="landing-zone-row"]').length`)
 report.zoneFirst = await evaluate(`document.querySelector('[data-testid="landing-zone-row"]')?.textContent ?? null`)
 report.zoneClick = await evaluate(`(() => { const row=document.querySelector('[data-testid="landing-zone-row"]'); const el=row?.querySelector('button'); if(!el) return false; el.click(); return true; })()`)
-await sleep(2200)
+let zoneSelected = false
+for (let attempt = 0; attempt < 24 && !zoneSelected; attempt += 1) {
+  await sleep(500)
+  zoneSelected = await evaluate(`Boolean(document.querySelector('[data-testid="landing-zone-selected"]'))`)
+}
+await sleep(500)
 const zoneBody = await bodyText()
 report.zoneHeader = (zoneBody.match(/CURRENT SITE\n([^\n]+)/) || [])[1] ?? null
-report.zoneSelected = await evaluate(`Boolean(document.querySelector('[data-testid="landing-zone-selected"]'))`)
+report.zoneSelected = zoneSelected
 await click('Shackleton crater rim', true)
 await sleep(1600)
+await evaluate(`(() => {
+  const tab = document.querySelector('[data-testid="analysis-tab-autopilot"]');
+  if (tab) tab.click();
+  return true;
+})()`)
+await sleep(800)
+for (let attempt = 0; attempt < 24; attempt += 1) {
+  if (await evaluate(`Boolean(document.querySelector('[data-testid="landing-zone-details"]'))`)) break
+  await sleep(500)
+}
 // Expanded zone metrics: Watts, Wh, temperatures and percentages.
 await evaluate(`(() => { const b=document.querySelector('[data-testid="landing-zone-details"]'); if(b) b.click(); return true; })()`)
-await sleep(1200)
+for (let attempt = 0; attempt < 20; attempt += 1) {
+  if (await evaluate(`Boolean(document.querySelector('.zone-detail'))`)) break
+  await sleep(500)
+}
 report.zoneMetricsText = await evaluate(`document.querySelector('.zone-detail')?.textContent ?? null`)
 const signatureOf = () => evaluate(`document.querySelector('[data-testid="landing-zone-signature"]')?.textContent?.trim() ?? null`)
 const zonePanelText = () => bodyText()
@@ -575,8 +593,12 @@ report.cyclesWeeks = await evaluate(`document.querySelectorAll('.cycles-week-lab
 report.cyclesSummaryBefore = await evaluate(`document.querySelector('[data-testid="cycles-summary"]')?.textContent ?? null`)
 const clockValue = () => evaluate(`document.body.innerText.match(/MISSION TIME \\(UTC\\)\\s*\\n?([^\\n]+)/)?.[1] ?? null`)
 report.cyclesRelayToggled = await evaluate(`(() => { const el=document.querySelector('[data-testid="cycles-relay-toggle"]'); if(!el) return false; el.click(); return true; })()`)
-await sleep(2200)
-report.cyclesSummaryAfter = await evaluate(`document.querySelector('[data-testid="cycles-summary"]')?.textContent ?? null`)
+let cyclesSummaryAfter = report.cyclesSummaryBefore
+for (let attempt = 0; attempt < 30 && cyclesSummaryAfter === report.cyclesSummaryBefore; attempt += 1) {
+  await sleep(500)
+  cyclesSummaryAfter = await evaluate(`document.querySelector('[data-testid="cycles-summary"]')?.textContent ?? null`)
+}
+report.cyclesSummaryAfter = cyclesSummaryAfter
 report.cyclesRelayRowText = await evaluate(`document.querySelector('[data-testid="cycles-relay"]')?.textContent ?? null`)
 const timeBeforeCycles = await clockValue()
 report.cyclesTimeBeforeSeek = timeBeforeCycles
@@ -584,6 +606,119 @@ report.cyclesSeekClicked = await evaluate(`(() => { const els=[...document.query
 await sleep(1200)
 report.cyclesTimeAfterSeek = await clockValue()
 report.cyclesSeekWorks = Boolean(report.cyclesSeekClicked && report.cyclesTimeAfterSeek && report.cyclesTimeAfterSeek !== timeBeforeCycles)
+
+// Task-29: feasible mission date per zone and timeline jump (Artemis III preset).
+await evaluate(`(() => {
+  const compare = [...document.querySelectorAll('button')].find((button) => (button.textContent || '').trim() === 'Compare');
+  if (compare) compare.click();
+  return Boolean(compare);
+})()`)
+await sleep(600)
+report.presetApplied = await evaluate(`(() => {
+  const select = document.querySelector('[data-testid="mission-preset-select"]');
+  if (!select) return false;
+  const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set;
+  setter.call(select, 'apollo11');
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+  return true;
+})()`)
+report.datePresetApplied = report.presetApplied
+await sleep(1200)
+await evaluate(`(() => {
+  const tab = document.querySelector('[data-testid="analysis-tab-autopilot"]');
+  if (tab) tab.click();
+  return Boolean(tab);
+})()`)
+const signatureBeforeDates = await signatureOf()
+const dateRows = async () =>
+  evaluate(`(() => {
+    const rows = [...document.querySelectorAll('.zone-date[data-testid^="ap-date-"]')];
+    return rows.map((row) => ({
+      hook: row.dataset.testid ?? null,
+      text: (row.textContent || '').replace(/\s+/g, ' ').trim(),
+      hasDate: /Feasible mission date|Fecha de misión viable/i.test(row.textContent || ''),
+      noDate: /No feasible date|No hay fecha viable/i.test(row.textContent || ''),
+    }));
+  })()`)
+let dateRowsState = await dateRows()
+for (let attempt = 0; attempt < 40 && dateRowsState.every((row) => !row.hasDate); attempt += 1) {
+  await sleep(500)
+  dateRowsState = await dateRows()
+}
+report.dateRows = dateRowsState
+report.dateRowsWithDate = dateRowsState.filter((row) => row.hasDate).length
+report.dateRowsWithoutDate = dateRowsState.filter((row) => row.noDate).length
+report.dateSearchMeta = await evaluate(`document.querySelector('.date-search-meta')?.textContent?.trim() ?? null`)
+report.dateSearchNoDateAlert = await evaluate(`document.querySelector('[data-testid="ap-no-feasible-date"]')?.textContent?.trim() ?? null`)
+report.dateSearchToggle = await evaluate(`document.querySelector('[data-testid="ap-date-search-toggle"]')?.checked ?? null`)
+report.dateSearchStep = await evaluate(`document.querySelector('[data-testid="ap-date-step"]')?.value ?? null`)
+const missionClock = () => evaluate(`(() => {
+  const date = document.querySelector('input[type="date"]')?.value ?? '';
+  const time = document.querySelector('input[type="time"]')?.value ?? '';
+  return date && time ? (date + 'T' + time) : null;
+})()`)
+for (let attempt = 0; attempt < 40; attempt += 1) {
+  const ready = await evaluate(`Boolean(document.querySelector('.zone-date[data-testid^="ap-date-"] button'))`)
+  if (ready) break
+  await sleep(500)
+}
+const dateSet = await evaluate(`(() => {
+  const input = document.querySelector('input[type="date"]');
+  if (!input) return false;
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+  setter.call(input, '2026-11-20');
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+  return true;
+})()`)
+await sleep(1200)
+report.dateSetDifferent = dateSet
+const dateBeforeJump = await missionClock()
+let dateJumpButton = false
+for (let attempt = 0; attempt < 30 && !dateJumpButton; attempt += 1) {
+  await sleep(500)
+  dateJumpButton = await evaluate(`Boolean(document.querySelector('[data-testid^="ap-date-"] button'))`)
+}
+report.dateJumpClicked = dateJumpButton && (await evaluate(`(() => {
+  const button = document.querySelector('[data-testid^="ap-date-"] button');
+  if (!button) return false;
+  button.click();
+  return true;
+})()`))
+await sleep(3000)
+report.dateJump = { before: dateBeforeJump, after: await missionClock() }
+report.dateJumpChanged = Boolean(dateBeforeJump && report.dateJump.after && report.dateJump.after !== dateBeforeJump)
+const signatureBeforeStep = await signatureOf()
+report.dateStepChanged = await evaluate(`(() => {
+  const select = document.querySelector('[data-testid="ap-date-step"]');
+  if (!select) return false;
+  const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set;
+  setter.call(select, '24');
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+  return true;
+})()`)
+let signatureAfterStep = signatureBeforeStep
+let stepMetaText = ''
+for (let attempt = 0; attempt < 60; attempt += 1) {
+  await sleep(500)
+  signatureAfterStep = await signatureOf()
+  stepMetaText = await evaluate(`document.querySelector('.date-search-meta')?.textContent?.trim() ?? ''`)
+  if (/step 24 h/.test(stepMetaText) && signatureAfterStep !== signatureBeforeStep) break
+}
+report.dateStepMeta = stepMetaText
+report.dateStepValue = await evaluate(`document.querySelector('[data-testid="ap-date-step"]')?.value ?? null`)
+report.dateStepRecomputed = /step 24 h/.test(stepMetaText) || report.dateStepValue === '24'
+report.dateStepSignature = signatureAfterStep
+await click('Compare', true)
+await sleep(1000)
+await evaluate(`(() => {
+  const select = document.querySelector('[data-testid="mission-preset-select"]');
+  if (!select) return false;
+  const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set;
+  setter.call(select, '');
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+  return true;
+})()`)
+await sleep(2500)
 
 report.export = await click('Export JSON brief')
 await sleep(4000)
@@ -723,6 +858,9 @@ const failed =
   !report.defaultFeasible || !Array.isArray(report.zoneDuplicateLabels) || report.zoneDuplicateLabels.length > 0 ||
   !report.infeasibleState || !report.infeasibleBadge || !report.infeasibleAlert ||
   !report.restorePower || !report.restoredFeasible ||
+  !report.presetApplied || !report.dateJumpClicked || !report.dateJumpChanged ||
+  report.dateRowsWithDate < 1 || !report.dateSearchToggle ||
+  !report.dateStepChanged || !report.dateStepRecomputed ||
   !(report.cyclesSunSegments >= 1) || !(report.cyclesDirectSegments >= 1) ||
   !(report.cyclesWeeks >= 2) || !report.cyclesRelayToggled ||
   report.cyclesSummaryAfter === report.cyclesSummaryBefore ||

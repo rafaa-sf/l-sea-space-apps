@@ -225,6 +225,12 @@ export async function runTask(type, payload = {}) {
       const ephemeris = await resolveEphemerides(payload, sites)
       const options = { ...(payload.options ?? {}) }
       if (payload.maxZones != null) options.maxZones = payload.maxZones
+      // Task-28: the zone autopilot searches mission-start dates by default;
+      // callers can opt out with `searchDates: false` or pass `dateSearch` options.
+      if (payload.searchDates !== false) options.searchDates = true
+      if (payload.dateSearch && typeof payload.dateSearch === 'object') {
+        options.dateSearch = { ...(payload.dateSearch ?? {}) }
+      }
       const result = rankLandingZones({
         terrain,
         ephemeris,

@@ -351,6 +351,32 @@ Documented formulas/approximations:
   `no-crater-hazard-data`, `psr-map-unavailable`, `zone.is-psr`, …) are attached
   and `confidence` is reduced instead of failing.
 
+### `src/core/dateSearch.js` (mission-start date search)
+
+- `searchFeasibleDate({ terrain, zone, ephemeris, mission, options })` searches the
+  available ephemeris coverage (2026-11-01..2026-12-31) for the **earliest**
+  feasible mission start, default step 12 h (`dateSearch.stepHours`) and a fast
+  screening step of 30 min (`evaluationStepSeconds`). The ray-traced horizon
+  profile is built/cached once per zone and reused for every candidate.
+- Candidate starts are clipped so `missionDays` fits inside the coverage
+  (`mission-longer-than-ephemeris` warning when it does not; the mission window
+  is then clipped). Fast screening derives illumination/thermal/power/comms and
+  runs the full feasibility gate; the winning date is re-evaluated with
+  `computeLandingMetrics` for the entry's metrics, score and signature.
+- `rankLandingZones({ ..., options: { searchDates: true, dateSearch } })` adds per
+  entry `feasibleDate` (ISO, earliest), `feasibleDateScore` (score at that date),
+  `feasibleDatesSearched`, `hasFeasibleDate` and `missionStartUsed`, sorts zones
+  with feasible dates first by score at that date (others after), and reports
+  `meta.dateSearch = { enabled, stepHours, evaluationStepSeconds, zonesSearched,
+  zonesWithFeasibleDate, noFeasibleDate, message: 'ok'|'no-feasible-date'|'disabled',
+  searchWindow }`; `meta.inputSignature` includes the search options/window.
+  Worker `landingZones` enables the search by default; pass `searchDates: false`
+  or `dateSearch` options in the payload to change it.
+- Window limit: the shipped ephemeris only covers two months, so an "annual"
+  search is not possible without more data (documented; no fake extrapolation).
+- Measured on the wide 1024 m-region DEM, 8 zones, 14-day missions, 12 h step:
+  ~1.9 s in the worker (target <5 s).
+
 ### `src/core/cycles.js`
 
 - `computeMissionCycles({ terrain, site, ephemeris, mission, options }) -> cycles`

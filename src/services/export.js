@@ -156,6 +156,12 @@ function normalizeBriefZone(entry, index) {
     confidence: num(entry.confidence),
     feasible: entry.feasible ?? null,
     feasibility: entry.feasibility ?? null,
+    // Task-28 mission-start date search passthrough.
+    feasibleDate: entry.feasibleDate ?? null,
+    feasibleDateScore: num(entry.feasibleDateScore),
+    feasibleDatesSearched: num(entry.feasibleDatesSearched),
+    hasFeasibleDate: entry.hasFeasibleDate ?? null,
+    missionStartUsed: entry.missionStartUsed ?? null,
     rawScore: num(entry.rawScore),
     scoreCapApplied: entry.scoreCapApplied ?? null,
     components: entry.components ?? null,

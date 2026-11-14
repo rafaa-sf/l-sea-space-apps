@@ -29,6 +29,7 @@ import {
   resolveEphemerisForSite,
 } from './autopilot.js'
 import { detectLandingZones, normalizeZoneOptions } from './zones.js'
+import { normalizeDateSearchOptions, searchFeasibleDate } from './dateSearch.js'
 import {
   LANDING_MODEL_VERSION,
   computeInputSignature,
@@ -200,6 +201,7 @@ export function rankLandingZones({ terrain, ephemeris, sites, mission, options }
   const weights = normalizeLandingWeights(normalizedMission.weights ?? zoneOptions.weights)
   const ephemerisSiteIds = new Set()
 
+  let dateSearchWindow = null
   const entries = detection.zones.map((zone) => {
     const zoneSite = landingZoneToSite(zone, { mastM: normalizedMission.mastM, source: 'zone' })
     const nearest = nearestCuratedSite(zone, curatedSites, referenceRadiusM)
@@ -208,13 +210,31 @@ export function rankLandingZones({ terrain, ephemeris, sites, mission, options }
     const ephemerisSiteId = nearest?.site.id ?? resolution.dataset?.siteId ?? null
     if (ephemerisSiteId) ephemerisSiteIds.add(ephemerisSiteId)
 
+    // Optional mission-start date search (task-28): find the earliest feasible
+    // start inside the ephemeris coverage and score the zone at that date.
+    const dateSearchRequested = zoneOptions.searchDates === true || zoneOptions.dateSearch?.enabled === true
+    let dateSearchResult = null
+    if (dateSearchRequested && resolution.dataset) {
+      dateSearchResult = searchFeasibleDate({
+        terrain,
+        zone: zoneSite,
+        ephemeris: resolution.dataset,
+        mission: normalizedMission,
+        options: { ...(zoneOptions.dateSearch ?? {}), enabled: true },
+      })
+      if (dateSearchResult.searchWindow) dateSearchWindow = dateSearchResult.searchWindow
+    }
+    const effectiveMission = dateSearchResult?.hasFeasibleDate
+      ? { ...normalizedMission, startTime: dateSearchResult.feasibleDate }
+      : normalizedMission
+
     const metricsResult = computeLandingMetrics({
       terrain,
       zone,
       zones: detection.zones,
       ephemeris: resolution.dataset,
       site: zoneSite,
-      mission: normalizedMission,
+      mission: effectiveMission,
       nearestSite: nearest,
       craters: cratersInfo.craters,
       cratersAvailable: cratersInfo.cratersAvailable,
@@ -286,11 +306,23 @@ export function rankLandingZones({ terrain, ephemeris, sites, mission, options }
       nearestSiteId: nearest?.site.id ?? null,
       nearestSiteDistanceM: nearest ? round1(nearest.distanceM) : null,
       zoneLabel: null,
+      // Date-search results (task-28). When a feasible date was found, score and
+      // metrics above are evaluated at that mission start.
+      feasibleDate: dateSearchResult?.hasFeasibleDate ? dateSearchResult.feasibleDate : null,
+      feasibleDateScore: dateSearchResult?.hasFeasibleDate ? metricsResult.score : null,
+      feasibleDatesSearched: dateSearchResult?.feasibleDatesSearched ?? 0,
+      hasFeasibleDate: dateSearchResult?.hasFeasibleDate === true,
+      missionStartUsed: effectiveMission.startTime ?? null,
       inputSignature: metricsResult.inputSignature,
     }
   })
 
-  sortZoneEntriesByFeasibility(entries)
+  entries.sort((a, b) => {
+    const aDated = a.hasFeasibleDate ? 0 : 1
+    const bDated = b.hasFeasibleDate ? 0 : 1
+    if (aDated !== bDated) return aDated - bDated
+    return compareZoneEntries(a, b)
+  })
   let rank = 0
   for (const entry of entries) {
     if (entry.score != null) {
@@ -308,7 +340,10 @@ export function rankLandingZones({ terrain, ephemeris, sites, mission, options }
       sites: [...ephemerisSiteIds].sort(),
       sampleCount: detection.zones.length > 0 ? (ephemeris && typeof ephemeris === 'object' && typeof ephemeris.samples?.length === 'number' ? ephemeris.samples.length : null) : null,
     },
-    options: detectionOptions,
+    options: {
+      ...detectionOptions,
+      dateSearch: normalizeDateSearchOptions(zoneOptions.dateSearch ?? {}),
+    },
   })
   for (const entry of entries) entry.inputSignature = signature
 
@@ -333,7 +368,32 @@ export function rankLandingZones({ terrain, ephemeris, sites, mission, options }
       undeterminedZones: undeterminedEntries.length,
       hasFeasibleZones: feasibleEntries.length > 0,
       recommendedZoneId: feasibleEntries[0]?.zone?.id ?? null,
-      rankingRule: 'feasible-first-then-score',
+      rankingRule:
+        zoneOptions.searchDates === true || zoneOptions.dateSearch?.enabled === true
+          ? 'feasible-date-first-then-score'
+          : 'feasible-first-then-score',
+      dateSearch: (() => {
+        const dated = entries.filter((entry) => entry.hasFeasibleDate)
+        const requested = zoneOptions.searchDates === true || zoneOptions.dateSearch?.enabled === true
+        const opts = normalizeDateSearchOptions(zoneOptions.dateSearch ?? {})
+        const firstSearch = entries.find((entry) => entry.feasibleDatesSearched > 0)
+        const windowInfo = firstSearch?.missionStartUsed ?? null
+        void windowInfo
+        return {
+          enabled: requested,
+          stepHours: opts.stepHours,
+          evaluationStepSeconds: opts.evaluationStepSeconds,
+          zonesSearched: requested ? entries.length : 0,
+          zonesWithFeasibleDate: dated.length,
+          zonesWithoutFeasibleDate: requested ? entries.length - dated.length : 0,
+          totalCandidates: entries.reduce((total, entry) => total + (entry.feasibleDatesSearched ?? 0), 0),
+          rangeStart: dateSearchWindow ? new Date(dateSearchWindow.startMs).toISOString() : null,
+          rangeEnd: dateSearchWindow ? new Date(dateSearchWindow.endMs).toISOString() : null,
+          noFeasibleDate: requested && dated.length === 0,
+          message: requested ? (dated.length > 0 ? 'ok' : 'no-feasible-date') : 'disabled',
+          searchWindow: dateSearchWindow,
+        }
+      })(),
       feasibility: {
         feasibleZones: feasibleEntries.length,
         infeasibleZones: infeasibleEntries.length,
