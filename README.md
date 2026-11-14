@@ -11,6 +11,7 @@ communication windows derived from real NASA data.
 [![CI](https://github.com/rafaa-sf/l-sea-space-apps/actions/workflows/ci.yml/badge.svg)](https://github.com/rafaa-sf/l-sea-space-apps/actions/workflows/ci.yml)
 [![Live](https://img.shields.io/badge/live-l--sea--space--apps.vercel.app-2ea44f)](https://l-sea-space-apps.vercel.app)
 [![Stack](https://img.shields.io/badge/stack-Vue%203%20%2B%20Three.js-3f80ea)](https://vuejs.org)
+[![Docs](https://img.shields.io/badge/docs-index-6f42c1)](docs/README.md)
 
 **Live application:** <https://l-sea-space-apps.vercel.app>
 
@@ -36,6 +37,15 @@ L-SEA turns that data into a single comparison workflow:
 - Mission autopilot ranking, orbital-variation views and a JSON mission brief
   export with NASA source links.
 - English and Spanish interface.
+
+## Documentation
+
+Full grouped index: **[docs/README.md](docs/README.md)**.
+
+- **Project and challenge:** [challenge](docs/challenge.md) · [architecture](docs/architecture.md) · [NASA data](docs/data.md) · [AI use declaration](docs/ai-usage.md)
+- **Product, impact and submission:** [submission](docs/submission.md) · [demo](docs/demo.md) · [impact and scalability](docs/scalability.md) · [commercial case](docs/commercial.md)
+- **Quality and operations:** [QA and test bench](docs/qa.md) · [deployment](docs/deployment.md) · [contributing](docs/contributing.md) · [security](docs/security.md) · [decisions](docs/decisions.md) · [Miro integration](docs/miro.md)
+- **Reproducible test bench:** [qa/README.md](qa/README.md) · [qa/REPORT.md](qa/REPORT.md)
 
 ## NASA data
 
@@ -72,28 +82,6 @@ mcp/miro/      Model Context Protocol server for the Miro REST API
 demo/          Project Demo deck (7 slides) and generator
 docs/          Project documentation
 ```
-
-## Documentation
-
-| Document | Contents |
-| --- | --- |
-| [`docs/challenge.md`](docs/challenge.md) | Official challenge, event rules and shared resources |
-| [`docs/architecture.md`](docs/architecture.md) | Technical architecture, data flow and module contracts |
-| [`docs/data.md`](docs/data.md) | NASA endpoints, CORS behaviour, provenance and licensing |
-| [`docs/submission.md`](docs/submission.md) | Project page content, demo script and submission checklist |
-| [`docs/demo.md`](docs/demo.md) | Project Demo deck and video script |
-| [`docs/commercial.md`](docs/commercial.md) | Business case, market, business model and judging-criteria mapping |
-| [`docs/scalability.md`](docs/scalability.md) | Impact assessment and scalability analysis: beneficiaries, measurable impact, growth, scale limits and roadmap |
-| [`docs/qa.md`](docs/qa.md) | Test strategy and executed QA evidence |
-| [`qa/README.md`](qa/README.md) | Reproducible QA test bench: Monte Carlo logic bench and device/resolution UI matrix |
-| [`qa/REPORT.md`](qa/REPORT.md) | Executed test-bench runs: numbers, findings and reproduction |
-| [`docs/deployment.md`](docs/deployment.md) | Vercel deployment, verification and rollback |
-| [`docs/contributing.md`](docs/contributing.md) | Conventions and the two-machine collaboration protocol |
-| [`docs/security.md`](docs/security.md) | Secrets policy and repository safety |
-| [`docs/ai-usage.md`](docs/ai-usage.md) | AI use declaration required by the challenge |
-| [`docs/decisions.md`](docs/decisions.md) | Architectural and project decision log |
-| [`docs/miro.md`](docs/miro.md) | Miro MCP server setup and tools |
-| [`docs/screenshots/`](docs/screenshots/) | Application screenshots |
 
 ## Development
 
