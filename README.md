@@ -44,7 +44,7 @@ Full rules: [docs/guide.md](docs/guide.md).
 | Item | Detail |
 | --- | --- |
 | Stack | Vue 3 + Vite + Three.js (plain JavaScript) |
-| Deployment | Static build on GoDaddy hosting |
+| Deployment | Static build on Vercel |
 | UI languages | English and Spanish |
 | NASA data | JPL Horizons, LOLA DEM (PDS Geosciences), Moon Trek |
 | Fallback | Canvas 2D renderer for machines without WebGL |
@@ -70,7 +70,7 @@ Architecture and module contracts: [docs/architecture.md](docs/architecture.md).
 | [docs/git-workflow.md](docs/git-workflow.md) | Git and GitHub workflow for the two machines |
 | [docs/coordination.md](docs/coordination.md) | Two-machine lock protocol (git tags), test bench and Miro coordination |
 | [docs/security.md](docs/security.md) | Secrets handling, environment variables and repository safety |
-| [docs/deployment.md](docs/deployment.md) | GoDaddy static deployment plan |
+| [docs/deployment.md](docs/deployment.md) | Vercel static deployment plan |
 | [docs/miro-mcp.md](docs/miro-mcp.md) | Miro MCP server for agent–board collaboration |
 | [docs/decisions.md](docs/decisions.md) | Decision log for the repository |
 

@@ -12,7 +12,7 @@ all teammates; changes to a public interface are coordinated through the Lead.
 | Build tool | Vite |
 | i18n | vue-i18n (English and Spanish) |
 | Tests | Vitest |
-| Deployment | Static build (`dist/`) on GoDaddy hosting |
+| Deployment | Static build (`dist/`) on Vercel |
 
 No TypeScript: plain JavaScript ES modules.
 

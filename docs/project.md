@@ -53,7 +53,7 @@ agent–board collaboration.
 Pending:
 
 - Final application polish and end-to-end demo validation.
-- GoDaddy deployment of the static build.
+- Vercel deployment of the static build.
 - Project page submission (Submit for Judging).
 - Demo materials (at most 7 slides or a 30-second video).
 
@@ -66,7 +66,7 @@ Pending:
 | Domain logic | Framework-agnostic ES modules (`src/core/`, `src/services/`) |
 | Background compute | Web Worker (single CPU thread) |
 | i18n | English and Spanish (`vue-i18n`) |
-| Deployment | Static build on GoDaddy hosting |
+| Deployment | Static build on Vercel |
 | AI collaboration | Miro MCP server (`mcp/miro/`) |
 
 See [architecture.md](architecture.md) for the module contracts.

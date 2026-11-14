@@ -11,7 +11,7 @@ attribution and pre-compute plan for every NASA service used by L-SEA.
 
 ## Runtime model: static deployment, pre-computed NASA data
 
-The application is a **static Vite build** deployed to GoDaddy hosting. There is
+The application is a **static Vite build** deployed to Vercel hosting. There is
 no server-side runtime, so only services that send CORS headers can be called
 directly from the browser. That splits the data into two classes:
 

@@ -280,7 +280,7 @@ Consequence: a loader that checks only `res.ok` will treat a missing data file a
 valid and fail later in `JSON.parse` with a confusing HTML error, while a loader
 that sends `Accept: application/json` gets a clean 404. **All data checks must
 assert `Content-Type` and parse the payload, never trust the status code alone.**
-On GoDaddy the same behaviour will occur once the `.htaccess` SPA fallback in
+On Vercel the same behaviour will occur once the `.htaccess` SPA fallback in
 `docs/deployment.md` section 5 is installed. Evidence:
 `preview-mime-behavior.txt`, `preview-missing-data-behavior.txt`.
 
@@ -533,7 +533,7 @@ What was **not** testable today, and why:
    `src/components`, `src/render`, `src/workers` do not exist. Features 1–13 and
    15 have no code path to execute; this report records their absence, not a
    behavioural failure.
-2. **Deployed URL checks** (HTTPS, redirect, certificate, GoDaddy headers,
+2. **Deployed URL checks** (HTTPS, redirect, certificate, Vercel headers,
    compression, caching, `.htaccess` behaviour) — the site is not deployed and no
    credentials/hosting were provided; these are marked N/A in
    the deployment checklist run (internal QA evidence).
