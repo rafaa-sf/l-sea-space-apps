@@ -1962,6 +1962,46 @@ body.is-resizing-panes * {
   color: var(--color-text);
 }
 
+.tag--ok {
+  border-color: rgba(74, 187, 122, 0.5);
+  color: var(--color-ok);
+}
+
+.tag--danger {
+  border-color: rgba(214, 92, 92, 0.55);
+  color: var(--color-danger);
+}
+
+.rank-item.is-infeasible {
+  border-left: 2px solid var(--color-danger);
+  background: rgba(214, 92, 92, 0.04);
+}
+
+.reason--danger {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 2px 6px;
+  border-left: 2px solid var(--color-danger);
+  border-radius: var(--radius-xs);
+  background: rgba(214, 92, 92, 0.1);
+  color: var(--color-danger);
+}
+
+.violation-list {
+  margin-top: 4px;
+}
+
+.feasibility-alert {
+  margin: 6px 0;
+  padding: 6px 8px;
+  border: 1px solid rgba(214, 92, 92, 0.5);
+  border-radius: var(--radius-sm);
+  background: rgba(214, 92, 92, 0.08);
+  color: var(--color-danger);
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+
 .reason--approx {
   display: inline-block;
   margin-top: 2px;

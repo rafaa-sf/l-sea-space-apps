@@ -48,6 +48,50 @@ function toggleZone(id) {
 }
 
 const zonesMeta = computed(() => state.landingZonesMeta ?? {})
+const feasibleCount = computed(() => {
+  const value = Number(zonesMeta.value.feasibleZones)
+  return Number.isFinite(value) ? value : null
+})
+const noFeasibleZone = computed(() => {
+  if (!zones.value.length) return false
+  if (zonesMeta.value.hasFeasibleZones === false) return true
+  return feasibleCount.value === 0
+})
+
+function isInfeasible(entry) {
+  if (typeof entry?.feasible === 'boolean') return !entry.feasible
+  return Boolean(entry?.feasibility && entry.feasibility.feasible === false)
+}
+
+function feasibilityBadge(entry) {
+  if (!entry) return null
+  const status = entry.feasibility?.status
+  if (typeof entry.feasible === 'boolean') {
+    if (entry.feasible) return { label: t('autopilot.feasible'), tone: 'ok' }
+    return { label: status === 'undetermined' ? t('autopilot.conditional') : t('autopilot.notFeasible'), tone: 'danger' }
+  }
+  if (!entry.feasibility) return null
+  if (entry.feasibility.feasible) return { label: t('autopilot.feasible'), tone: 'ok' }
+  return { label: status === 'undetermined' ? t('autopilot.conditional') : t('autopilot.notFeasible'), tone: 'danger' }
+}
+
+const ALIAS_METRIC_KEYS = new Set([
+  'eclipseHours',
+  'sunElevationMeanDeg',
+  'heaterPowerW',
+  'averageHeaterPowerW',
+  'dataBudgetFraction',
+])
+
+function violationText(violation) {
+  if (!violation) return ''
+  const code = violation.code ?? violation.reason ?? ''
+  const candidates = [`autopilot.violations.${code}`, `autopilot.${code}`]
+  const key = candidates.find((candidate) => te(candidate))
+  if (key) return t(key)
+  if (violation.text) return violation.text
+  return code
+}
 const zoneSignature = computed(() =>
   String(zonesMeta.value.inputSignature ?? zonesMeta.value.signature ?? state.landingZonesStatus.inputSignature ?? ''),
 )
@@ -95,6 +139,7 @@ const GROUP_LABELS = {
   logistics: 'autopilot.groups.logistics',
   science: 'autopilot.groups.science',
   general: 'autopilot.groups.general',
+  missionInputs: 'autopilot.groups.missionInputs',
 }
 const METRIC_LABELS = {
   meanSlopeDeg: 'meanSlopeDeg',
@@ -109,6 +154,19 @@ const METRIC_LABELS = {
   'ellipse.requiredRadiusM': 'ellipseRadiusM',
   'hazard.nearestCraterDistanceM': 'nearestCraterDistanceM',
   'hazard.craterHazard': 'craterHazard',
+  totalEclipseHours: 'totalEclipseH',
+  longestEclipseHours: 'longestEclipseH',
+  sunElevationMeanWindowDeg: 'meanSunElevationDeg',
+  sunElevationMeanSunlitDeg: 'meanSunElevationSunlitDeg',
+  heaterPowerSizedW: 'heaterPowerSizedW',
+  heaterAveragePowerW: 'averageHeaterPowerW',
+  heatedMinTempC: 'heatedMinTempC',
+  withinUnheatedOperatingRange: 'withinUnheatedOperatingRange',
+  directMaxLosGapHours: 'directMaxLosGapHours',
+  dataBudgetRatio: 'dataBudgetRatio',
+  dataBudgetCoverage: 'dataBudgetCoverage',
+  requiredAreaM2: 'ellipseRequiredAreaM2',
+  availableAreaM2: 'ellipseAvailableAreaM2',
   sunlitFraction: 'sunlitFraction',
   sunlitHours: 'sunlitHours',
   continuousSunDays: 'continuousSunDays',
@@ -116,6 +174,7 @@ const METRIC_LABELS = {
   sunElevationMinDeg: 'minSunElevationDeg',
   sunElevationMaxDeg: 'maxSunElevationDeg',
   sunElevationMeanDeg: 'meanSunElevationDeg',
+  sunElevationMeanSunlitDeg: 'meanSunElevationSunlitDeg',
   sunsetCount: 'sunsetCount',
   sunriseCount: 'sunriseCount',
   eclipseCount: 'eclipseCount',
@@ -146,7 +205,7 @@ const METRIC_LABELS = {
   minOperatingC: 'minOperatingC',
   maxOperatingC: 'maxOperatingC',
   withinOperatingRange: 'withinOperatingRange',
-  earthVisibleFraction: 'earthVisibleFraction',
+  earthVisibleFraction: 'earthVisibleEffective',
   directEarthVisibleFraction: 'directEarthVisibleFraction',
   maxLosGapHours: 'maxLosGapHours',
   relayCoverage: 'relayCoverage',
@@ -216,10 +275,10 @@ const METRIC_LABELS = {
   equivalentRadiusM: 'ellipseEquivalentRadiusM',
   nearestCraterDepthM: 'nearestCraterDepthM',
   reachM: 'hazardReachM',
-  sunElevationMeanSunlitDeg: 'meanSunElevationDeg',
+  sunElevationMeanSunlitDeg: 'meanSunElevationSunlitDeg',
   totalEnergyWh: 'totalEnergyWh',
   sunlitEnergyWh: 'sunlitEnergyWh',
-  averageHeaterPowerW: 'heaterPowerW',
+  averageHeaterPowerW: 'averageHeaterPowerW',
   windowHours: 'windowHours',
   availableHours: 'availableHours',
   relayDataRateMbps: 'relayDataRateMbps',
@@ -283,6 +342,8 @@ function inferUnit(key) {
   if (lower.includes('days')) return 'days'
   if (/hours?$/.test(lower) || /eclipseh$/.test(lower)) return 'h'
   if (lower.endsWith('min') || lower.includes('minutes')) return 'min'
+  if (/km2$/.test(lower)) return 'km²'
+  if (/m2$/.test(lower)) return 'm²'
   if (lower.endsWith('km')) return 'km'
   if (lower.endsWith('mb')) return 'Mb'
   if (lower.endsWith('mbps')) return 'Mbps'
@@ -295,6 +356,17 @@ function inferUnit(key) {
 
 function formatMetric(key, value) {
   if (typeof value === 'boolean') return value ? t('common.yes') : t('common.no')
+  if (/solarConstantWm2$/i.test(String(key))) {
+    const constant = Number(value)
+    if (Number.isFinite(constant)) return `${formatNumber(constant, 0)} W/m²`
+  }
+  const budgetKey = String(key).toLowerCase()
+  if (budgetKey.includes('databudget') && /(ratio|fraction)$/.test(budgetKey)) {
+    const ratio = Number(value)
+    if (Number.isFinite(ratio)) {
+      return t('autopilot.dataBudgetOfNeed', { value: formatNumber(ratio, ratio >= 100 ? 0 : ratio >= 10 ? 1 : 2) })
+    }
+  }
   const numeric = Number(value)
   if (!Number.isFinite(numeric)) return String(value)
   const lower = String(key).toLowerCase()
@@ -325,10 +397,19 @@ function flattenNumbers(value, prefix = '', out = []) {
 function zoneGroups(entry) {
   const metrics = entry?.metrics ?? {}
   const groups = []
-  for (const key of GROUP_KEYS) {
-    const source = metrics[key] ?? entry?.[key]
+  const seen = new Set()
+  for (const key of [...GROUP_KEYS, 'missionInputs']) {
+    const source = metrics[key] ?? (key === 'missionInputs' ? entry?.metrics?.missionInputs : entry?.[key])
     if (source && typeof source === 'object') {
       const items = flattenNumbers(source)
+        .filter((item) => !ALIAS_METRIC_KEYS.has(item.key.split('.').pop()))
+        .filter((item) => {
+          if (key === 'missionInputs') return true
+          const dedupeKey = `${metricLabel(item.key)}|${formatMetric(item.key, item.value)}`
+          if (seen.has(dedupeKey)) return false
+          seen.add(dedupeKey)
+          return true
+        })
       if (items.length) groups.push({ key, items })
     }
   }
@@ -446,8 +527,12 @@ const ranking = computed(() => state.scores)
       {{ t('autopilot.fallbackNote') }}: {{ state.autopilot.error }}
     </p>
 
+    <p v-if="noFeasibleZone" class="feasibility-alert" role="status">
+      {{ t('autopilot.noFeasibleZone') }}
+    </p>
     <div v-if="landingAvailable && zones.length" class="zone-meta">
       <p class="panel-hint zone-meta__text" :title="zoneSignature || undefined">
+        <template v-if="feasibleCount !== null"> {{ t('autopilot.feasibleCount', { count: feasibleCount, total: zones.length }) }} · </template>
         {{ t('autopilot.computedAt') }}: {{ computedAt }}<template v-if="computeMs !== null"> · {{ formatDuration(computeMs / 1000) }}</template>
         · {{ t('autopilot.signature') }}: <code data-testid="landing-zone-signature">{{ zoneSignature ? zoneSignature.slice(0, 8) : t('common.notAvailable') }}</code>
       </p>
@@ -473,7 +558,7 @@ const ranking = computed(() => state.scores)
           v-for="entry in zones"
           :key="entry.zone.id"
           class="rank-item"
-          :class="{ 'is-selected': entry.zone.id === selectedZoneId }"
+          :class="{ 'is-selected': entry.zone.id === selectedZoneId, 'is-infeasible': isInfeasible(entry) }"
           data-testid="landing-zone-row"
           :data-zone-rank="entry.rank"
           :data-zone-id="entry.zone.id"
@@ -486,8 +571,15 @@ const ranking = computed(() => state.scores)
           <button type="button" class="rank-item__head" @click="actions.selectLandingZone(entry)">
             <span class="rank-item__rank">#{{ entry.rank }}</span>
             <span class="rank-item__name">{{ t('autopilot.zoneLabel', { rank: entry.rank, lat: formatLat(entry.zone.lat), lon: formatLon(entry.zone.lon) }) }}</span>
-            <span v-if="entry.grade" class="tag">{{ entry.grade }}</span>
-            <span class="rank-item__score">{{ formatNumber(entry.score, 1) }}</span>
+            <span
+              v-if="feasibilityBadge(entry)"
+              class="tag"
+              :class="`tag--${feasibilityBadge(entry).tone}`"
+            >{{ feasibilityBadge(entry).label }}</span>
+            <span v-if="entry.grade" class="tag" :class="{ 'tag--danger': isInfeasible(entry) }">{{ entry.grade }}</span>
+            <span class="rank-item__score" :title="entry.rawScore != null ? `${t('autopilot.rawScore')}: ${formatNumber(entry.rawScore, 1)}` : undefined">
+              {{ formatNumber(entry.score, 1) }}<template v-if="entry.scoreCapApplied">*</template>
+            </span>
           </button>
           <div class="rank-item__bar" aria-hidden="true">
             <span class="rank-item__bar-fill" :style="{ width: `${Math.max(0, Math.min(100, entry.score))}%` }" />
@@ -519,6 +611,11 @@ const ranking = computed(() => state.scores)
             </section>
             <p v-if="!zoneGroups(entry).length" class="panel-hint">{{ t('autopilot.noDetails') }}</p>
           </div>
+          <ul v-if="entry.feasibility && entry.feasibility.violations?.length" class="reason-list violation-list">
+            <li v-for="(violation, index) in entry.feasibility.violations" :key="`${entry.zone.id}-violation-${index}`" class="reason reason--danger">
+              {{ violationText(violation) }}
+            </li>
+          </ul>
           <ul v-if="zoneWarnings(entry).length" class="reason-list">
             <li
               v-for="(warning, index) in zoneWarnings(entry)"
