@@ -487,6 +487,10 @@ export async function createMoonScene(canvas, options = {}) {
     clearOverlays()
     renderSites()
     updateHelpers()
+    // The scale depends on the projection, which only exists once the terrain
+    // is set: force a view report so the scale bar appears deterministically on
+    // load instead of waiting for a resize or a camera interaction.
+    notifyViewChange(true)
   }
 
   function clearSites() {
