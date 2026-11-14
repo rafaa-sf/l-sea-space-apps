@@ -1,0 +1,100 @@
+{
+  "meta": {
+    "purpose": "Tag taxonomy for the L-SEA Monte Carlo test bench. Every test case and every executed result carries tags from these namespaces so results can be filtered (include/exclude) and grouped.",
+    "version": 1,
+    "date": "2026-11-14",
+    "filter_semantics": "Include filter: a result matches if it carries ALL requested include tags (AND). Exclude filter: a result is dropped if it carries ANY exclude tag. Tags are lowercase strings starting with @."
+  },
+  "namespaces": {
+    "@level": {
+      "description": "Test level / stage",
+      "values": ["@level/logic", "@level/ui", "@level/e2e", "@level/data"]
+    },
+    "@type": {
+      "description": "Kind of test",
+      "values": ["@mc", "@matrix", "@smoke", "@regression", "@invariant"]
+    },
+    "@inv": {
+      "description": "Invariant under test (logic Monte Carlo)",
+      "values": [
+        "@inv/no-nan",
+        "@inv/bounds",
+        "@inv/determinism",
+        "@inv/roundtrip",
+        "@inv/horizon-consistency",
+        "@inv/horizon-monotonicity",
+        "@inv/visibility-consistency",
+        "@inv/set-events",
+        "@inv/windows",
+        "@inv/power",
+        "@inv/comms",
+        "@inv/scoring",
+        "@inv/ranking",
+        "@inv/cache-neutrality"
+      ]
+    },
+    "@feature": {
+      "description": "Application feature / module (mirrors docs/architecture.md features)",
+      "values": [
+        "@feature/geometry",
+        "@feature/terrain",
+        "@feature/horizon",
+        "@feature/ephemeris",
+        "@feature/power",
+        "@feature/comms",
+        "@feature/autopilot",
+        "@feature/sites",
+        "@feature/export",
+        "@feature/layers",
+        "@feature/i18n",
+        "@feature/render3d",
+        "@feature/render2d",
+        "@feature/worker"
+      ]
+    },
+    "@device": {
+      "description": "Device class of the simulated box (UI matrix)",
+      "values": ["@device/desktop", "@device/tablet", "@device/mobile", "@device/foldable", "@device/tv"]
+    },
+    "@orientation": {
+      "description": "Viewport orientation",
+      "values": ["@orientation/portrait", "@orientation/landscape"]
+    },
+    "@res": {
+      "description": "Exact viewport resolution tag; one per box, e.g. @res/390x844",
+      "values": "dynamic: @res/<width>x<height>"
+    },
+    "@dpr": {
+      "description": "Device pixel ratio class",
+      "values": "dynamic: @dpr/1, @dpr/2, @dpr/2.625, @dpr/3"
+    },
+    "@tier": {
+      "description": "Resolution tier",
+      "values": ["@tier/sd", "@tier/hd", "@tier/fhd", "@tier/qhd", "@tier/uhd", "@tier/ultrawide", "@tier/superwide"]
+    },
+    "@ui": {
+      "description": "UI invariant checked in the device matrix",
+      "values": [
+        "@ui/no-horizontal-overflow",
+        "@ui/no-vertical-overflow",
+        "@ui/boxes-in-viewport",
+        "@ui/no-console-errors",
+        "@ui/panels-rendered",
+        "@ui/interactive-targets",
+        "@ui/fonts-readable"
+      ]
+    },
+    "@status": {
+      "description": "Result status, assigned by the runner",
+      "values": ["@status/pass", "@status/fail", "@status/warn", "@status/skip"]
+    },
+    "@speed": {
+      "description": "Expected runtime class",
+      "values": ["@speed/fast", "@speed/slow"]
+    }
+  },
+  "seed_policy": {
+    "default_seed": 20261114,
+    "rule": "Every Monte Carlo result stores its seed. A failing case must be reproducible with --seed <seed> and --case <index>."
+  }
+}
