@@ -2,21 +2,27 @@
 
 ## Purpose
 
-L-SEA Space Apps is a project built for the **NASA International Space Apps
-Challenge**, a global hackathon that brings together participants to solve
-challenges using NASA and partner open data.
+L-SEA Space Apps is the team's project for the **NASA International Space Apps
+Challenge · Málaga 2026**, a global hackathon that brings together participants
+to solve challenges using NASA and partner open data.
 
-## Current status
+The project must answer a 2026 challenge, integrate at least one NASA resource
+from that challenge with an explained real contribution, and be submitted through
+the official Project page before the NASA deadline.
 
-**Early setup.** The repository is initialized, documented and synchronized with
-its GitHub remote. No application code exists yet.
+## Event facts
 
-Pending:
+| Item | Detail |
+| --- | --- |
+| Event | NASA International Space Apps Challenge · Málaga 2026 |
+| Dates | 14–15 November 2026 |
+| Venue | 42 Málaga Fundación Telefónica · Av. Sor Teresa Prat, 15 · Edificio E3 · 29003 Málaga |
+| Development start | Saturday 14 November 2026, 09:00 local time |
+| Submission deadline | Sunday 15 November 2026, before 23:59 local time |
+| Team size | 1 to 6 people |
+| Local lead | Celeste Sánchez · <nasa.spaceapps.malaga@gmail.com> |
 
-- Team rules (to be shared by the team lead).
-- Technology stack and application architecture.
-- Branch protection and review requirements.
-- Project structure inside the repository.
+The complete rules are summarized in [guide.md](guide.md).
 
 ## Team and machines
 
@@ -32,6 +38,19 @@ Both machines work on the same public repository:
 
 Coordination rules for working from two machines are described in
 [git-workflow.md](git-workflow.md).
+
+## Current status
+
+**Hackathon weekend (14–15 November 2026).** Repository, documentation and the
+shared resources index are ready. Application code and the chosen challenge are
+to be defined during the event.
+
+Pending:
+
+- Challenge selection.
+- Technology stack and application architecture.
+- Project structure inside the repository.
+- Branch protection and review requirements.
 
 ## Repository ownership
 

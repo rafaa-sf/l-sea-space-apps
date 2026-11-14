@@ -15,6 +15,8 @@ Record of decisions made about this repository, in chronological order.
 | D-009 | 2026-11-14 | Documentation is organized under `docs/`, with the README as index | Keeps project documentation structured and easy to maintain |
 | D-010 | 2026-11-14 | Documentation focuses on project knowledge; installation/run instructions are added only once the technology stack is defined | The stack is not defined yet, so setup instructions would be speculative |
 | D-011 | 2026-11-14 | Two machines with distinct roles: primary (development) and commercial (business side) | Team structure agreed at project start |
+| D-012 | 2026-11-14 | The organization's Drive folder is the shared source for the participant guide and event resources; files are linked from `docs/resources.md` and not copied into the repository | The repository is public, the files are binary/large, and NASA brand-restricted material should not be redistributed |
+| D-013 | 2026-11-14 | `docs/guide.md` is an English working summary of the official Spanish participant guide | Team documentation is written in English, while the original guide remains the authoritative rules source |
 
 ## How to add a decision
 
