@@ -7,8 +7,8 @@ application's "AI use" link (served as `/data/ai-usage.md`).
 
 > **Full disclosure:** **all content in this repository was produced by AI
 > agents** — application code, data-acquisition scripts, datasets formatting,
-> tests, CI, documentation, the submission package and the QA (Monte Carlo) test
-> bench. Two AI agent teams worked on two machines under human direction. The
+> tests, CI, documentation, the submission package and the QA test
+> benches. Two AI agent teams worked on two machines under human direction. The
 > human team defined the challenge, product and priorities, authorised actions,
 > reviewed and accepted the output, and remains **fully responsible** for the
 > submitted material. Real NASA data was retrieved from NASA services by scripts
@@ -21,7 +21,7 @@ application's "AI use" link (served as `/data/ai-usage.md`).
 | **DeepSeek Harness** (agentic coding platform) | Hosted the two AI agent teams that produced the repository and the submission material |
 | **DeepSeek models** (`deepseek` / `deepseek-flash` coding agents) | Language models behind every agent session |
 | **Node.js 24, Vite, Vue 3, Three.js, Vitest** | Application stack written by the agents |
-| **Headless Google Chrome 139 + Chrome DevTools Protocol** | Automated device/resolution UI simulation (CDP, no browser-automation library) |
+| **Headless Google Chrome 139 + Chrome DevTools Protocol** | Responsive layout and interactive UI checks in headless Chrome via CDP (no browser-automation library) |
 | **Python 3 + rasterio / numpy** | Terrain conversion and data validation scripts written by the agents |
 | **git / GitHub CLI / GitHub Actions** | Version control, tags-based machine coordination and CI, operated by the agents |
 | **pdftotext / pdftoppm and image reading** | Extraction of the official event material (participant and judges guides, challenge posters) |
@@ -51,10 +51,10 @@ and coordinated with the advisory lock protocol described in `docs/coordination.
 
 | Session | Role | Responsibility |
 | --- | --- | --- |
-| **Lead** | Coordination / integration | Defined the team structure, the impact & scalability workstream, the Monte Carlo test-bench contract and the machine-coordination protocol; reviewed and integrated every deliverable; opened the documentation pull request |
-| **commander** | Submission and device QA | Submission-readiness audit, repository-conventions check, decision-log drafts, commit plan, contract-vs-reality gap analysis, the device/resolution UI matrix and the filterable report |
+| **Lead** | Coordination / integration | Defined the team structure, the impact & scalability workstream, the QA test-bench contract and the machine-coordination protocol; reviewed and integrated every deliverable; opened the documentation pull request |
+| **commander** | Submission and device QA | Submission-readiness audit, repository-conventions check, decision-log drafts, commit plan, contract-vs-reality gap analysis, the responsive-layout checks and the filterable report |
 | **comercial** | Commercialisation | Project-page content (name, summary, detailed description, NASA-data narrative), business case, 7-slide pitch and 30-second video script, judges-criteria mapping, social-media copy |
-| **testbench** | Test bench | Test plan and executed QA report, data-integrity validation, deployment-checklist dry run, and the Monte Carlo logic bench (tens of thousands of randomised scenarios) |
+| **testbench** | Test bench | Test plan and executed QA report, data-integrity validation and deployment-checklist dry run |
 
 ## 3. What AI generated
 
@@ -67,8 +67,8 @@ and coordinated with the advisory lock protocol described in `docs/coordination.
 | Tests and CI | Vitest unit/contract suites for the scientific core and services, and the GitHub Actions pipelines |
 | Documentation | `README.md`, every file under `docs/` (including this declaration and the submission documents), `public/data/ephemeris/README.md`, `public/data/ai-usage.md` |
 | Submission package | Project-page copy, pitch deck outline, 30-second video script, business case, judging-criteria mapping, impact & scalability dossier, submission-readiness checklist |
-| QA test bench | Test plan, executed test report (data integrity, build, static audit, deployment dry run), Monte Carlo logic bench (randomised site/date/mission scenarios over the real core), device/resolution UI matrix (desktop, laptop, tablet, mobile, foldable and TV viewports in portrait and landscape, several pixel ratios, English and Spanish, plus the no-WebGL fallback), screenshots and the filterable report |
-| Coordination tooling | Tag-based machine synchronisation (`claim/*` and `sync/*` tags, `machine-sync.sh` script and its documentation) |
+| QA test bench | Test plan, executed test report (data integrity, build, static audit, responsive layout checks, deployment dry run) and the corresponding reports; see `docs/test-report.md` and `docs/test-plan.md`. |
+| Coordination tooling | Tag-based machine synchronisation (`claim/*`, `sync/*` and `lock/*` tags) and the repository pre-push lock hook |
 | Version control | Branch creation, Conventional-Commit messages, pull requests and tag publication performed by the agents |
 
 ## 4. What humans did
@@ -76,11 +76,11 @@ and coordinated with the advisory lock protocol described in `docs/coordination.
 - Selected the NASA Space Apps challenge and defined the product vision and scope.
 - Chose the technology stack direction, approved the architecture and data
   strategy, and defined the feature list and priorities.
-- Directed both AI agent teams, set the authorisation gates (in particular: ask
-  before any push to GitHub), reviewed the output and rejected or corrected parts
-  of it.
-- Ran/verified key commands and inspected results (build, tests, data statistics,
-  Monte Carlo and device-matrix reports) before accepting them.
+- Directed both AI agent teams under the standing authorisation they had for the
+  git workflow (commits, branches and pulls), reviewed the output and rejected or
+  corrected parts of it.
+- Verified key commands and inspected results (build, tests, data statistics and
+  QA reports) before accepting them.
 - Completed and submitted the official Project page, demo and final materials, and
   accepted responsibility for them.
 
@@ -103,14 +103,8 @@ and coordinated with the advisory lock protocol described in `docs/coordination.
   `public/data/layers.json` (see `docs/api-integrations.md`).
 - The application builds successfully (`npm run build`) and its unit/contract
   suites pass (Vitest; see the QA test-bench report).
-- The **Monte Carlo test bench** exercises the real scientific core with numerous
-  randomised site/date/mission scenarios and checks 13 invariants (no NaN, bounds,
-  determinism, coordinate round-trip, horizon consistency, visibility, set
-  events, windows, power, comms, scoring, ranking, cache neutrality).
-- The **device/resolution matrix** emulates desktop, laptop, tablet, mobile,
-  foldable and TV viewports (portrait and landscape, several pixel ratios) in both
-  English and Spanish, plus the no-WebGL fallback, and measures layout boxes,
-  overflow, console errors and control sizes.
+- Responsive layout and no-WebGL fallback checks are documented in
+  `docs/test-report.md`.
 - Exact test counts are maintained in the test-bench reports rather than duplicated
   here; they are generated by the same AI agents and can be reproduced from the
   scripts.
@@ -149,8 +143,10 @@ every claim in the submission.
 
 The agents ran autonomously with tool access (filesystem, shell, git/GitHub CLI,
 headless browser, package managers) and coordinated through a shared task board and
-git-tag leases. Every GitHub push required explicit human authorisation; the tags
-`sync/*` and `claim/*` document which machine published what and when. The
+git-tag leases. The team had standing authorisation for the git workflow (commits,
+branches and pushes), reported each release, and the tags `sync/*`, `claim/*` and
+`lock/*` plus the repository history document which machine published what and
+when. The
 authoritative record of the work is the repository history and pull requests.
 
 *Event rules reference: AI is allowed at NASA Space Apps; the team must declare the
