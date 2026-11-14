@@ -1,6 +1,6 @@
 # Monte Carlo test bench — specification (contract)
 
-**Project:** L-SEA Space Apps — *Lunar Landing Site Navigator* (NASA Space Apps Málaga 2026, Challenge 11)
+**Project:** L-SEA Space Apps — *Lunar Landing Site Navigator* (NASA Space Apps Málaga 2026, Challenge 10)
 **Owner:** Lead (contract, review, final run) · **Implementers:** test bench (`testbench`) for the logic engine; coordination (`commander`) for the device/UI matrix + report
 **Date:** 2026-11-14 · **Version:** 1
 

@@ -1,7 +1,7 @@
 # Monte Carlo test bench
 
 Automated, randomised stress-testing for **L-SEA Space Apps** (NASA Space Apps
-Challenge · Málaga 2026, Challenge 11 — *Lunar Landing Site Navigator*).
+Challenge · Málaga 2026, Challenge 10 — *Lunar Landing Site Navigator*).
 
 Two independent runners share one contract (`SPEC.md`), one device matrix
 (`devices.json`) and one tag taxonomy (`tags.json`). Every test case and every
