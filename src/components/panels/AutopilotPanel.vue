@@ -325,6 +325,7 @@ function groupLabel(key) {
 
 function metricLabel(key) {
   const leaf = String(key).includes('.') ? String(key).split('.').pop() : String(key)
+  if (leaf === 'mastM') return t('autopilot.mast')
   const short = METRIC_LABELS[key] ?? METRIC_LABELS[leaf]
   if (short) {
     const i18nKey = `autopilot.metrics.${short}`
@@ -404,7 +405,6 @@ function zoneGroups(entry) {
       const items = flattenNumbers(source)
         .filter((item) => !ALIAS_METRIC_KEYS.has(item.key.split('.').pop()))
         .filter((item) => {
-          if (key === 'missionInputs') return true
           const dedupeKey = `${metricLabel(item.key)}|${formatMetric(item.key, item.value)}`
           if (seen.has(dedupeKey)) return false
           seen.add(dedupeKey)
