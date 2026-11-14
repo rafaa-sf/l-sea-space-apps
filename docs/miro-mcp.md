@@ -133,6 +133,14 @@ The tools then appear to the model as `mcp__miro__<tool>`
 }
 ```
 
+## Two machines
+
+The primary and commercial machines use the same Miro team but keep **separate
+local tokens**: each machine creates/installs its own Miro app (or uses its own
+OAuth token) and stores it in its local `.env`. Tokens are never committed nor
+shared through git. Both machines can work on the same boards; coordinate
+editing with Miro presence/comments and keep one board per workstream.
+
 ## Limitations
 
 - The server uses a single access token from the environment; OAuth refresh flows

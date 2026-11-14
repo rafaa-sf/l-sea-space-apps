@@ -63,6 +63,7 @@ Architecture and module contracts: [docs/architecture.md](docs/architecture.md).
 | [docs/ai-usage.md](docs/ai-usage.md) | AI tools declaration for the NASA submission |
 | [docs/conventions.md](docs/conventions.md) | Language, commit message, branch naming and code conventions |
 | [docs/git-workflow.md](docs/git-workflow.md) | Git and GitHub workflow for the two machines |
+| [docs/coordination.md](docs/coordination.md) | Two-machine lock protocol (git tags), test bench and Miro coordination |
 | [docs/security.md](docs/security.md) | Secrets handling, environment variables and repository safety |
 | [docs/deployment.md](docs/deployment.md) | GoDaddy static deployment plan |
 | [docs/miro-mcp.md](docs/miro-mcp.md) | Miro MCP server for agent–board collaboration |

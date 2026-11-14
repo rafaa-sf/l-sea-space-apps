@@ -65,6 +65,10 @@ Rules:
 - Keep branches short-lived to minimize merge conflicts.
 - If both machines work at the same time, they use separate branches and rebase
   on `origin/main` before opening the pull request.
+- Before pushing, using the shared test bench or deploying, acquire the
+  advisory lock described in [coordination.md](coordination.md). The
+  `.githooks/pre-push` hook blocks pushes while the other machine holds a fresh
+  lock.
 
 ## Authentication
 
