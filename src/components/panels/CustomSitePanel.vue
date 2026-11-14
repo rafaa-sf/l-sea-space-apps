@@ -63,7 +63,7 @@ function addCustomSite() {
         <button type="button" class="button button--quiet button--small" @click="fillFromPointer">
           {{ t('sites.usePointer') }}
         </button>
-        <button type="submit" class="button button--primary button--small">{{ t('sites.addCustom') }}</button>
+        <button type="submit" class="button button--secondary button--small">{{ t('sites.addCustom') }}</button>
       </div>
     </form>
 
