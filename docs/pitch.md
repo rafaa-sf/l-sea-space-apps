@@ -1,9 +1,9 @@
 # Pitch & Project Demo package — L-SEA Space Apps
 
 
-> **Status snapshot (2026-11-14, `origin/develop` @ `5db7603`).** The application is implemented in source: a Vue 3 mission-control shell with 11 feature panels, a pure-JavaScript core (geometry, terrain, Sun/Earth horizon engine, ephemeris, power, communications, autopilot), service adapters, a single Web Worker, a Three.js scene with a no-WebGL Canvas 2D fallback, and the full real NASA datasets (`public/data/pois.json` — 10 sites; `public/data/ephemeris/` — 10 files × 2 928 samples at 30-minute steps from JPL Horizons DE441; `public/data/layers.json` — 21 verified Moon Trek layers; `public/data/terrain/` — 2 LOLA regions). `npm test` passes 98 tests in 7 files and `npm run build` is green; CI runs on `develop`. **Not yet validated:** end-to-end demo on a deployed URL, accuracy against live JPL Horizons references, usability. **Status refresh before submission:** re-check the final commit, the deployed public URL and the Project page fields before Submit for Judging.
+> **Status snapshot (2026-11-14, main @ 35149e4).** Application and real NASA datasets are merged on main; npm test passes 104 tests in 7 files plus 8 MCP tests; CI is green. Deployment URL and Project Demo link are still pending (docs/submission.md TODOs).
 
-**Project:** L-SEA Space Apps — *Lunar Landing Site Navigator* (challenge #11, partner agency CSA)
+**Project:** L-SEA Space Apps — *Lunar Landing Site Navigator* (challenge #10, partner agency CSA)
 **Event:** NASA Space Apps Challenge · Málaga 2026 · **Owner:** commercial workstream · **Version:** 2026-11-14
 **This document covers:** (A) the 7-slide Project Demo deck (cover + 6), (B) the local Málaga pitch (2–3 min oral, English slides), (C) a ≤ 30 s video script, (D) Q&A preparation and the demo runbook.
 **Rules basis:** `docs/guide.md` §§"Deliverables: Project page", "Project Demo rules", "Local pitch (Málaga)" — slides ≤ 7 including cover OR video ≤ 30 s; all written material in English; visual material in English even when the oral pitch is Spanish or English; public link, no login; no identifiable minors; honest labelling of built vs. simulated vs. planned.
@@ -22,12 +22,12 @@ Deck total: **7 slides** (limit is 7 *including* cover). Target export: public G
 
 - **On-slide text:**
   - **L-SEA Space Apps** — *Lunar Landing Site Navigator*
-  - NASA Space Apps Challenge · Málaga 2026 — Challenge #11 (partner agency: CSA)
+  - NASA Space Apps Challenge · Málaga 2026 — Challenge #10 (partner agency: CSA)
   - *"Compare lunar south-pole landing sites and dates in one rapid, bilingual tool — built on real NASA terrain data."*
   - Team: L-SEA (max. 1–6 members; **no names of minors**, per the participant guide)
   - Link(s): public demo + repository *(TODO: add final URLs)*
 - **Visual:** dark lunar-surface background (own/terrain-derived render, not NASA branding), project wordmark text only.
-- **Notes (15 s):** "We are L-SEA. We took challenge #11: build a tool to compare lunar south-pole landing sites and dates. One sentence: our design turns NASA terrain and Sun/Earth data into a rapid side-by-side comparison for mission planners and educators."
+- **Notes (15 s):** "We are L-SEA. We took challenge #10: build a tool to compare lunar south-pole landing sites and dates. One sentence: our design turns NASA terrain and Sun/Earth data into a rapid side-by-side comparison for mission planners and educators."
 - **Label:** — (cover)
 
 ### Slide 2 — Concrete problem and who it affects
@@ -94,7 +94,7 @@ Deck total: **7 slides** (limit is 7 *including* cover). Target export: public G
 - **On-slide text:**
   - **Impact:** faster site/date trade studies; resilience to launch slips; accessible to non-specialists; bilingual education/outreach.
   - **Next step (post-event):** finish comparison MVP → validate against JPL Horizons → timed usability test with 3–5 users → first pilot with a mission team or education programme.
-  - **References (legible):** Challenge #11 brief; NASA LRO LOLA (PDS Geosciences Node); JPL Horizons; NASA Moon Trek; repository link; public demo link.
+  - **References (legible):** Challenge #10 brief; NASA LRO LOLA (PDS Geosciences Node); JPL Horizons; NASA Moon Trek; repository link; public demo link.
 - **Visual:** 3-step roadmap arrow + QR/reference block (plain text URLs, readable).
 - **Notes (15 s):** "The impact we are going after is decision speed: fewer hours per trade study and a faster answer when a launch slips — plus a public, bilingual way to explain why the Moon is hard. Next: finish the comparison, validate the geometry against Horizons, then pilot it with a real team. Thank you."
 - **Label:** 🟦 HYPOTHESIS (impact framing, not yet validated)
@@ -172,7 +172,7 @@ Several questions below are the ones the participant guide suggests rehearsing (
 ## Sources
 
 - Demo/pitch rules and recommended structures: `docs/guide.md` §§"Deliverables: Project page", "Project Demo rules", "Local pitch (Málaga)"; Spanish original the official Málaga 2026 participant guide (English summary in `docs/guide.md`) (pp. 7–12, 15)
-- Challenge facts: the official Challenge 11 statement (NASA Space Apps 2026 challenges page: https://www.spaceappschallenge.org/2026/challenges/); the official Málaga 2026 event material
+- Challenge facts: the official Challenge 10 statement (NASA Space Apps 2026 challenges page: https://www.spaceappschallenge.org/2026/challenges/); the official Málaga 2026 event material
 - Product/architecture features: `docs/architecture.md`
 - Terrain details and validation: `public/data/terrain/*.json`, `scripts/nasa/build-terrain.py`, `docs/test-report.md`
 - Build/test status: `docs/test-report.md`, `docs/test-report.md`

@@ -1,30 +1,30 @@
-# Submission checklist — L-SEA Space Apps (Challenge 11)
+# Submission checklist — L-SEA Space Apps (Challenge 10)
 
 
-> **Status snapshot (2026-11-14, `origin/develop` @ `5db7603`).** The application is implemented in source: a Vue 3 mission-control shell with 11 feature panels, a pure-JavaScript core (geometry, terrain, Sun/Earth horizon engine, ephemeris, power, communications, autopilot), service adapters, a single Web Worker, a Three.js scene with a no-WebGL Canvas 2D fallback, and the full real NASA datasets (`public/data/pois.json` — 10 sites; `public/data/ephemeris/` — 10 files × 2 928 samples at 30-minute steps from JPL Horizons DE441; `public/data/layers.json` — 21 verified Moon Trek layers; `public/data/terrain/` — 2 LOLA regions). `npm test` passes 98 tests in 7 files and `npm run build` is green; CI runs on `develop`. **Not yet validated:** end-to-end demo on a deployed URL, accuracy against live JPL Horizons references, usability. **Status refresh before submission:** re-check the final commit, the deployed public URL and the Project page fields before Submit for Judging.
+> **Status snapshot (2026-11-14, main @ 35149e4).** Application and real NASA datasets are merged on main; npm test passes 104 tests in 7 files plus 8 MCP tests; CI is green. Deployment URL and Project Demo link are still pending (docs/submission.md TODOs).
 
 **Scope:** NASA International Space Apps Challenge · Málaga 2026, Project page
 requirements mapped from [`docs/guide.md`](guide.md) (lines 41–60 "Deliverables:
 Project page", 62–90 "Project Demo rules", 92–107 "Submission", 109–124
-"Responsible use", 178–191 "Last-30-minutes checklist") plus the Challenge 11
+"Responsible use", 178–191 "Last-30-minutes checklist") plus the Challenge 10
 requirement baseline from the official challenge statement (NASA Space Apps 2026
 challenges page: <https://www.spaceappschallenge.org/2026/challenges/>).
 
 **Product:** L-SEA Space Apps — lunar south-pole landing-site navigation and
-mission-briefing tool answering **Challenge 11, "Lunar Landing Site Navigator"**
+mission-briefing tool answering **Challenge 10, "Lunar Landing Site Navigator"**
 (Málaga listing: "Navegador de aterrizaje lunar"; partner agency: **CSA**).
 
-**Baseline (`origin/develop` @ `5db7603`, 2026-11-14).** The application is
-implemented in source: a Vue 3 mission-control shell with 11 feature panels, a
-pure-JavaScript core (geometry, terrain, horizon/ray-tracing engine, ephemeris,
-power, comms, autopilot), service adapters, a single Web Worker, a Three.js
-scene with a no-WebGL 2D fallback, the full real NASA datasets (LOLA terrain,
-10 POIs, 10 ephemeris files × 2 928 samples, 21 Moon Trek layers), the data
-pipeline and CI. `npm test` passes 98 tests in 7 files and `npm run build` is
-green. **Not yet validated/deployed:** end-to-end demo on a public URL, accuracy
-against live JPL Horizons references, usability; `main` still lacks the app.
-**Status refresh before submission:** re-check the final commit, the deployed
-public URL and every Project page field before Submit for Judging.
+**Baseline (main @ `35149e4`, 2026-11-14).** The application and the real NASA
+datasets are merged on `main`: a Vue 3 mission-control UI, a pure-JavaScript core
+(geometry, terrain, horizon/ray-tracing engine, ephemeris, power, comms,
+autopilot), service adapters, a single Web Worker, a Three.js scene with a
+no-WebGL 2D fallback, LOLA terrain, 10 POIs, 10 ephemeris files × 2 928 samples,
+21 Moon Trek layers, the data pipeline and CI. `npm test` passes 104 tests in 7
+files plus 8 MCP tests and `npm run build` is green. **Not yet
+validated/deployed:** end-to-end demo on a public URL, accuracy against live JPL
+Horizons references, usability. **Status refresh before submission:** re-check
+the final commit, the deployed public URL and every Project page field before
+Submit for Judging.
 
 **Deadline:** Sunday 15 November 2026, before 23:59 local time
 (guide.md line 20/97). Local pitch and technical tests: Sunday 16:30–19:00
@@ -64,7 +64,7 @@ machine that owns application code), *coordination* (this documentation workstre
 | --- | --- | --- | --- | --- | --- |
 | LP-01 | Local pitch Sunday 17:30–19:00, technical tests 16:30–17:15; not a replacement for Submit for Judging (guide.md L144–158) | PENDING | Lead + commercial | Reuse the 7-slide demo deck (`docs/project-page.md`) plus spoken script | Pitch duration/slide-limit rules are ambiguous in published references (2–2:30 or 2–3 min) and must be confirmed with the organization before the technical test (guide.md L152–154). Visual material in English (L150–151). |
 
-## 3. Challenge 11 requirement baseline (official brief)
+## 3. Challenge 10 requirement baseline (official brief)
 
 Source: local copy of the official challenge text
 (official challenge statement: <https://www.spaceappschallenge.org/2026/challenges/>);

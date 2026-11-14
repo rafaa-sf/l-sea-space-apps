@@ -1,11 +1,11 @@
 # Impact & Scalability Dossier — L-SEA Space Apps
 
 
-> **Status snapshot (2026-11-14, `origin/develop` @ `5db7603`).** The application is implemented in source: a Vue 3 mission-control shell with 11 feature panels, a pure-JavaScript core (geometry, terrain, Sun/Earth horizon engine, ephemeris, power, communications, autopilot), service adapters, a single Web Worker, a Three.js scene with a no-WebGL Canvas 2D fallback, and the full real NASA datasets (`public/data/pois.json` — 10 sites; `public/data/ephemeris/` — 10 files × 2 928 samples at 30-minute steps from JPL Horizons DE441; `public/data/layers.json` — 21 verified Moon Trek layers; `public/data/terrain/` — 2 LOLA regions). `npm test` passes 98 tests in 7 files and `npm run build` is green; CI runs on `develop`. **Not yet validated:** end-to-end demo on a deployed URL, accuracy against live JPL Horizons references, usability. **Status refresh before submission:** re-check the final commit, the deployed public URL and the Project page fields before Submit for Judging.
+> **Status snapshot (2026-11-14, main @ 35149e4).** Application and real NASA datasets are merged on main; npm test passes 104 tests in 7 files plus 8 MCP tests; CI is green. Deployment URL and Project Demo link are still pending (docs/submission.md TODOs).
 
 **Project:** L-SEA Space Apps — *Lunar Landing Site Navigator*
 **Event:** NASA International Space Apps Challenge · Málaga 2026 (14–15 November 2026)
-**Challenge:** #11 — "Lunar Landing Site Navigator" (ES: *Navegador de aterrizaje lunar*)
+**Challenge:** #10 — "Lunar Landing Site Navigator" (ES: *Navegador de aterrizaje lunar*)
 **Partner agency:** CSA (Canadian Space Agency)
 **Owner:** Lead — impact & scalability
 **Status:** working draft for the hackathon submission; complements `docs/architecture.md` (technical contract) and the Project page document (`docs/project-page.md`).
@@ -50,7 +50,7 @@ finer DEMs, more epochs and an API — with the browser doing the compute and a 
 
 ## 2. The problem (grounded in the challenge brief)
 
-From the challenge brief (see the official Challenge 11 statement (NASA Space Apps 2026 challenges page: https://www.spaceappschallenge.org/2026/challenges/)):
+From the challenge brief (see the official Challenge 10 statement (NASA Space Apps 2026 challenges page: https://www.spaceappschallenge.org/2026/challenges/)):
 
 - CLPS and other lunar missions depend on landing sites/dates that balance **science** and
   **engineering** needs.
@@ -288,8 +288,8 @@ The impact claims are only credible if the geometry is right. Minimum validation
 
 ## 7. Sources
 
-- Challenge brief (extracted): the official Challenge 11 statement (NASA Space Apps 2026 challenges page: https://www.spaceappschallenge.org/2026/challenges/)
-- Challenge wallpapers (14 challenges; #11 is the match): the official Málaga 2026 event material … `retos-3.png`
+- Challenge brief (extracted): the official Challenge 10 statement (NASA Space Apps 2026 challenges page: https://www.spaceappschallenge.org/2026/challenges/)
+- Challenge wallpapers (14 challenges; #10 is the match): the official Málaga 2026 event material … `retos-3.png`
 - Participant guide (rules, deliverables): the official Málaga 2026 participant guide (English summary in `docs/guide.md`); summary in repo `docs/guide.md`
 - Technical contract and feature map: repo `docs/architecture.md`
 - Deployment/static constraints: repo `docs/deployment.md`

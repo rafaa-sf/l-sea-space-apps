@@ -1,11 +1,11 @@
 # NASA Project page content — L-SEA Space Apps
 
 
-> **Status snapshot (2026-11-14, `origin/develop` @ `5db7603`).** The application is implemented in source: a Vue 3 mission-control shell with 11 feature panels, a pure-JavaScript core (geometry, terrain, Sun/Earth horizon engine, ephemeris, power, communications, autopilot), service adapters, a single Web Worker, a Three.js scene with a no-WebGL Canvas 2D fallback, and the full real NASA datasets (`public/data/pois.json` — 10 sites; `public/data/ephemeris/` — 10 files × 2 928 samples at 30-minute steps from JPL Horizons DE441; `public/data/layers.json` — 21 verified Moon Trek layers; `public/data/terrain/` — 2 LOLA regions). `npm test` passes 98 tests in 7 files and `npm run build` is green; CI runs on `develop`. **Not yet validated:** end-to-end demo on a deployed URL, accuracy against live JPL Horizons references, usability. **Status refresh before submission:** re-check the final commit, the deployed public URL and the Project page fields before Submit for Judging.
+> **Status snapshot (2026-11-14, main @ 35149e4).** Application and real NASA datasets are merged on main; npm test passes 104 tests in 7 files plus 8 MCP tests; CI is green. Deployment URL and Project Demo link are still pending (docs/submission.md TODOs).
 
 **Project:** L-SEA Space Apps — *Lunar Landing Site Navigator* (ES: *Navegador de aterrizaje lunar*)
 **Event:** NASA International Space Apps Challenge · Málaga 2026 (14–15 November 2026, 42 Málaga Fundación Telefónica)
-**Challenge:** #11 — "Lunar Landing Site Navigator" (official English title; Málaga challenge wallpaper calls it "Navegador de aterrizaje lunar"). Partner agency: CSA (Canadian Space Agency). Subjects: Human Exploration, Moon, Software, Space Exploration. Level: Intermediate/Advanced.
+**Challenge:** #10 — "Lunar Landing Site Navigator" (official English title; Málaga challenge wallpaper calls it "Navegador de aterrizaje lunar"). Partner agency: CSA (Canadian Space Agency). Subjects: Human Exploration, Moon, Software, Space Exploration. Level: Intermediate/Advanced.
 **Owner:** commercial workstream · **Version:** 2026-11-14 · **Status:** submission draft
 **Editorial rule:** this page separates **built**, **planned (design contract)** and **not built**. Do not publish a claim in the "Built" column unless the demo shows it working. Every factual claim is traceable to `docs/*`, `public/data/terrain/*` or the event material listed under [Sources](#sources).
 
@@ -28,7 +28,7 @@ Do not use NASA or CSA logos, flags or mission identifiers as project branding; 
 
 ## 2. Summary (50–200 words — final version: **194 words**)
 
-> L-SEA Space Apps is a browser-based tool for comparing lunar south-pole landing sites and dates, built for the NASA Space Apps Challenge Málaga 2026 and challenge #11, "Lunar Landing Site Navigator". Landing on the Moon's south pole means trading sunlight for power, Earth visibility for direct communications, and terrain that hides the horizon. Mission planners face these trade-offs every time a launch date or landing site changes, but the data sits in tools built for specialists. Our design puts site selection, Sun and Earth positions relative to the horizon, time to sunset or earthset, power and communications windows, and an "autopilot" site scorer in one interface for mission planners and educators, with a bilingual EN/ES UI and a JSON mission-brief export. The repository ships real NASA LOLA south-pole terrain, and the tool is designed around pre-computed JPL Horizons ephemerides so it can run as a static site, with a 2D fallback for machines without WebGL. The prototype is implemented in source: a mission-control interface with 11 feature panels, a terrain/horizon engine, ephemeris-driven Sun and Earth visibility, power and communications metrics, a site comparator, autopilot scoring, a JSON mission-brief export and a no-WebGL 2D fallback; the automated test suite passes (98 tests). Remaining work is validation against reference ephemerides, deployment and the final demo; we report what is verified and what is still pending.
+> L-SEA Space Apps is a browser-based tool for comparing lunar south-pole landing sites and dates, built for the NASA Space Apps Challenge Málaga 2026 and challenge #10, "Lunar Landing Site Navigator". Landing on the Moon's south pole means trading sunlight for power, Earth visibility for direct communications, and terrain that hides the horizon. Mission planners face these trade-offs every time a launch date or landing site changes, but the data sits in tools built for specialists. Our design puts site selection, Sun and Earth positions relative to the horizon, time to sunset or earthset, power and communications windows, and an "autopilot" site scorer in one interface for mission planners and educators, with a bilingual EN/ES UI and a JSON mission-brief export. The repository ships real NASA LOLA south-pole terrain, and the tool is designed around pre-computed JPL Horizons ephemerides so it can run as a static site, with a 2D fallback for machines without WebGL. The prototype is implemented in source: a mission-control interface with 11 feature panels, a terrain/horizon engine, ephemeris-driven Sun and Earth visibility, power and communications metrics, a site comparator, autopilot scoring, a JSON mission-brief export and a no-WebGL 2D fallback; the automated test suite passes (98 tests). Remaining work is validation against reference ephemerides, deployment and the final demo; we report what is verified and what is still pending.
 
 **Word count:** 194 (limit 50–200). Re-count after any edit (`wc -w` on the paragraph).
 
@@ -159,8 +159,8 @@ The challenge brief names NASA's Quickmap alongside Moon Trek and JPL Horizons. 
 
 | Reference | Type | How it is used |
 | --- | --- | --- |
-| Challenge brief #11, "Lunar Landing Site Navigator" (extracted to the official Challenge 11 statement (NASA Space Apps 2026 challenges page: https://www.spaceappschallenge.org/2026/challenges/)) | Challenge statement | Problem definition, objectives, data/accuracy considerations. Note: the local extraction ends mid-sentence ("…Earth's libration (wobble) o"); verify the full statement on the official 2026 challenges page before submission. |
-| Málaga challenge wallpapers (the official Málaga 2026 event material; challenge 11 is on `retos-3.png`) | Event material | Confirms the local Spanish challenge name "Navegador de aterrizaje lunar", summary line and tags (Luna, Navegación, Alunizaje). |
+| Challenge brief #10, "Lunar Landing Site Navigator" (extracted to the official Challenge 10 statement (NASA Space Apps 2026 challenges page: https://www.spaceappschallenge.org/2026/challenges/)) | Challenge statement | Problem definition, objectives, data/accuracy considerations. Note: the local extraction ends mid-sentence ("…Earth's libration (wobble) o"); verify the full statement on the official 2026 challenges page before submission. |
+| Málaga challenge wallpapers (the official Málaga 2026 event material; challenge 10 is on `retos-3.png`) | Event material | Confirms the local Spanish challenge name "Navegador de aterrizaje lunar", summary line and tags (Luna, Navegación, Alunizaje). |
 | Málaga participant guide 2026 (the official Málaga 2026 participant guide (English summary in `docs/guide.md`); English summary in `docs/guide.md`) | Rules | Deliverable rules, demo limits, English requirement, AI/use declarations, privacy, submission process. |
 | Málaga judges guide slides (the official Málaga 2026 event material) | Event material (Spanish) | Judge profiles and local judging lenses — see the related document in `docs/` for the English translation. |
 | Project repository | Our work | `README.md`, `docs/architecture.md`, `docs/deployment.md`, `docs/security.md`, `docs/guide.md`; terrain metadata `public/data/terrain/*.json`; builder `scripts/nasa/build-terrain.py`. |
@@ -202,8 +202,8 @@ No commercial market data, customer data or third-party imagery is used in this 
 
 ## Sources
 
-- Challenge brief (official 2026 challenge #11, extracted): the official Challenge 11 statement (NASA Space Apps 2026 challenges page: https://www.spaceappschallenge.org/2026/challenges/)
-- Málaga 2026 challenge wallpaper (challenge 11): the official Málaga 2026 event material
+- Challenge brief (official 2026 challenge #10, extracted): the official Challenge 10 statement (NASA Space Apps 2026 challenges page: https://www.spaceappschallenge.org/2026/challenges/)
+- Málaga 2026 challenge wallpaper (challenge 10): the official Málaga 2026 event material
 - Participant guide 2026 (Spanish): the official Málaga 2026 participant guide (English summary in `docs/guide.md`); English working summary: `docs/guide.md`
 - Project and event facts: `README.md`, `docs/project.md`
 - Engineering contract and feature map: `docs/architecture.md`

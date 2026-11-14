@@ -1,10 +1,10 @@
 # Business case — L-SEA Space Apps (Lunar Landing Site Navigator)
 
 
-> **Status snapshot (2026-11-14, `origin/develop` @ `5db7603`).** The application is implemented in source: a Vue 3 mission-control shell with 11 feature panels, a pure-JavaScript core (geometry, terrain, Sun/Earth horizon engine, ephemeris, power, communications, autopilot), service adapters, a single Web Worker, a Three.js scene with a no-WebGL Canvas 2D fallback, and the full real NASA datasets (`public/data/pois.json` — 10 sites; `public/data/ephemeris/` — 10 files × 2 928 samples at 30-minute steps from JPL Horizons DE441; `public/data/layers.json` — 21 verified Moon Trek layers; `public/data/terrain/` — 2 LOLA regions). `npm test` passes 98 tests in 7 files and `npm run build` is green; CI runs on `develop`. **Not yet validated:** end-to-end demo on a deployed URL, accuracy against live JPL Horizons references, usability. **Status refresh before submission:** re-check the final commit, the deployed public URL and the Project page fields before Submit for Judging.
+> **Status snapshot (2026-11-14, main @ 35149e4).** Application and real NASA datasets are merged on main; npm test passes 104 tests in 7 files plus 8 MCP tests; CI is green. Deployment URL and Project Demo link are still pending (docs/submission.md TODOs).
 
 **Project:** L-SEA Space Apps — *Lunar Landing Site Navigator*
-**Event:** NASA International Space Apps Challenge · Málaga 2026 · Challenge #11 (partner agency: CSA)
+**Event:** NASA International Space Apps Challenge · Málaga 2026 · Challenge #10 (partner agency: CSA)
 **Owner:** commercial workstream · **Version:** 2026-11-14
 **Status:** hackathon-stage business case. It is a **decision and narrative document**, not a validated business plan.
 **Traceability:** every concrete claim cites the challenge brief, the Málaga/NASA event material, the repository docs or a named source. Anything unverified is tagged **`[HYPOTHESIS]`** or **TODO** — never presented as fact. No market-size, price or traction figures are asserted because no verified source for them is available in the provided material.
@@ -25,7 +25,7 @@ The lunar south pole is a focus of NASA's CLPS program and of other lunar missio
 
 ## 2. Problem and opportunity (grounded in the challenge)
 
-From the official challenge brief (the official Challenge 11 statement (NASA Space Apps 2026 challenges page: https://www.spaceappschallenge.org/2026/challenges/)):
+From the official challenge brief (the official Challenge 10 statement (NASA Space Apps 2026 challenges page: https://www.spaceappschallenge.org/2026/challenges/)):
 
 | Fact (brief) | Commercial implication |
 | --- | --- |
@@ -198,8 +198,8 @@ Grants and competitions are non-dilutive and fit the public-data/public-good fra
 
 ## Sources
 
-- Challenge brief #11 "Lunar Landing Site Navigator": the official Challenge 11 statement (NASA Space Apps 2026 challenges page: https://www.spaceappschallenge.org/2026/challenges/) (official challenge statement; local extraction truncated)
-- Málaga 2026 challenge wallpapers (challenge 11 = "Navegador de aterrizaje lunar"): the official Málaga 2026 event material
+- Challenge brief #10 "Lunar Landing Site Navigator": the official Challenge 10 statement (NASA Space Apps 2026 challenges page: https://www.spaceappschallenge.org/2026/challenges/) (official challenge statement; local extraction truncated)
+- Málaga 2026 challenge wallpapers (challenge 10 = "Navegador de aterrizaje lunar"): the official Málaga 2026 event material
 - Participant guide 2026 and English summary: the official Málaga 2026 participant guide (English summary in `docs/guide.md`); `docs/guide.md`
 - Technical contract, feature map and static constraints: `docs/architecture.md`, `docs/deployment.md`
 - Current code/build/test status: the application is implemented in source (`src/`), 98 automated tests pass, the production build is green, and the real NASA datasets are shipped — see `docs/test-report.md` §0. Remaining: end-to-end demo on a deployed URL and accuracy validation against live Horizons
