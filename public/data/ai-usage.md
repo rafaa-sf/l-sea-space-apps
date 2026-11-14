@@ -7,8 +7,8 @@ application's "AI use" link (served as `/data/ai-usage.md`).
 
 > **Full disclosure:** **all content in this repository was produced by AI
 > agents** — application code, data-acquisition scripts, datasets formatting,
-> tests, CI, documentation, the submission package and the QA test
-> benches. Two AI agent teams worked on two machines under human direction. The
+> tests, CI, documentation, the submission package and the QA test bench
+> (Monte Carlo logic bench and device/resolution UI matrix). Two AI agent teams worked on two machines under human direction. The
 > human team defined the challenge, product and priorities, authorised actions,
 > reviewed and accepted the output, and remains **fully responsible** for the
 > submitted material. Real NASA data was retrieved from NASA services by scripts
@@ -21,7 +21,7 @@ application's "AI use" link (served as `/data/ai-usage.md`).
 | **DeepSeek Harness** (agentic coding platform) | Hosted the two AI agent teams that produced the repository and the submission material |
 | **DeepSeek models** (`deepseek` / `deepseek-flash` coding agents) | Language models behind every agent session |
 | **Node.js 24, Vite, Vue 3, Three.js, Vitest** | Application stack written by the agents |
-| **Headless Google Chrome 139 + Chrome DevTools Protocol** | Responsive layout and interactive UI checks in headless Chrome via CDP (no browser-automation library) |
+| **Headless Google Chrome 139 + Chrome DevTools Protocol** | Automated device/resolution UI simulation and layout/accessibility checks (CDP, no browser-automation library) |
 | **Python 3 + rasterio / numpy** | Terrain conversion and data validation scripts written by the agents |
 | **git / GitHub CLI / GitHub Actions** | Version control, tags-based machine coordination and CI, operated by the agents |
 | **pdftotext / pdftoppm and image reading** | Extraction of the official event material (participant and judges guides, challenge posters) |
@@ -52,9 +52,9 @@ and coordinated with the advisory lock protocol described in `docs/coordination.
 | Session | Role | Responsibility |
 | --- | --- | --- |
 | **Lead** | Coordination / integration | Defined the team structure, the impact & scalability workstream, the QA test-bench contract and the machine-coordination protocol; reviewed and integrated every deliverable; opened the documentation pull request |
-| **commander** | Submission and device QA | Submission-readiness audit, repository-conventions check, decision-log drafts, commit plan, contract-vs-reality gap analysis, the responsive-layout checks and the filterable report |
+| **commander** | Submission and device QA | Submission-readiness audit, repository-conventions check, decision-log drafts, commit plan, contract-vs-reality gap analysis, and the device/resolution UI matrix with its filterable report (shipped under `qa/ui/`) |
 | **comercial** | Commercialisation | Project-page content (name, summary, detailed description, NASA-data narrative), business case, 7-slide pitch and 30-second video script, judges-criteria mapping, social-media copy |
-| **testbench** | Test bench | Test plan and executed QA report, data-integrity validation and deployment-checklist dry run |
+| **testbench** | Test bench | Test plan and executed QA report, data-integrity validation, deployment-checklist dry run and the Monte Carlo logic bench (shipped under `qa/logic/`) |
 
 ## 3. What AI generated
 
@@ -67,7 +67,7 @@ and coordinated with the advisory lock protocol described in `docs/coordination.
 | Tests and CI | Vitest unit/contract suites for the scientific core and services, and the GitHub Actions pipelines |
 | Documentation | `README.md`, every file under `docs/` (including this declaration and the submission documents), `public/data/ephemeris/README.md`, `public/data/ai-usage.md` |
 | Submission package | Project-page copy, pitch deck outline, 30-second video script, business case, judging-criteria mapping, impact & scalability dossier, submission-readiness checklist |
-| QA test bench | Test plan, executed test report (data integrity, build, static audit, responsive layout checks, deployment dry run) and the corresponding reports; see `docs/test-report.md` and `docs/test-plan.md`. |
+| QA test bench | Monte Carlo logic bench (tens of thousands of randomised site/date/mission scenarios over the real scientific core, 13 invariants), device/resolution UI matrix (51 desktop/laptop/tablet/mobile/foldable/TV boxes × English/Spanish + no-WebGL probes), screenshots, tag filter and a self-contained filterable report — shipped under `qa/`; see `qa/README.md` and `qa/REPORT.md`. |
 | Coordination tooling | Tag-based machine synchronisation (`claim/*`, `sync/*` and `lock/*` tags) and the repository pre-push lock hook |
 | Version control | Branch creation, Conventional-Commit messages, pull requests and tag publication performed by the agents |
 
@@ -103,8 +103,10 @@ and coordinated with the advisory lock protocol described in `docs/coordination.
   `public/data/layers.json` (see `docs/api-integrations.md`).
 - The application builds successfully (`npm run build`) and its unit/contract
   suites pass (Vitest; see the QA test-bench report).
-- Responsive layout and no-WebGL fallback checks are documented in
-  `docs/test-report.md`.
+- The shipped test bench is reproducible and records the repository git SHA:
+  `qa/REPORT.md` documents the executed runs (20,000 randomised logic scenarios and
+  104 device/resolution UI runs) and the findings; run the commands in `qa/README.md`
+  to regenerate them.
 - Exact test counts are maintained in the test-bench reports rather than duplicated
   here; they are generated by the same AI agents and can be reproduced from the
   scripts.
@@ -142,8 +144,8 @@ every claim in the submission.
 ## 9. Method transparency
 
 The agents ran autonomously with tool access (filesystem, shell, git/GitHub CLI,
-headless browser, package managers) and coordinated through a shared task board and
-git-tag leases. The team had standing authorisation for the git workflow (commits,
+headless browser, package managers), coordinated through a shared task board and
+the repository's advisory lock tags, and shipped the QA test bench under `qa/`. The team had standing authorisation for the git workflow (commits,
 branches and pushes), reported each release, and the tags `sync/*`, `claim/*` and
 `lock/*` plus the repository history document which machine published what and
 when. The
