@@ -41,6 +41,8 @@ export default {
     title: 'LOLA DEM area',
     highDetail: 'High detail - 152 km, 74 m/px',
     wide: 'Wide area - 608 km, 594 m/px',
+    custom: 'Custom - {width} x {height} km, {resolution} m/px',
+ 
   },
   common: {
     open: 'Open',
@@ -81,6 +83,7 @@ export default {
     status: 'Prototype / hackathon build / AI-assisted',
   },
   viewport: {
+    sitesOutside: '{count} sites outside the loaded LOLA DEM area',
     sun: 'Sun',
     earth: 'Earth',
     scaleKm: '{km} km',
@@ -129,6 +132,7 @@ export default {
       terrain: 'Click terrain to capture coordinates',
     },
     pointer: 'Pointer: {lat} {lon}',
+ 
     elevationLegend: 'Elevation',
     northIndicator: 'North indicator',
     northShort: 'N',

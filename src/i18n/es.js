@@ -41,6 +41,8 @@ export default {
     title: 'Área del MDE LOLA',
     highDetail: 'Alta resolución - 152 km, 74 m/px',
     wide: 'Área amplia - 608 km, 594 m/px',
+    custom: 'Personalizado - {width} x {height} km, {resolution} m/px',
+ 
   },
   common: {
     open: 'Abrir',
@@ -81,6 +83,7 @@ export default {
     status: 'Prototipo / desarrollo de hackathon / asistido por IA',
   },
   viewport: {
+    sitesOutside: '{count} sitios fuera del área LOLA DEM cargada',
     sun: 'Sol',
     earth: 'Tierra',
     scaleKm: '{km} km',
@@ -129,6 +132,7 @@ export default {
       terrain: 'Pulsa el terreno para capturar coordenadas',
     },
     pointer: 'Puntero: {lat} {lon}',
+ 
     elevationLegend: 'Elevación',
     northIndicator: 'Indicador del norte',
     northShort: 'N',

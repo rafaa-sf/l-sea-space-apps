@@ -15,6 +15,7 @@ import { hasWorker, runInWorker } from './moduleBridge.js'
 import {
   createCustomSite,
   exportBrief,
+  getTerrainIndexRegions,
   loadEphemeris,
   loadLayers,
   loadSites,
@@ -112,6 +113,7 @@ export const state = reactive({
     terrainRegionId: null,
     terrainRegionName: null,
     terrainAttribution: null,
+    terrainIndex: [],
     craters: [],
     detected: { core: [], services: [], workers: [] },
   },
@@ -282,6 +284,7 @@ async function doBoot() {
     state.data.terrainRegionName = terrainResult.regionName ?? terrainResult.terrain.name ?? null
     state.data.terrainAttribution = terrainResult.attribution ?? terrainResult.terrain.attribution ?? null
     state.data.terrainStats = compute.terrainStats(terrainResult.terrain)
+    state.data.terrainIndex = getTerrainIndexRegions() ?? []
     try {
       state.data.craters = compute.findCraters(terrainResult.terrain, { limit: 8 }) ?? []
     } catch (error) {
@@ -400,6 +403,7 @@ export async function setTerrainRegion(regionId) {
     state.data.terrainRegionName = result.regionName ?? result.terrain.name ?? null
     state.data.terrainAttribution = result.attribution ?? result.terrain.attribution ?? null
     state.data.terrainStats = compute.terrainStats(result.terrain)
+    state.data.terrainIndex = getTerrainIndexRegions() ?? state.data.terrainIndex
     try {
       state.data.craters = compute.findCraters(result.terrain, { limit: 8 }) ?? []
     } catch (error) {

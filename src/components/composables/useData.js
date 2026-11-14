@@ -251,7 +251,14 @@ function terrainUrl(file) {
  *     default high-resolution region is used when no wide region exists.
  *  3. Synthetic terrain, only as an explicit error path (reported in the UI).
  */
-/** Selectable LOLA DEM regions (ids match public/data/terrain/index.json). */
+let lastTerrainRegions = []
+
+/** Regions discovered in public/data/terrain/index.json by the last load. */
+export function getTerrainIndexRegions() {
+  return lastTerrainRegions
+}
+
+/** Fallback catalogue; the live list comes from the terrain index. */
 export const DEM_REGIONS = Object.freeze([
   { id: 'south-pole-875s-20m', labelKey: 'dem.highDetail', extentKm: 152, pixelSizeM: 74 },
   { id: 'south-pole-80s-80m', labelKey: 'dem.wide', extentKm: 608, pixelSizeM: 594 },
@@ -262,6 +269,7 @@ export async function loadTerrain(options = {}) {
   // otherwise the wide area (the POI list spans the whole south-pole cap).
   const index = await fetchJson(`${DATA_ROOT}/terrain/index.json`, 20000)
   const regions = Array.isArray(index?.regions) ? index.regions : []
+  lastTerrainRegions = regions
   const explicitRegion = Boolean(options.regionId)
   const preferred =
     (options.regionId ? regions.find((entry) => entry.id === options.regionId) : null) ??

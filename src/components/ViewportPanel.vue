@@ -9,6 +9,7 @@ import { useI18n } from 'vue-i18n'
 import { actions, selectedSite, state } from './composables/useAppState.js'
 import { getCompute } from './composables/useCompute.js'
 import { DEM_REGIONS } from './composables/useData.js'
+import { lonLatToPlanarMeters } from '../render/geo.js'
 import { detectWebgl } from '../render/webgl.js'
 import { siteDisplayName, sourceLabelKey } from './composables/labels.js'
 import { formatNumber } from './composables/format.js'
@@ -17,6 +18,7 @@ import { hypsometricCssGradient } from '../render/geo.js'
 const { t, te, locale } = useI18n()
 
 const canvasRef = ref(null)
+const stageRef = ref(null)
 const canvasKey = ref(0)
 const mode = ref('initializing')
 const initializing = ref(true)
@@ -29,6 +31,8 @@ let api = null
 let compute = null
 let recreateToken = 0
 let watchers = []
+let settleTimer = null
+let stageObserver = null
 
 const labels = computed(() => ({
   sun: t('viewport.sun'),
@@ -36,9 +40,61 @@ const labels = computed(() => ({
   scaleKm: t('viewport.scaleKm', { km: 50 }),
 }))
 
+const terrainBounds = computed(() => {
+  const terrain = state.terrain
+  if (!terrain || !Number.isFinite(Number(terrain.minX))) return null
+  return {
+    minX: Number(terrain.minX),
+    maxX: Number(terrain.maxX),
+    minY: Number(terrain.minY),
+    maxY: Number(terrain.maxY),
+    datum: Number(terrain.datum ?? terrain.referenceRadiusM ?? 1737400),
+  }
+})
+
+/** Sites inside the loaded DEM extent; outside sites are hidden and flagged. */
+const sitesInRegion = computed(() => {
+  const bounds = terrainBounds.value
+  if (!bounds) return state.sites
+  return state.sites.filter((site) => {
+    const point = lonLatToPlanarMeters(site.lat, site.lon, bounds.datum)
+    return point.x >= bounds.minX && point.x <= bounds.maxX && point.y >= bounds.minY && point.y <= bounds.maxY
+  })
+})
+const sitesOutsideCount = computed(() => Math.max(0, state.sites.length - sitesInRegion.value.length))
 const sceneSites = computed(() =>
-  state.sites.map((site) => ({ ...site, displayName: siteDisplayName(t, te, site) })),
+  sitesInRegion.value.map((site) => ({ ...site, displayName: siteDisplayName(t, te, site) })),
 )
+
+function regionLabel(region) {
+  if (region.id === 'south-pole-875s-20m') return t('dem.highDetail')
+  if (region.id === 'south-pole-80s-80m') return t('dem.wide')
+  const parsePair = (value) => {
+    if (typeof value !== 'string') return null
+    const parts = value.trim().split(/[\s,]+/).map(Number)
+    return parts.length >= 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1]) ? parts : null
+  }
+  const flat = region.boundsM
+  const lower = parsePair(flat?.lower) ?? (Number.isFinite(Number(flat?.minX)) && Number.isFinite(Number(flat?.minY)) ? [Number(flat.minX), Number(flat.minY)] : null)
+  const upper = parsePair(flat?.upper) ?? (Number.isFinite(Number(flat?.maxX)) && Number.isFinite(Number(flat?.maxY)) ? [Number(flat.maxX), Number(flat.maxY)] : null)
+  if (!lower || !upper) return region.id
+  const width = Math.round(Math.abs(upper[0] - lower[0]) / 1000)
+  const height = Math.round(Math.abs(upper[1] - lower[1]) / 1000)
+  const resolution = Number(region.pixelSizeM)
+  return t('dem.custom', {
+    width,
+    height,
+    resolution: Number.isFinite(resolution) ? formatNumber(resolution, 0) : '?',
+  })
+}
+
+const demRegions = computed(() => {
+  const indexed = Array.isArray(state.data.terrainIndex) ? state.data.terrainIndex : []
+  if (indexed.length) {
+    return indexed.map((region) => ({ ...region, label: regionLabel(region) }))
+  }
+  return DEM_REGIONS.map((region) => ({ ...region, label: regionLabel(region) }))
+})
 
 const selectedName = computed(() => siteDisplayName(t, te, selectedSite.value) || t('common.none'))
 
@@ -64,7 +120,7 @@ const terrainExtent = computed(() => {
   return [terrain.minX, terrain.minY, terrain.maxX, terrain.maxY].map((value) => Number(value).toFixed(1)).join(',')
 })
 const markersAnchored = computed(() => (state.analysis.ready && state.selectedSiteId ? 'true' : 'false'))
-const demRegionId = computed(() => state.data.terrainRegionId ?? DEM_REGIONS[0].id)
+const demRegionId = computed(() => state.data.terrainRegionId ?? demRegions.value[0]?.id ?? '')
 const ephemerisBadge = computed(() => t(sourceLabelKey(state.data.ephemerisSource, 'ephemeris')))
 
 const legendGradient = hypsometricCssGradient()
@@ -119,7 +175,13 @@ function pushTerrain() {
   // only for the synthetic fallback path.
   const renderTerrain =
     state.terrain && Number.isFinite(Number(state.terrain.minX)) ? state.terrain : state.viewTerrain
-  if (renderTerrain) api.setTerrain(renderTerrain)
+  if (!renderTerrain) return
+  api.setTerrain(renderTerrain)
+  // Rebuild every overlay against the NEW projection immediately after the
+  // grid, before returning (region switch ordering).
+  pushSites()
+  pushEnvironment()
+  pushLayers()
 }
 
 function pushSites() {
@@ -151,6 +213,28 @@ function pushLayers() {
   if (!api) return
   const enabled = Object.keys(state.layerEnabled).filter((id) => state.layerEnabled[id])
   api.setLayers(state.layers, enabled)
+}
+
+/**
+ * Geometry changes (rail drags, vertical split, window resize) can leave the
+ * scene's screen-space marker state stale. Debounced re-detect: ask the
+ * renderer to resize, then re-run sites/labels/overlays against the current
+ * projection (no page reload, camera/selection preserved).
+ */
+function scheduleMarkerResync() {
+  if (settleTimer) clearTimeout(settleTimer)
+  settleTimer = setTimeout(() => {
+    settleTimer = null
+    if (!api) return
+    try {
+      api.resize?.()
+    } catch {
+      /* renderer handles its own resize */
+    }
+    pushSites()
+    pushEnvironment()
+    pushLayers()
+  }, 120)
 }
 
 function pushLabels() {
@@ -298,18 +382,24 @@ onMounted(async () => {
   actions.setWebglStatus(webgl.value)
   await createRenderer()
   setupWatchers()
+  if (stageRef.value) {
+    stageObserver = new ResizeObserver(() => scheduleMarkerResync())
+    stageObserver.observe(stageRef.value)
+  }
 })
 
 onBeforeUnmount(() => {
   for (const stop of watchers) stop()
   watchers = []
+  if (stageObserver) stageObserver.disconnect()
+  if (settleTimer) clearTimeout(settleTimer)
   destroyRenderer()
 })
 </script>
 
 <template>
   <section class="viewport" :aria-label="t('viewport.regionLabel')" :data-markers-anchored="markersAnchored">
-    <div class="viewport__stage">
+    <div ref="stageRef" class="viewport__stage">
       <canvas
         :key="canvasKey"
         ref="canvasRef"
@@ -322,6 +412,8 @@ onBeforeUnmount(() => {
         :data-terrain-layout="terrainLayout"
         :data-terrain-extent="terrainExtent"
         :data-terrain-region="demRegionId"
+        :data-sites-visible="String(sitesInRegion.length)"
+        :data-sites-outside="String(sitesOutsideCount)"
         data-hillshade-mode="fixed"
         @keydown="onCanvasKeydown"
       />
@@ -339,7 +431,7 @@ onBeforeUnmount(() => {
         <label class="dem-select">
           <span class="sr-only">{{ t('dem.title') }}</span>
           <select class="input dem-select__control" :value="demRegionId" data-testid="dem-region-select" :aria-label="t('dem.title')" @change="setTerrainRegion">
-            <option v-for="region in DEM_REGIONS" :key="region.id" :value="region.id">{{ t(region.labelKey) }}</option>
+            <option v-for="region in demRegions" :key="region.id" :value="region.id">{{ region.label }}</option>
           </select>
         </label>
         <div class="segmented" role="group" :aria-label="t('viewport.modeLabel')">
@@ -391,6 +483,16 @@ onBeforeUnmount(() => {
         <span class="map-compass__letter">{{ t('viewport.northShort') }}</span>
         <span class="map-compass__needle" :style="{ transform: `rotate(${cameraAzimuth}deg)` }" aria-hidden="true" />
       </div>
+
+      <p
+        v-if="sitesOutsideCount"
+        class="viewport__sites-status"
+        :class="{ 'is-2d': mode === '2d' }"
+        role="status"
+        aria-live="polite"
+      >
+        {{ t('viewport.sitesOutside', { count: sitesOutsideCount }) }}
+      </p>
 
       <div v-if="elevationStats" class="map-legend" data-testid="elevation-legend" :aria-label="t('viewport.elevationLegend')">
         <span class="map-legend__title">{{ t('viewport.elevationLegend') }}</span>

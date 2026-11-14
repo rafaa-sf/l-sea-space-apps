@@ -1526,6 +1526,27 @@ body.is-resizing-panes * {
   border-bottom: 5px solid var(--color-text-dim);
 }
 
+.viewport__sites-status {
+  position: absolute;
+  top: 38px;
+  left: 52px;
+  z-index: 4;
+  margin: 0;
+  padding: 2px 7px;
+  border: 1px solid rgba(201, 151, 63, 0.35);
+  border-radius: var(--radius-xs);
+  background: rgba(13, 16, 22, 0.85);
+  color: var(--color-warn);
+  font-size: 9.5px;
+  pointer-events: none;
+  max-width: calc(100% - 300px);
+}
+
+.viewport__sites-status.is-2d {
+  top: 74px;
+  left: 10px;
+}
+
 .map-legend {
   position: absolute;
   left: 10px;
