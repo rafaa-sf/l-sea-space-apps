@@ -455,6 +455,7 @@ export default {
     running: 'Running',
     done: 'Completed',
     error: 'Error',
+    errorHint: 'The background worker failed, so scoring ran on the main thread — results are still available. Reload the page to retry.',
     unavailable: 'Not available (main thread)',
     mainThreadNote: 'The worker module is not present yet; the autopilot runs on the main thread.',
     singleThreadNote: 'Single background CPU thread per the architecture contract.',
@@ -491,6 +492,7 @@ export default {
     busy: 'Building brief…',
     done: 'Brief downloaded',
     error: 'Export failed',
+    errorHint: 'The mission brief could not be exported. Try again; if it persists, open Diagnostics and run the export again.',
     last: 'Last export',
   },
   data: {

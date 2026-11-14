@@ -455,6 +455,7 @@ export default {
     running: 'Ejecutando',
     done: 'Completado',
     error: 'Error',
+    errorHint: 'El worker en segundo plano ha fallado, así que la puntuación se calculó en el hilo principal — los resultados siguen disponibles. Recarga la página para reintentar.',
     unavailable: 'No disponible (hilo principal)',
     mainThreadNote: 'El módulo worker todavía no está presente; el piloto automático se ejecuta en el hilo principal.',
     singleThreadNote: 'Un único hilo de CPU en segundo plano según el contrato de arquitectura.',
@@ -491,6 +492,7 @@ export default {
     busy: 'Generando briefing…',
     done: 'Briefing descargado',
     error: 'Error al exportar',
+    errorHint: 'No se pudo exportar el briefing de misión. Inténtalo de nuevo; si persiste, abre Diagnóstico y vuelve a exportar.',
     last: 'Última exportación',
   },
   data: {

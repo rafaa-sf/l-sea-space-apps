@@ -62,7 +62,7 @@ const workerAvailable = computed(() => hasWorker() || state.worker.available)
     <StatRow label-key="worker.source" :value="state.worker.source === 'worker' ? t('autopilot.source.worker') : t('autopilot.source.main')" :mono="false" />
     <StatRow label-key="worker.lastRun" :value="lastRun" :mono="false" />
     <StatRow label-key="worker.duration" :value="duration" :mono="false" />
-    <p v-if="workerSummary === 'error' && state.worker.error" class="panel-note panel-note--warn">{{ state.worker.error }}</p>
+    <p v-if="workerSummary === 'error'" class="panel-note panel-note--warn" :title="state.worker.error || ''">{{ t('worker.errorHint') }}</p>
     <p v-if="!workerAvailable" class="panel-note panel-note--warn">{{ t('worker.mainThreadNote') }}</p>
     <p class="panel-note">{{ t('worker.singleThreadNote') }}</p>
 
