@@ -124,3 +124,16 @@ See `tags.json` for the full taxonomy. Main namespaces:
 - The harness never modifies the application: findings are reported, not fixed.
 
 See `REPORT.md` for the executed runs, their numbers and the findings.
+
+## Playback simulator (`qa/playback/`)
+
+Monte-Carlo stress test of the mission-time transport. It loads the real store
+under fake timers and checks that playback never leaks or duplicates its
+interval (stopped clock must not advance; running clock has exactly one timer).
+Targeted templates cover `Play → Now → Play → Pause` and the time-change paths.
+
+```bash
+node qa/playback/playback-sim.mjs --sequences 20000 --seed 20261114
+```
+
+See [`playback/README.md`](playback/README.md).
