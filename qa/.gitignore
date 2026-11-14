@@ -1,0 +1,4 @@
+# Generated test-bench artefacts: results JSON/NDJSON, Markdown summaries,
+# screenshots and filtered-report demos. Reproduce them with the runners in
+# this directory; see README.md.
+**/results/
