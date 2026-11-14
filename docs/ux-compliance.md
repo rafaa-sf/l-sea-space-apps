@@ -287,10 +287,13 @@ Additional layout fixes required by the larger type scale and targets:
 
 | Check | Result |
 | --- | --- |
-| `npm test` | 143/143 tests passing |
+| `npm test` | 157/157 tests passing |
 | `npm run build` | green |
-| Device matrix — tool `#/tool`, English, **all 51 boxes + 2 no-WebGL probes** | **53/53 pass**, all 7 `@ui/*` checks (no horizontal overflow, no console errors, boxes in viewport, panels rendered, **targets ≥ 24 px**, **fonts ≥ 12 px**) |
-| Landing at 1440 / 390 / 320 px | no horizontal overflow, no console errors, targets ≥ 24 px, minimum font 12 px |
+| Device matrix — tool `#/tool`, English, **all 51 boxes + 2 no-WebGL probes** (implementation time) | **53/53 pass**, all 7 `@ui/*` checks (no horizontal overflow, no console errors, boxes in viewport, panels rendered, **targets ≥ 24 px**, **fonts ≥ 12 px**) |
+| **Re-check on merged `develop`** (2026-11-14) — tool, 7 device boxes × EN/ES (desktop, tablet, 390/360/320/280 px phones) | **16/16 pass**, all 7 `@ui/*` checks |
+| Landing re-check (1920 / 390 / 320 × EN/ES) | no horizontal overflow, no console errors, targets ≥ 24 px, minimum font 12 px (the panels check does not apply to the landing) |
+| Whole-page audit — landing + console, every tab and tool drawer, EN, desktop + mobile | **43/43 checks pass** (no console errors, no NaN/undefined, no overflow, no empty panels) |
+| Contrast re-check (design tokens) | all text pairs ≥ 4.5:1, control borders ≥ 3:1, primary button label 5.80:1 |
 | Contrast after the change | primary button 5.80:1 · faint text 5.54:1 · control border 3.04:1 (all ≥ 4.5 or ≥ 3 as required) |
 | QA harness | `panels-rendered` now matches the tabbed surfaces layout; slow screenshots are retried and recorded as notes, not console errors |
 
