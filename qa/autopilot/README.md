@@ -22,6 +22,12 @@ For every date it ranks the ten sites under each profile and verifies:
 | invalid site | a NaN site must be reported as an error entry, not crash the ranking |
 | randomized sweep | 150 random missions; increasing power/sun/data needs must not improve the matching component |
 
+## Feasibility Monte Carlo
+
+`feasibility-mc.mjs` varies battery, power, sun, thermal, data and RTG profiles and
+checks the hard-feasibility gate against the returned margins (no false
+"possible"/"impossible"). See [FINDINGS.md](FINDINGS.md).
+
 ## Truthfulness audit
 
 `score-audit.mjs` recomputes the site and zone scores from the returned components

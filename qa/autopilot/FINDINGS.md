@@ -94,3 +94,42 @@ respond.
 Observation (not a bug): infeasible zones are shown with the capped score plus an
 asterisk (the raw score is in the title tooltip). It is correct, but the asterisk
 deserves a visible legend in the panel.
+
+## Feasibility Monte Carlo (battery, power, sun, thermal, data, RTG)
+
+Run with [`feasibility-mc.mjs`](feasibility-mc.mjs) on the wide south-pole DEM
+(6 zones) with eight mission profiles: baseline, battery 200 Wh / 5 000 Wh,
+power 1 500 W, 20 consecutive sunlit days, operating limit 0 °C, heater 150 W and
+an RTG (300 W). For every zone the gate is recomputed from the returned margins
+and compared with the reported flags:
+
+| Check | Result |
+| --- | --- |
+| Zone with all margins satisfied marked feasible (no false “impossible”) | pass |
+| Zone with a failed margin marked infeasible (no false “possible”) | pass |
+| `power`/`battery`/`thermal`/`data`/`illumination` flags equal their margins | pass |
+| Score cap 55, `scoreCapApplied`, grade and feasible-first ordering | pass |
+| Reported battery capacity equals the effective capacity used by the gate | pass |
+| Summary counters (`feasibleZones`, `hasFeasibleZones`, recommended zone) | pass |
+
+**0 mismatches in 48 zone evaluations.** Notable, expected behaviours:
+
+- With the default 40 kWh battery and 10 consecutive-sunlit-day requirement only
+  1 of 6 zones is feasible in this profile: the others fail the **continuous sun**
+  requirement or the eclipse battery sizing, not a data error.
+- `battery-200` and `battery-5000` make all zones infeasible because the longest
+  eclipse needs tens of kWh; `power-1500` and `heater-150` fail power and thermal
+  cold constraints respectively; the RTG profile ignores battery/sun constraints
+  as documented.
+- The UI exposes battery, heater, thermal limits, data need and power source, so
+  these factors are all editable by the user.
+
+### Calibration fix found by this audit
+
+The mission field was labelled **“Sunlit days needed”** while the gate compares it
+with the **longest continuous** sunlight window (documented in
+`docs/architecture.md` as *consecutive lunar days*). A zone with positive power
+margin and enough battery could therefore look “possible” yet be gated as
+impossible. Fixed in PR #19: the field is now **“Consecutive sunlit days needed”**
+(EN) / **“Días consecutivos de sol necesarios”** (ES), with an explanatory
+tooltip and `aria-description`.
