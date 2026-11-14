@@ -71,7 +71,7 @@ The data pipeline, verification evidence and attribution are documented in
 Vue 3 and Vite for the interface, Three.js for the 3D viewport, plain
 JavaScript for the framework-agnostic domain core, a single Web Worker for
 background scoring, Vitest for tests and GitHub Actions for continuous
-integration. The production build is fully static and is deployed on GitHub Pages (with Vercel kept as a legacy mirror).
+integration. The production build is fully static and is deployed on GitHub Pages; the earlier Vercel hosting was migrated away (history in `docs/deployment.md` and the decision log).
 
 ## Repository layout
 
@@ -107,8 +107,9 @@ The Miro MCP server is a separate package: `npm --prefix mcp/miro ci` and
 
 Production is deployed on **GitHub Pages** at
 <https://rafaa-sf.github.io/l-sea-space-apps/>. The Pages workflow builds and
-publishes every push to `main` (the old Vercel project is kept only as a legacy
-mirror). Deployment details, verification steps and rollback are in
+publishes every push to `main`. The earlier Vercel deployment was disconnected and its
+configuration removed; the migration is documented in `docs/deployment.md` and
+`docs/decisions.md`. Deployment details, verification steps and rollback are in
 [`docs/deployment.md`](docs/deployment.md).
 
 ## Quality and verification
