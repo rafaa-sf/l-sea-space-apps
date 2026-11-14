@@ -2207,6 +2207,9 @@ body.is-resizing-panes * {
 }
 
 .app-footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
   color: var(--color-text-faint);
 }
 
@@ -2427,5 +2430,25 @@ body.is-resizing-panes * {
   .segmented__button,
   .locale-switcher__button {
     min-height: 44px;
+  }
+}
+
+/* Phones: keep the console header usable without expanding the document. */
+@media (max-width: 720px) {
+  .app-header {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .app-header::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-header > *,
+  .header-tools,
+  .locale-switcher,
+  .app-header__actions .button {
+    flex: 0 0 auto;
   }
 }
