@@ -63,6 +63,10 @@ MIRO_ACCESS_TOKEN='<token>' node mcp/miro/src/server.js
 
 The process speaks MCP JSON-RPC over **stdout**; diagnostics go to **stderr**.
 
+If `MIRO_ACCESS_TOKEN` is not present in the process environment, the server
+falls back to reading it from the repository-root `.env` file (gitignored), so
+local MCP clients do not need to duplicate the secret in their configuration.
+
 ## Test
 
 ```bash
@@ -93,8 +97,9 @@ The suite uses mocked HTTP responses and does not need a token or network access
 
 ### DeepSeek Harness (this project's agent team)
 
-Add an entry to the profile patch layer
-(`~/.dsh/profiles/<profile>/cordis.patch.yml`), then restart the harness:
+Registered in `~/.dsh/profiles/web/cordis.patch.yml` (insert list entry
+`mcp-miro`). It takes effect on the next profile recomposition or harness
+restart. If you re-create the profile, add this entry:
 
 ```yaml
 - id: mcp-miro

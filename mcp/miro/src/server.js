@@ -14,6 +14,34 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { createMiroClient } from './miro-client.js'
 import { tools } from './tools.js'
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+/**
+ * Local-development fallback: read MIRO_ACCESS_TOKEN from the repository root
+ * `.env` when the MCP client did not provide it in the child environment.
+ * The `.env` file is gitignored and never committed.
+ */
+function loadRepoEnvToken() {
+  if (process.env.MIRO_ACCESS_TOKEN) return
+  try {
+    const here = dirname(fileURLToPath(import.meta.url))
+    const envPath = resolve(here, '../../../.env')
+    for (const line of readFileSync(envPath, 'utf8').split(/\r?\n/)) {
+      const match = line.match(/^MIRO_ACCESS_TOKEN=(.*)$/)
+      if (match) {
+        const value = match[1].trim().replace(/^["']|["']$/g, '')
+        if (value) process.env.MIRO_ACCESS_TOKEN = value
+        break
+      }
+    }
+  } catch {
+    /* no .env file: rely on the MCP client environment */
+  }
+}
+
+loadRepoEnvToken()
 
 const SERVER_NAME = 'miro'
 const SERVER_VERSION = '0.1.0'
