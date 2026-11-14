@@ -231,8 +231,7 @@ in the repository history (commit `263d724`).
 - **Firefox.** Firefox was available but not automated; only Chromium was exercised.
 - **First-load performance.** The build is about 19 MB, dominated by NASA terrain
   binaries; the default terrain region is 8 MiB raw. Server compression and
-  lazy-loading are the planned mitigations (see [commercial.md](commercial.md) section
-  10).
+  lazy-loading are the planned mitigations (see [scalability.md](scalability.md) section 2.4).
 - **SPA fallback.** Missing data paths return `200 text/html` with a default `Accept`
   header; loaders must validate content type, and tests must assert MIME and parse the
   payload rather than trusting the status code.

@@ -43,7 +43,11 @@ All passed for 19,999 of 20,000 cases, except the single boundary case below:
 
 ### Findings
 
-**L-1 (application defect, medium severity — for the team to fix).** Case
+**L-1 (application defect — FIXED).** Status: fixed in `src/core/terrain.js`
+(the sampling tolerance now matches `pointInsideBounds` and edge-clamps the
+half-pixel band) with a regression suite in `src/core/terrain.test.js`; the
+reproducer `node qa/logic/logic-mc.mjs --seed 20261114 --case 6000` now passes.
+The text below records the finding as observed before the fix. Case
 `seed 20261114`, `case 6000` reproduces a `NaN` in `sampleElevation`, slope and
 aspect for a site at **lat −87.428°, lon 346.541°**. Root cause is in
 `src/core/terrain.js`: `isInsideTerrain()` / `pointInsideBounds()` accept a

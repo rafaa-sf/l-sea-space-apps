@@ -82,7 +82,8 @@ docs/          Project documentation
 | [`docs/data.md`](docs/data.md) | NASA endpoints, CORS behaviour, provenance and licensing |
 | [`docs/submission.md`](docs/submission.md) | Project page content, demo script and submission checklist |
 | [`docs/demo.md`](docs/demo.md) | Project Demo deck and video script |
-| [`docs/commercial.md`](docs/commercial.md) | Business case, impact and judging-criteria mapping |
+| [`docs/commercial.md`](docs/commercial.md) | Business case, market, business model and judging-criteria mapping |
+| [`docs/scalability.md`](docs/scalability.md) | Impact assessment and scalability analysis: beneficiaries, measurable impact, growth, scale limits and roadmap |
 | [`docs/qa.md`](docs/qa.md) | Test strategy and executed QA evidence |
 | [`qa/README.md`](qa/README.md) | Reproducible QA test bench: Monte Carlo logic bench and device/resolution UI matrix |
 | [`docs/deployment.md`](docs/deployment.md) | Vercel deployment, verification and rollback |

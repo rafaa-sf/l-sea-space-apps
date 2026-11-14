@@ -67,8 +67,8 @@ and coordinated with the advisory lock protocol described in `docs/contributing.
 | Datasets | Processing and formatting of the real NASA data into the compact files under `public/data/`; no values invented |
 | Tests and CI | Vitest unit/contract suites for the scientific core and services, and the GitHub Actions pipelines |
 | Documentation | `README.md`, every file under `docs/` (including this declaration and the submission documents), `public/data/ephemeris/README.md`, `public/data/ai-usage.md` |
-| Submission package | Project page content and readiness checklist, demo deck outline, 30-second video script, business case, judging-criteria mapping and impact analysis, now consolidated in [submission.md](submission.md), [demo.md](demo.md), [commercial.md](commercial.md) and [qa.md](qa.md) |
-| QA test bench | Monte Carlo logic bench (`qa/logic/`: 20 000 randomised site/date/mission scenarios over the real scientific core, 13 invariants) and device/resolution UI matrix (`qa/ui/`: 51 viewports × English/Spanish + no-WebGL probes, filterable report), shipped under `qa/`; see [`docs/qa.md`](qa.md) and [`qa/README.md`](../qa/README.md). |
+| Submission package | Project page content and readiness checklist, demo deck outline, 30-second video script, business case, judging-criteria mapping and impact analysis, now consolidated in [submission.md](../../docs/submission.md), [demo.md](../../docs/demo.md), [commercial.md](../../docs/commercial.md), [scalability.md](../../docs/scalability.md) and [qa.md](../../docs/qa.md) |
+| QA test bench | Monte Carlo logic bench (`qa/logic/`: 20 000 randomised site/date/mission scenarios over the real scientific core, 13 invariants) and device/resolution UI matrix (`qa/ui/`: 51 viewports × English/Spanish + no-WebGL probes, filterable report), shipped under `qa/`; see [`docs/qa.md`](../../docs/qa.md) and [`qa/README.md`](../../qa/README.md). |
 | Coordination tooling | Tag-based machine synchronisation (`claim/*`, `sync/*` and `lock/*` tags) and the repository pre-push lock hook |
 | Version control | Branch creation, Conventional-Commit messages, pull requests and tag publication performed by the agents |
 
@@ -105,7 +105,7 @@ and coordinated with the advisory lock protocol described in `docs/contributing.
 - The application builds successfully (`npm run build`) and its unit/contract
   suites pass (Vitest; see the QA test-bench report).
 - Responsive layout and no-WebGL fallback checks are documented in
-  [`docs/qa.md`](qa.md); the QA test bench ships under `qa/` and records the
+  [`docs/qa.md`](../../docs/qa.md); the QA test bench ships under `qa/` and records the
   repository git SHA. `qa/REPORT.md` documents the executed runs (20 000
   randomised logic scenarios and the device/resolution UI matrix) and its
   findings; run the commands in `qa/README.md` to regenerate them.

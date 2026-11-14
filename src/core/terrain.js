@@ -506,6 +506,10 @@ export function pointInsideBounds(terrain, x, y) {
  * @param {Terrain|null} terrain
  * @param {number} x Projected easting in meters.
  * @param {number} y Projected northing in meters.
+ * Accepts the same half-pixel margin as {@link pointInsideBounds} and
+ * edge-clamps it, so every point reported inside the terrain has a finite
+ * sample.
+ *
  * @param {{clampToGrid?: boolean}} [options] Snap out-of-range points to the
  *   nearest grid cell instead of returning `NaN`.
  * @returns {number} Elevation in meters relative to the reference radius, or
@@ -516,12 +520,15 @@ export function sampleElevationXY(terrain, x, y, options = {}) {
   const { clampToGrid = false } = options
 
   // Pixel-centre georeferencing: bounds are pixel edges, so subtract half a
-  // pixel from the edge-index formula. The outer half pixel is edge-clamped.
+  // pixel from the edge-index formula. `pointInsideBounds()` accepts points up
+  // to half a pixel *outside* those bounds, so sampling must accept the same
+  // band and edge-clamp it. Otherwise a point reported inside the terrain can
+  // yield NaN elevation/slope/aspect/horizon (issue #4).
   let col = (x - terrain.minX) / terrain.pixelSizeM - 0.5
   let row = (terrain.maxY - y) / terrain.pixelSizeM - 0.5
   const lastCol = terrain.width - 1
   const lastRow = terrain.height - 1
-  const tolerance = 0.5 + 1e-6
+  const tolerance = 1.0 + 1e-6
   const outside = col < -tolerance || col > lastCol + tolerance || row < -tolerance || row > lastRow + tolerance
   if (outside) {
     if (!clampToGrid) return Number.NaN
