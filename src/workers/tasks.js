@@ -30,6 +30,7 @@ import { solarPowerEstimate } from '../core/power.js'
 import { commWindows, dataBudget } from '../core/comms.js'
 import { normalizeMission, rankSites, scoreSite } from '../core/autopilot.js'
 import { rankLandingZones } from '../core/zoneAutopilot.js'
+import { computeMissionCycles } from '../core/cycles.js'
 import { loadSites } from '../services/sites.js'
 import { loadEphemeris, loadEphemerisMap } from '../services/horizons.js'
 import { loadTerrain, loadTerrainForSite, loadTerrainRegions } from '../services/lola.js'
@@ -39,6 +40,7 @@ export const TASK_TYPES = Object.freeze([
   'ping',
   'autopilot',
   'landingZones',
+  'missionCycles',
   'scoreSite',
   'horizonProfile',
   'craters',
@@ -231,6 +233,41 @@ export async function runTask(type, payload = {}) {
         options,
       })
       return result
+    }
+
+    case 'missionCycles': {
+      // Weekly sunlight/eclipse and Earth-link/relay cycles for the selected
+      // site or landing zone over the mission window.
+      const site = payload.site ?? null
+      if (!site) throw new Error('missionCycles requires a site')
+      let terrain = ensureTerrain(payload.terrain)
+      if (!terrain) {
+        try {
+          terrain = await loadTerrainForSite(site)
+        } catch {
+          /* fall through */
+        }
+      }
+      if (!terrain) {
+        try {
+          terrain = await loadTerrain(payload.region ?? 'default')
+        } catch {
+          /* keep null; cycles warns about a missing terrain */
+        }
+      }
+      let ephemeris = ensureEphemeris(payload.ephemeris)
+      if (!ephemeris) {
+        const ephemerisSiteId = site.ephemerisSiteId ?? payload.ephemerisSiteId ?? site.id
+        if (ephemerisSiteId) ephemeris = await loadEphemeris(ephemerisSiteId)
+      }
+      if (!ephemeris) throw new Error('missionCycles requires an ephemeris dataset')
+      return computeMissionCycles({
+        terrain,
+        site,
+        ephemeris,
+        mission: payload.mission ?? {},
+        options: payload.options ?? {},
+      })
     }
 
     case 'scoreSite': {
