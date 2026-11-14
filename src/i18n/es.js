@@ -139,8 +139,6 @@ export default {
     pointer: 'Puntero: {lat} {lon}',
  
     elevationLegend: 'Elevación',
-    northIndicator: 'Indicador del norte',
-    northShort: 'N',
     scaleBar: 'Barra de escala',
     metersPerPixel: '1 px = {value} m',
     canvasTitle: 'Pulsa un marcador para seleccionar un sitio. Pulsa el terreno para capturar coordenadas.',

@@ -24,7 +24,6 @@ const mode = ref('initializing')
 const initializing = ref(true)
 const webgl = ref(state.system.webgl)
 const note = ref(null)
-const cameraAzimuth = ref(0)
 const scaleInfo = ref(null)
 
 let api = null
@@ -180,7 +179,6 @@ function niceScaleMeters(target) {
  */
 function updateScaleBar(info) {
   if (!info || !Number.isFinite(info.visibleMeters) || info.visibleMeters <= 0) return
-  cameraAzimuth.value = info.azimuthDeg
   const meters = niceScaleMeters(info.visibleMeters / 6)
   const px = Math.max(36, Math.min(220, (meters / info.visibleMeters) * info.widthPx))
   const metersPerPixel = info.visibleMeters / Math.max(1, info.widthPx)
@@ -519,11 +517,6 @@ onBeforeUnmount(() => {
         >
           {{ t('viewport.banner.try3d') }}
         </button>
-      </div>
-
-      <div v-if="mode === '3d'" class="map-compass" data-testid="north-indicator" :aria-label="t('viewport.northIndicator')">
-        <span class="map-compass__letter">{{ t('viewport.northShort') }}</span>
-        <span class="map-compass__needle" :style="{ transform: `rotate(${cameraAzimuth}deg)` }" aria-hidden="true" />
       </div>
 
       <p
