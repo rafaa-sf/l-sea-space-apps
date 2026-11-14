@@ -1,9 +1,9 @@
 import { createApp } from 'vue'
-import App from './App.vue'
+import Root from './Root.vue'
 import i18n from './i18n'
 import './styles/main.css'
 
-const app = createApp(App)
+const app = createApp(Root)
 
 app.config.errorHandler = (error, instance, info) => {
   // Keep the mission console usable even if one component fails: log and move on.

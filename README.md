@@ -38,6 +38,13 @@ L-SEA turns that data into a single comparison workflow:
   export with NASA source links.
 - English and Spanish interface.
 
+## Entry points
+
+- `/` — project landing page: the challenge, what the tool does, the NASA data
+  behind it, impact and scalability, and the grouped documentation index.
+- `/#/tool` — the interactive mission console (lazy-loaded; a `Project overview`
+  link returns to the landing page).
+
 ## Documentation
 
 Full grouped index: **[docs/README.md](docs/README.md)**.
