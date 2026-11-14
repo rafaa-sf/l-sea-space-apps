@@ -2460,3 +2460,22 @@ body.is-resizing-panes * {
     flex: 0 0 auto;
   }
 }
+
+/* Very narrow phones: the viewport toolbar is right-anchored, so at 280 px the
+   segmented controls + DEM selector used to slide off the left edge (clipped
+   content). Anchor both edges and let the toolbar wrap instead. */
+@media (max-width: 480px) {
+  /* CR-NARROW-VIEWPORT */
+  .viewport__controls {
+    left: 8px;
+    max-width: calc(100% - 16px);
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .viewport__controls .dem-select,
+  .viewport__controls .segmented {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+}
