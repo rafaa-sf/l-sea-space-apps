@@ -32,6 +32,17 @@ The server authenticates with a **Miro access token** read from the
 3. Install the app on a team and get an access token.
 4. Store the token locally only — never commit it:
 
+The token comes from the Miro developer app, not from Miro's "AI integrations"
+list. The bridge runs on our side: our agent calls the Miro REST API with the
+app token. DeepSeek does not need to appear in Miro's AI list for this to work.
+
+Alternative: Miro also offers its own official MCP server
+(<https://developers.miro.com/docs/miro-mcp>). Our custom server is used because
+it works with a plain access token and a local stdio process; Miro's official
+MCP requires an OAuth-capable client. Both can coexist.
+
+
+
 ```bash
 cp .env.example .env   # if not present yet
 # edit .env and set MIRO_ACCESS_TOKEN=...
