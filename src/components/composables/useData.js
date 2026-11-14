@@ -251,12 +251,20 @@ function terrainUrl(file) {
  *     default high-resolution region is used when no wide region exists.
  *  3. Synthetic terrain, only as an explicit error path (reported in the UI).
  */
-export async function loadTerrain() {
-  // Pick the analysis region from the terrain index first: the POI list spans
-  // the whole south-pole cap, so the wide-area region is the sensible default.
+/** Selectable LOLA DEM regions (ids match public/data/terrain/index.json). */
+export const DEM_REGIONS = Object.freeze([
+  { id: 'south-pole-875s-20m', labelKey: 'dem.highDetail', extentKm: 152, pixelSizeM: 74 },
+  { id: 'south-pole-80s-80m', labelKey: 'dem.wide', extentKm: 608, pixelSizeM: 594 },
+])
+
+export async function loadTerrain(options = {}) {
+  // Pick the analysis region from the terrain index: an explicit region id wins,
+  // otherwise the wide area (the POI list spans the whole south-pole cap).
   const index = await fetchJson(`${DATA_ROOT}/terrain/index.json`, 20000)
   const regions = Array.isArray(index?.regions) ? index.regions : []
+  const explicitRegion = Boolean(options.regionId)
   const preferred =
+    (options.regionId ? regions.find((entry) => entry.id === options.regionId) : null) ??
     regions.find((entry) => entry.role === 'wide-area') ??
     regions.find((entry) => entry.id === index?.defaultRegionId) ??
     regions[0] ??
@@ -274,7 +282,7 @@ export async function loadTerrain() {
       const planar = raw ? normalizePlanarTerrain(raw) : null
       const coversWideArea =
         planar && 2 * Math.max(Math.abs(planar.minX), Math.abs(planar.maxX), Math.abs(planar.minY), Math.abs(planar.maxY)) >= 250000
-      if (planar && raw.synthetic !== true && coversWideArea) {
+      if (planar && raw.synthetic !== true && (explicitRegion || coversWideArea)) {
         return {
           terrain: planar,
           viewTerrain: canonicalizeTerrain(planar, { maxSize: 256 }),
