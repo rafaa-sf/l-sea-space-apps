@@ -1,0 +1,57 @@
+{
+  "id": "lunar-south-pole-terrain",
+  "referenceRadiusM": 1737400,
+  "projection": {
+    "type": "polar_stereographic",
+    "latitudeOfOriginDeg": -90,
+    "centralMeridianDeg": 0,
+    "referenceRadiusM": 1737400,
+    "formula": {
+      "lonLatToXY": "rho = 2 * R * tan(pi/4 + lat/2); x = rho * sin(lon); y = rho * cos(lon)",
+      "xyToLonLat": "rho = hypot(x, y); lon = atan2(x, y); lat = 2 * atan(rho / (2 * R)) - pi/2",
+      "units": "meters for x/y, radians inside formulas"
+    }
+  },
+  "defaultRegionId": "south-pole-875s-20m",
+  "regions": [
+    {
+      "id": "south-pole-875s-20m",
+      "role": "high-resolution",
+      "meta": "south-pole-875s-20m.json",
+      "bin": "south-pole-875s-20m.bin",
+      "width": 2048,
+      "height": 2048,
+      "pixelSizeM": 74.0625,
+      "boundsM": {
+        "minX": -75840.0,
+        "maxX": 75840.0,
+        "minY": -75840.0,
+        "maxY": 75840.0
+      },
+      "elevationRangeM": [
+        -4378,
+        2369
+      ]
+    },
+    {
+      "id": "south-pole-80s-80m",
+      "role": "wide-area",
+      "meta": "south-pole-80s-80m.json",
+      "bin": "south-pole-80s-80m.bin",
+      "width": 1024,
+      "height": 1024,
+      "pixelSizeM": 593.75,
+      "boundsM": {
+        "minX": -304000.0,
+        "maxX": 304000.0,
+        "minY": -304000.0,
+        "maxY": 304000.0
+      },
+      "elevationRangeM": [
+        -7274,
+        7001
+      ]
+    }
+  ],
+  "attribution": "NASA/GSFC/LOLA (PDS Geosciences Node)"
+}

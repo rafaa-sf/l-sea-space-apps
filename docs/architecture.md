@@ -76,24 +76,40 @@ times. The Moon reference radius is `1737400` m.
 }
 ```
 
-### Terrain grid (LOLA DEM subset)
+### Terrain grid (LOLA DEM, polar stereographic)
 
-```js
-{
-  width: 512,                // samples along longitude
-  height: 512,               // samples along latitude
-  lat0: -90, lon0: 0,        // south-west corner, degrees
-  lat1: -80, lon1: 360,      // north-east corner, degrees
-  datum: 1737400,            // reference radius, meters
-  data: Float32Array,        // elevation in meters, row-major
-}
+The real LOLA polar DEMs are stored in **polar stereographic projection**, not as
+a regular lat/lon grid. Two regions are shipped under `public/data/terrain/`:
+
+| Region | Grid | Pixel size | Coverage | Role |
+| --- | --- | --- | --- | --- |
+| `south-pole-875s-20m` | 2048 × 2048 | 74.06 m | 87.5S–90S (±75,840 m) | High-resolution (default) |
+| `south-pole-80s-80m` | 1024 × 1024 | 593.75 m | 80S–90S (±304,000 m) | Wide area for outer POIs |
+
+`public/data/terrain/index.json` lists the available regions. Each region has a
+`.bin` (int16 little-endian, row-major, elevation in metres relative to
+R = 1,737,400 m) and a `.json` metadata file.
+
+Polar stereographic transform (R = 1,737,400 m, central meridian 0°):
+
+```text
+lonLatToXY:  rho = 2 * R * tan(pi/4 + lat/2); x = rho * sin(lon); y = rho * cos(lon)
+xyToLonLat:  rho = hypot(x, y); lon = atan2(x, y); lat = 2 * atan(rho / (2 * R)) - pi/2
+grid:        col = (x - minX) / pixelSizeM; row = (maxY - y) / pixelSizeM
 ```
+
+Row 0 is the `maxY` (north) edge; column 0 is the `minX` (west) edge. `y` grows
+toward longitude 0°. The loader picks the widest region that contains the site
+(high-resolution first), and samples bilinearly.
 
 ## Core interfaces (coder)
 
 ### `src/core/terrain.js`
 
-- `sampleElevation(terrain, lat, lon) -> number` — bilinear interpolation.
+- `lonLatToXY(latDeg, lonDeg) -> { x, y }` — polar stereographic, metres.
+- `xyToLonLat(x, y) -> { latDeg, lonDeg }` — inverse transform.
+- `sampleElevation(terrain, lat, lon) -> number` — converts to grid coordinates
+  and samples bilinearly (metres relative to the reference radius).
 - `slopeAt(terrain, lat, lon) -> { slopeDeg, aspectDeg }`.
 - `findCraters(terrain, options) -> Array<{ lat, lon, diameterM, depthM }>`.
 

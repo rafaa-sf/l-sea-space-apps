@@ -1,0 +1,45 @@
+{
+  "id": "south-pole-875s-20m",
+  "name": "Lunar south pole, 87.5S-90S (LOLA LDEM_875S_20M)",
+  "role": "high-resolution",
+  "source": "NASA LRO LOLA polar gridded product, PDS Geosciences Node (lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/jp2)",
+  "sourceFile": "ldem_875s_20m.jp2",
+  "sourceShape": {
+    "width": 7584,
+    "height": 7584
+  },
+  "referenceRadiusM": 1737400,
+  "datumNote": "Elevation values are meters relative to the 1737400 m reference radius (LOLA shape model). Source DNs have SCALING_FACTOR 0.5; this grid stores elevation in meters (1 m resolution) already scaled.",
+  "projection": {
+    "type": "polar_stereographic",
+    "latitudeOfOriginDeg": -90,
+    "centralMeridianDeg": 0,
+    "referenceRadiusM": 1737400,
+    "formula": {
+      "lonLatToXY": "rho = 2 * R * tan(pi/4 + lat/2); x = rho * sin(lon); y = rho * cos(lon)",
+      "xyToLonLat": "rho = hypot(x, y); lon = atan2(x, y); lat = 2 * atan(rho / (2 * R)) - pi/2",
+      "units": "meters for x/y, radians inside formulas"
+    }
+  },
+  "grid": {
+    "width": 2048,
+    "height": 2048,
+    "pixelSizeM": 74.0625,
+    "minX": -75840.0,
+    "maxX": 75840.0,
+    "minY": -75840.0,
+    "maxY": 75840.0,
+    "rowOrder": "row 0 = maxY (north edge), increasing row = decreasing y",
+    "colOrder": "col 0 = minX (west edge), increasing col = increasing x",
+    "dtype": "int16",
+    "endianness": "little",
+    "layout": "row-major",
+    "file": "south-pole-875s-20m.bin",
+    "fileBytes": 8388608
+  },
+  "elevationRangeM": [
+    -4378,
+    2369
+  ],
+  "attribution": "NASA/GSFC/LOLA (PDS Geosciences Node)"
+}
