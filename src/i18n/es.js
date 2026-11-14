@@ -389,7 +389,7 @@ export default {
       main: 'Hilo principal',
 
     },
-    zoneLabel: 'Zona de aterrizaje {rank}: {lat} {lon}',
+    zoneLabel: 'Zona de aterrizaje: {lat} {lon}',
     zoneSiteName: 'Zona de aterrizaje {rank}',
     zoneSelected: 'Zona de aterrizaje seleccionada',
     zoneArea: 'Área',
@@ -471,7 +471,7 @@ export default {
     computedAt: 'Calculado',
     signature: 'Firma de entrada',
     recalculate: 'Recalcular',
-    zoneLabel: 'Zona de aterrizaje {rank}: {lat} {lon}',
+    zoneLabel: 'Zona de aterrizaje: {lat} {lon}',
     zoneSiteName: 'Zona de aterrizaje {rank}',
     zoneSelected: 'Zona de aterrizaje seleccionada',
     zoneArea: 'Área',
