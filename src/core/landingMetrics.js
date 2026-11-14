@@ -212,18 +212,26 @@ export function computeIlluminationMetrics({ terrain, site, ephemeris, mission, 
   }
 
   const windowHours = windowSeconds / 3600
+  const totalEclipseHours = Math.max(0, windowHours - sunlitSeconds / 3600)
+  const sunElevationMeanWindowDeg = countEl > 0 ? sumEl / countEl : null
   return {
     sunlitFraction: clamp(sunlitSeconds / windowSeconds, 0, 1),
     sunlitHours: sunlitSeconds / 3600,
     continuousSunDays: longestSunWindowSeconds / 86400,
+    // Total dark time over the whole window vs the single longest dark gap.
+    totalEclipseHours,
     longestEclipseHours: gapStats.longestGapHours,
     longestEclipseStart: gapStats.longestGapStart,
     eclipseCount: gaps.filter((gap) => gap.durationSeconds > 60).length,
-    eclipseHours: Math.max(0, windowHours - sunlitSeconds / 3600),
+    // Legacy alias (deprecated): use totalEclipseHours.
+    eclipseHours: totalEclipseHours,
     sunElevationMinDeg: countEl > 0 ? minEl : null,
     sunElevationMaxDeg: countEl > 0 ? maxEl : null,
-    sunElevationMeanDeg: countEl > 0 ? sumEl / countEl : null,
+    // Window mean vs mean while sunlit (different physics).
+    sunElevationMeanWindowDeg,
     sunElevationMeanSunlitDeg: countSunlitEl > 0 ? sumSunlitEl / countSunlitEl : null,
+    // Legacy alias (deprecated): use sunElevationMeanWindowDeg.
+    sunElevationMeanDeg: sunElevationMeanWindowDeg,
     sunsetCount: windows.length,
     sunriseCount: windows.length,
     windowHours,
@@ -254,25 +262,42 @@ export function computeThermalMetrics({ illumination, mission }) {
   const minTempC = Math.min(nightTempC, maxTempC)
   const cyclingDeltaTC = Math.max(0, maxTempC - minTempC)
   const operatingDeficit = Math.max(0, thermalModel.minOperatingC - minTempC)
-  const heaterPowerW = clamp(operatingDeficit * thermalModel.heaterWPerK, 0, thermalModel.heaterMaxW)
-  const eclipseHours = illumination.eclipseHours
-  const heaterWh = heaterPowerW * eclipseHours
-  const averageHeaterPowerW = illumination.windowHours > 0 ? heaterWh / illumination.windowHours : 0
+  // Heater rating needed during eclipse (capped by the mission heater).
+  const heaterPowerSizedW = clamp(operatingDeficit * thermalModel.heaterWPerK, 0, thermalModel.heaterMaxW)
+  const totalEclipseHours = Number.isFinite(illumination.totalEclipseHours)
+    ? illumination.totalEclipseHours
+    : illumination.eclipseHours
+  const heaterWh = heaterPowerSizedW * totalEclipseHours
+  const heaterAveragePowerW =
+    illumination.windowHours > 0 ? heaterWh / illumination.windowHours : 0
+  // Temperature reached with the heater running at its sized power.
+  const heatedMinTempC =
+    minTempC + heaterPowerSizedW / Math.max(thermalModel.heaterWPerK, 1e-9)
+  const withinUnheatedOperatingRange =
+    minTempC >= thermalModel.minOperatingC && maxTempC <= thermalModel.maxOperatingC
+  const withinOperatingRange =
+    heatedMinTempC >= thermalModel.minOperatingC - 1e-9 && maxTempC <= thermalModel.maxOperatingC
   return {
     dayTempC,
     nightTempC,
     psrTempC: thermalModel.psrTemperatureC,
     minTempC,
     maxTempC,
+    heatedMinTempC,
     thermalCyclingDeltaTC: cyclingDeltaC(cyclingDeltaTC),
     thermalCycleCount: illumination.eclipseCount,
     isPsr,
-    heaterPowerW: round2(heaterPowerW),
+    // Sized heater power (during eclipse) [W] vs window-average heater load [W].
+    heaterPowerSizedW: round2(heaterPowerSizedW),
+    heaterAveragePowerW: round2(heaterAveragePowerW),
+    // Legacy aliases (deprecated).
+    heaterPowerW: round2(heaterPowerSizedW),
+    averageHeaterPowerW: round2(heaterAveragePowerW),
     heaterWh: round2(heaterWh),
-    averageHeaterPowerW: round2(averageHeaterPowerW),
     minOperatingC: thermalModel.minOperatingC,
     maxOperatingC: thermalModel.maxOperatingC,
-    withinOperatingRange: minTempC >= thermalModel.minOperatingC && maxTempC <= thermalModel.maxOperatingC,
+    withinOperatingRange,
+    withinUnheatedOperatingRange,
     model: {
       albedo: thermalModel.albedo,
       emissivity: thermalModel.emissivity,
@@ -328,15 +353,18 @@ export function computePowerMetrics({ terrain, site, ephemeris, mission, window,
 
   const averageW = sumW / count
   const powerNeedW = mission.powerNeedW
-  const heaterPowerW = thermal.heaterPowerW
-  const eclipseHours = illumination.eclipseHours
-  const eclipseDeficitWh = (powerNeedW + heaterPowerW) * eclipseHours
+  const heaterPowerSizedW = thermal.heaterPowerSizedW ?? thermal.heaterPowerW
+  const totalEclipseHours = Number.isFinite(illumination.totalEclipseHours)
+    ? illumination.totalEclipseHours
+    : illumination.eclipseHours
+  const eclipseHours = totalEclipseHours
+  const eclipseDeficitWh = (powerNeedW + heaterPowerSizedW) * eclipseHours
   const roundTrip = mission.batteryRoundTripEfficiency
   const depthOfDischarge = mission.batteryDepthOfDischarge
   const requiredBatteryWh = eclipseDeficitWh / Math.max(roundTrip * depthOfDischarge, 1e-6)
-  const averageHeaterPowerW = thermal.averageHeaterPowerW
-  const powerMarginW = averageW - powerNeedW - averageHeaterPowerW
-  const demandW = Math.max(powerNeedW + averageHeaterPowerW, 1e-6)
+  const heaterAveragePowerW = thermal.heaterAveragePowerW ?? thermal.averageHeaterPowerW
+  const powerMarginW = averageW - powerNeedW - heaterAveragePowerW
+  const demandW = Math.max(powerNeedW + heaterAveragePowerW, 1e-6)
   const batteryCapacityWh = mission.batteryCapacityWh
   const batteryCoverage =
     batteryCapacityWh == null
@@ -355,8 +383,12 @@ export function computePowerMetrics({ terrain, site, ephemeris, mission, window,
     eclipseDeficitWh: round2(eclipseDeficitWh),
     requiredBatteryWh: round2(requiredBatteryWh),
     heaterWh: round2(thermal.heaterWh),
-    heaterPowerW: round2(heaterPowerW),
-    averageHeaterPowerW: round2(averageHeaterPowerW),
+    // Legacy aliases (deprecated): the thermal group is authoritative.
+    heaterPowerW: round2(thermal.heaterPowerSizedW ?? thermal.heaterPowerW),
+    averageHeaterPowerW: round2(heaterAveragePowerW),
+    heaterPowerSizedW: round2(thermal.heaterPowerSizedW ?? thermal.heaterPowerW),
+    heaterAveragePowerW: round2(heaterAveragePowerW),
+    totalEclipseHours: round2(totalEclipseHours),
     powerNeedW: round2(powerNeedW),
     powerMarginW: round2(powerMarginW),
     powerMarginFraction: round4(powerMarginW / demandW),
@@ -394,11 +426,11 @@ export function computeCommsMetrics({ terrain, site, ephemeris, mission, window,
   })
   const directVisibleSeconds = directWindows.reduce((sum, current) => sum + (current.durationSeconds ?? 0), 0)
   const directEarthVisibleFraction = clamp(directVisibleSeconds / windowSeconds, 0, 1)
-  const gaps = windowsToGaps(directWindows, window.startMs, window.endMs)
-  const gapStats = gapStatistics(gaps)
+  const directGaps = windowsToGaps(directWindows, window.startMs, window.endMs)
+  const directGapStats = gapStatistics(directGaps)
 
-  // Windows used for the data budget: direct LOS or relay coverage (commWindows
-  // applies the documented relay-in-orbit model).
+  // Windows used for the data budget and effective availability: direct LOS or
+  // relay coverage (commWindows applies the documented relay-in-orbit model).
   const budgetWindows = commWindows(site, terrain, dataset, mission, window.startMs, window.endMs)
   const budget = dataBudget(budgetWindows, mission)
   const relayInOrbit = mission.relayInOrbit === true
@@ -406,16 +438,23 @@ export function computeCommsMetrics({ terrain, site, ephemeris, mission, window,
   const effectiveFraction = relayInOrbit ? Math.max(directEarthVisibleFraction, relayCoverage) : directEarthVisibleFraction
   const relayBenefitFraction = relayInOrbit ? Math.max(0, relayCoverage - directEarthVisibleFraction) : 0
   const availableHours = effectiveFraction * windowHours
-  const dataBudgetFraction =
+  const dataBudgetRatio =
     mission.dataNeedMb != null && mission.dataNeedMb > 0 ? budget.estimatedMb / mission.dataNeedMb : null
-  const maxLosGapHours = relayInOrbit && relayCoverage >= 0.999 ? 0 : gapStats.longestGapHours
-  const maxLosGapStart = relayInOrbit && relayCoverage >= 0.999 ? null : gapStats.longestGapStart
+  const dataBudgetCoverage = dataBudgetRatio == null ? null : clamp(dataBudgetRatio, 0, 1)
+  // Effective availability gaps (with relay) vs direct-LOS gaps.
+  const effectiveGaps = windowsToGaps(budgetWindows, window.startMs, window.endMs)
+  const effectiveGapStats = gapStatistics(
+    effectiveFraction >= 0.999 ? [] : effectiveGaps,
+  )
 
   return {
     earthVisibleFraction: round4(effectiveFraction),
     directEarthVisibleFraction: round4(directEarthVisibleFraction),
-    maxLosGapHours: round2(maxLosGapHours),
-    maxLosGapStart,
+    // Effective availability gaps (with relay if enabled).
+    maxLosGapHours: round2(effectiveGapStats.longestGapHours),
+    maxLosGapStart: effectiveGapStats.longestGapStart,
+    directMaxLosGapHours: round2(directGapStats.longestGapHours),
+    directMaxLosGapStart: directGapStats.longestGapStart,
     windowHours: round2(windowHours),
     availableHours: round2(availableHours),
     relayInOrbit,
@@ -424,7 +463,11 @@ export function computeCommsMetrics({ terrain, site, ephemeris, mission, window,
     relayBenefitFraction: round4(relayBenefitFraction),
     dataBudgetMb: round2(budget.estimatedMb),
     dataNeedMb: mission.dataNeedMb,
-    dataBudgetFraction: dataBudgetFraction == null ? null : round4(dataBudgetFraction),
+    // Ratios, not percentages: ratio = budget / need (may exceed 1).
+    dataBudgetRatio: dataBudgetRatio == null ? null : round4(dataBudgetRatio),
+    dataBudgetCoverage,
+    // Legacy alias (deprecated): use dataBudgetRatio.
+    dataBudgetFraction: dataBudgetRatio == null ? null : round4(dataBudgetRatio),
     meetsDataNeed: budget.meetsDataNeed,
     dataRateMbps: model.dataRateMbps,
     relayDataRateMbps: model.relayDataRateMbps,
@@ -433,7 +476,7 @@ export function computeCommsMetrics({ terrain, site, ephemeris, mission, window,
     // horizon obstruction (documented approximation, obstruction at 1 km).
     mastBenefitDeg: round3((Math.atan(mission.mastM / 1000) * RAD)),
     windowCount: budget.windowCount,
-    gaps,
+    gaps: effectiveGaps,
   }
 }
 
@@ -489,6 +532,8 @@ export function computeSafetyMetrics({ terrain, zone, mission, craters, cratersA
       fitRatio: round4(fitRatio),
       requiredAreaKm2: round3(requiredAreaKm2),
       availableAreaKm2: round3(availableAreaKm2),
+      requiredAreaM2: Math.round(requiredAreaKm2 * 1e6),
+      availableAreaM2: Math.round(availableAreaKm2 * 1e6),
       requiredRadiusM: round1(requiredRadiusM),
       equivalentRadiusM: round1(equivalentRadiusM),
       marginM: round1(marginM),
@@ -671,6 +716,197 @@ export function computeInputSignature({ terrain, mission, ephemeris, options } =
         }
       : null,
   })
+}
+
+/**
+ * Evaluate the hard mission-feasibility gate for one zone.
+ *
+ * A zone is **not feasible** when any of these hard constraints fails:
+ *
+ * - power: `powerMarginW < 0` (average solar power below load + average heater);
+ * - battery: a mission battery capacity is specified and
+ *   `requiredBatteryWh > batteryCapacityWh`;
+ * - thermal: the surface cannot be kept within the operating temperature range
+ *   even with the heater at its maximum power (`heatedMinTempC <
+ *   minOperatingTemperatureC`), or the day temperature exceeds
+ *   `maxOperatingTemperatureC`;
+ * - data: the mission specifies a data need and the estimated downlink budget
+ *   does not cover it;
+ * - undetermined: there is no terrain or ephemeris data to verify the mission.
+ *
+ * Infeasible/undetermined zones get their score capped (55) and a grade of at
+ * most `conditional`; the ranking sorts feasible zones first.
+ *
+ * @param {{
+ *   power: Object,
+ *   thermal: Object,
+ *   comms: Object,
+ *   illumination: Object,
+ *   mission: Object,
+ *   ephemerisAvailable?: boolean,
+ *   terrainAvailable?: boolean,
+ * }} input
+ * @returns {{
+ *   status: 'feasible'|'infeasible'|'undetermined',
+ *   feasible: boolean,
+ *   violations: Array<{code: string, severity: 'bad'|'warn', params: Object, text: string}>,
+ *   powerFeasible: boolean,
+ *   batteryFeasible: boolean,
+ *   thermalFeasible: boolean,
+ *   dataFeasible: boolean,
+ *   illuminationMeetsRequirement: boolean,
+ *   scoreCap: number|null,
+ * }}
+ */
+export function evaluateZoneFeasibility({
+  power,
+  thermal,
+  comms,
+  illumination,
+  mission,
+  ephemerisAvailable = true,
+  terrainAvailable = true,
+}) {
+  const violations = []
+  if (!terrainAvailable || !ephemerisAvailable) {
+    violations.push({
+      code: 'feasibility.undetermined',
+      severity: 'warn',
+      params: { terrainAvailable, ephemerisAvailable },
+      text:
+        'No terrain or ephemeris data is available to verify this zone: the score is capped and the ' +
+        'zone is treated as not feasible until the data is loaded.',
+    })
+    return {
+      status: 'undetermined',
+      feasible: false,
+      violations,
+      powerFeasible: false,
+      batteryFeasible: false,
+      thermalFeasible: false,
+      dataFeasible: false,
+      illuminationMeetsRequirement: false,
+      scoreCap: 55,
+    }
+  }
+
+  // Power margin
+  const powerMarginW = Number(power?.powerMarginW)
+  const powerFeasible = Number.isFinite(powerMarginW) && powerMarginW >= 0
+  if (!powerFeasible) {
+    violations.push({
+      code: 'feasibility.powerDeficit',
+      severity: 'bad',
+      params: {
+        powerNeedW: round2(mission.powerNeedW),
+        heaterAveragePowerW: round2(power?.heaterAveragePowerW ?? 0),
+        averageW: round2(power?.averageW ?? 0),
+        powerMarginW: round2(powerMarginW),
+      },
+      text:
+        `Power margin is ${round2(powerMarginW)} W: average solar power ${round2(power?.averageW ?? 0)} W ` +
+        `cannot cover the ${round2(mission.powerNeedW)} W load plus the ${round2(power?.heaterAveragePowerW ?? 0)} W ` +
+        'average heater demand.',
+    })
+  }
+
+  // Battery capacity (only when the mission specifies one; otherwise the
+  // required energy is a sizing recommendation, not a hard constraint).
+  const batteryCapacityWh = mission.batteryCapacityWh
+  const requiredBatteryWh = Math.max(0, Number(power?.requiredBatteryWh) || 0)
+  const batteryFeasible = batteryCapacityWh == null || requiredBatteryWh <= batteryCapacityWh + 1e-9
+  if (!batteryFeasible) {
+    violations.push({
+      code: 'feasibility.batteryInsufficient',
+      severity: 'bad',
+      params: {
+        requiredBatteryWh: round1(requiredBatteryWh),
+        batteryCapacityWh: round1(batteryCapacityWh),
+        batteryCoverage: round4(power?.batteryCoverage ?? 0),
+        totalEclipseHours: round2(power?.totalEclipseHours ?? 0),
+      },
+      text:
+        `Battery is insufficient: ${round1(requiredBatteryWh)} Wh are required for the total eclipse ` +
+        `time but only ${round1(batteryCapacityWh)} Wh are available ` +
+        `(coverage ${round1((power?.batteryCoverage ?? 0) * 100)}%).`,
+    })
+  }
+
+  // Thermal: can the heater keep the electronics inside the operating range?
+  const heatedMinTempC = Number(thermal?.heatedMinTempC)
+  const maxTempC = Number(thermal?.maxTempC)
+  const thermalCold = !(heatedMinTempC >= mission.minOperatingTemperatureC - 1e-9)
+  const thermalHot = !(maxTempC <= mission.maxOperatingTemperatureC + 1e-9)
+  if (thermalCold) {
+    violations.push({
+      code: 'feasibility.thermalCold',
+      severity: 'bad',
+      params: {
+        heatedMinTempC: round1(heatedMinTempC),
+        minOperatingC: round1(mission.minOperatingTemperatureC),
+        heaterPowerSizedW: round2(thermal?.heaterPowerSizedW ?? 0),
+        heaterMaxW: round1(mission.heaterMaxW),
+      },
+      text:
+        `Thermal cold limit exceeded: even with the heater at its maximum (` +
+        `${round1(mission.heaterMaxW)} W) the minimum temperature reaches ` +
+        `${round1(heatedMinTempC)} °C, below the ${round1(mission.minOperatingTemperatureC)} °C limit.`,
+    })
+  }
+  if (thermalHot) {
+    violations.push({
+      code: 'feasibility.thermalHot',
+      severity: 'bad',
+      params: {
+        maxTempC: round1(maxTempC),
+        maxOperatingC: round1(mission.maxOperatingTemperatureC),
+      },
+      text:
+        `Thermal hot limit exceeded: the day-time surface reaches ${round1(maxTempC)} °C, above the ` +
+        `${round1(mission.maxOperatingTemperatureC)} °C limit.`,
+    })
+  }
+  const thermalFeasible = !thermalCold && !thermalHot
+
+  // Data downlink is a hard constraint only when the mission demands data.
+  let dataFeasible = true
+  if (
+    mission.dataNeedMb != null &&
+    mission.dataNeedMb > 0 &&
+    comms?.dataBudgetCoverage != null &&
+    comms.dataBudgetCoverage < 1 - 1e-9
+  ) {
+    dataFeasible = false
+    violations.push({
+      code: 'feasibility.dataInsufficient',
+      severity: 'bad',
+      params: {
+        dataBudgetMb: round1(comms.dataBudgetMb ?? 0),
+        dataNeedMb: round1(mission.dataNeedMb),
+        dataBudgetCoverage: round4(comms.dataBudgetCoverage),
+      },
+      text:
+        `Data downlink is insufficient: ${round1(comms.dataBudgetMb ?? 0)} Mb of budget against a ` +
+        `${round1(mission.dataNeedMb)} Mb mission need.`,
+    })
+  }
+
+  const sunDaysNeeded = mission.sunDaysNeeded
+  const illuminationMeetsRequirement =
+    sunDaysNeeded > 0 ? (illumination?.continuousSunDays ?? 0) >= sunDaysNeeded : true
+
+  const feasible = powerFeasible && batteryFeasible && thermalFeasible && dataFeasible
+  return {
+    status: feasible ? 'feasible' : 'infeasible',
+    feasible,
+    violations,
+    powerFeasible,
+    batteryFeasible,
+    thermalFeasible,
+    dataFeasible,
+    illuminationMeetsRequirement,
+    scoreCap: feasible ? null : 55,
+  }
 }
 
 /**
@@ -916,8 +1152,30 @@ export function computeLandingMetrics(input = {}) {
     components.thermal * weights.thermal +
     components.logistics * weights.logistics +
     components.science * weights.science
-  const score = round1(clamp(weighted, 0, 100))
-  const { grade, code: gradeCode } = gradeForScore(score)
+  const rawScore = round1(clamp(weighted, 0, 100))
+
+  // Hard feasibility gate: an infeasible zone can never be presented as a good
+  // landing site, regardless of how well it scores on the soft criteria.
+  const feasibility = evaluateZoneFeasibility({
+    power,
+    thermal,
+    comms,
+    illumination,
+    mission: normalizedMission,
+    ephemerisAvailable: Boolean(ephemeris),
+    terrainAvailable: Boolean(terrain),
+  })
+  let score = rawScore
+  let gradeInfo = gradeForScore(rawScore)
+  if (!feasibility.feasible) {
+    score = Math.min(rawScore, feasibility.scoreCap ?? 55)
+    gradeInfo =
+      score >= 45
+        ? { grade: 'conditional', code: 'grade.conditional' }
+        : gradeForScore(score)
+  }
+  const { grade, code: gradeCode } = gradeInfo
+  const scoreCapApplied = score < rawScore
 
   let confidence = 1
   if (!terrain) confidence -= 0.35
@@ -931,6 +1189,9 @@ export function computeLandingMetrics(input = {}) {
   // ---------------------------------------------------------------------
   // Reasons (human-readable, i18n-friendly codes + English text + params).
   // ---------------------------------------------------------------------
+  for (const violation of feasibility.violations) {
+    reasons.push(reason(violation.code, violation.severity, violation.params, violation.text))
+  }
   reasons.push(
     reason('illumination.sunlit', illumination.sunlitFraction >= 0.5 ? 'good' : illumination.sunlitFraction > 0 ? 'warn' : 'bad', {
       sunlitFraction: round4(illumination.sunlitFraction),
@@ -1039,6 +1300,21 @@ export function computeLandingMetrics(input = {}) {
     zoneReliefM: round1(zone?.reliefM ?? 0),
     zoneCellCount: zone?.cellCount ?? 0,
     zoneSuitability: round2(zone?.suitability ?? 0),
+    // Exact mission inputs used for this scoring run (so the UI can prove the
+    // displayed controls are the scored values).
+    missionInputs: {
+      powerNeedW: normalizedMission.powerNeedW,
+      batteryCapacityWh: normalizedMission.batteryCapacityWh,
+      heaterMaxW: normalizedMission.heaterMaxW,
+      heaterWPerK: normalizedMission.heaterWPerK,
+      minOperatingC: normalizedMission.minOperatingC,
+      maxOperatingC: normalizedMission.maxOperatingC,
+      missionDays: round2(normalizedMission.missionDays),
+      startTime: normalizedMission.startTime,
+      dataNeedMb: normalizedMission.dataNeedMb,
+      mastM: normalizedMission.mastM,
+      relayInOrbit: normalizedMission.relayInOrbit,
+    },
     // new convenient flat duplicates
     requiredBatteryWh: power.requiredBatteryWh,
     heaterWh: thermal.heaterWh,
@@ -1064,6 +1340,10 @@ export function computeLandingMetrics(input = {}) {
 
   return {
     score,
+    rawScore,
+    scoreCapApplied,
+    feasible: feasibility.feasible,
+    feasibility,
     grade,
     gradeCode,
     confidence,

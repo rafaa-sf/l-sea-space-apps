@@ -22,6 +22,7 @@ import {
   computePowerMetrics,
   computeSafetyMetrics,
   computeThermalMetrics,
+  evaluateZoneFeasibility,
   gapStatistics,
   normalizeLandingWeights,
   surfaceEquilibriumTemperatureC,
@@ -384,5 +385,188 @@ describe('computeLandingMetrics integration', () => {
       options: { maxZones: 8 },
     })
     expect(otherTerrain).not.toBe(base)
+  })
+})
+
+
+describe('hard feasibility gating', () => {
+  const terrain = makePlane()
+
+  it('caps and downgrades an under-powered zone', () => {
+    const result = computeLandingMetrics({
+      terrain,
+      zone: ZONE,
+      zones: [ZONE],
+      ephemeris: makeEphemeris(),
+      site: SITE,
+      mission: { ...MISSION, powerNeedW: 1000 },
+    })
+    expect(result.feasible).toBe(false)
+    expect(result.feasibility.status).toBe('infeasible')
+    expect(result.feasibility.powerFeasible).toBe(false)
+    expect(result.feasibility.violations.map((violation) => violation.code)).toContain('feasibility.powerDeficit')
+    expect(result.reasons.map((reasonCode) => reasonCode.code)).toContain('feasibility.powerDeficit')
+    expect(result.score).toBeLessThanOrEqual(55)
+    expect(result.rawScore).toBeGreaterThan(result.score)
+    expect(result.scoreCapApplied).toBe(true)
+    expect(['conditional', 'poor']).toContain(result.grade)
+    expect(result.gradeCode).toMatch(/grade\.(conditional|poor)/)
+  })
+
+  it('flags an insufficient mission battery', () => {
+    const halfEclipse = makeEphemeris({ sun: (index) => ({ az: 270, el: index < 24 ? 2 : -2 }) })
+    const result = computeLandingMetrics({
+      terrain,
+      zone: ZONE,
+      zones: [ZONE],
+      ephemeris: halfEclipse,
+      site: SITE,
+      mission: { ...MISSION, batteryCapacityWh: 1000 },
+    })
+    expect(result.feasible).toBe(false)
+    expect(result.feasibility.batteryFeasible).toBe(false)
+    expect(result.feasibility.violations.map((violation) => violation.code)).toContain(
+      'feasibility.batteryInsufficient',
+    )
+    expect(result.metrics.power.requiredBatteryWh).toBeGreaterThan(1000)
+    expect(result.metrics.power.batteryCoverage).toBeLessThan(1)
+  })
+
+  it('flags thermal cold beyond heater capacity', () => {
+    const result = computeLandingMetrics({
+      terrain,
+      zone: ZONE,
+      zones: [ZONE],
+      ephemeris: makeEphemeris(),
+      site: SITE,
+      mission: { ...MISSION, heaterMaxW: 10 },
+    })
+    expect(result.feasibility.thermalFeasible).toBe(false)
+    expect(result.feasibility.violations.map((violation) => violation.code)).toContain(
+      'feasibility.thermalCold',
+    )
+    expect(result.metrics.thermal.heatedMinTempC).toBeLessThan(
+      result.metrics.thermal.minOperatingC,
+    )
+  })
+
+  it('flags thermal hot above the operating limit', () => {
+    const result = computeLandingMetrics({
+      terrain,
+      zone: ZONE,
+      zones: [ZONE],
+      ephemeris: makeEphemeris(),
+      site: SITE,
+      mission: { ...MISSION, maxOperatingTemperatureC: -120 },
+    })
+    expect(result.feasibility.thermalFeasible).toBe(false)
+    expect(result.feasibility.violations.map((violation) => violation.code)).toContain(
+      'feasibility.thermalHot',
+    )
+  })
+
+  it('treats missing data as undetermined and capped', () => {
+    const result = computeLandingMetrics({ terrain, zone: ZONE, zones: [ZONE], ephemeris: null, mission: MISSION })
+    expect(result.feasible).toBe(false)
+    expect(result.feasibility.status).toBe('undetermined')
+    expect(result.feasibility.violations.map((violation) => violation.code)).toContain(
+      'feasibility.undetermined',
+    )
+    expect(result.score).toBeLessThanOrEqual(55)
+  })
+
+  it('gates the data budget only when the mission demands data', () => {
+    const result = computeLandingMetrics({
+      terrain,
+      zone: ZONE,
+      zones: [ZONE],
+      ephemeris: makeEphemeris({ earth: (index) => ({ az: 90, el: index < 24 ? 2 : -2 }) }),
+      site: SITE,
+      mission: { ...MISSION, dataNeedMb: 1e9 },
+    })
+    expect(result.feasibility.dataFeasible).toBe(false)
+    expect(result.feasibility.violations.map((violation) => violation.code)).toContain(
+      'feasibility.dataInsufficient',
+    )
+    expect(result.feasible).toBe(false)
+  })
+
+  it('exposes the feasibility gates as a standalone function', () => {
+    const mission = normalizeMission({ ...MISSION, powerNeedW: 1000 })
+    const feasibility = evaluateZoneFeasibility({
+      power: { powerMarginW: -500, averageW: 300, heaterAveragePowerW: 50, requiredBatteryWh: 0 },
+      thermal: { heatedMinTempC: -40, maxTempC: 10, heaterPowerSizedW: 280 },
+      comms: { dataBudgetCoverage: null },
+      illumination: { continuousSunDays: 5 },
+      mission,
+      ephemerisAvailable: true,
+      terrainAvailable: true,
+    })
+    expect(feasibility.status).toBe('infeasible')
+    expect(feasibility.scoreCap).toBe(55)
+  })
+})
+
+describe('metric audit (unambiguous keys and units)', () => {
+  const terrain = makePlane()
+  const alternatingEphemeris = makeEphemeris({
+    sun: (index) => ({ az: 270, el: index < 12 || (index >= 24 && index < 36) ? 2 : -2 }),
+    earth: (index) => ({ az: 90, el: index < 24 ? 2 : -2 }),
+  })
+
+  it('keeps total and longest eclipse distinct and heater sizing explicit', () => {
+    const result = computeLandingMetrics({
+      terrain,
+      zone: ZONE,
+      zones: [ZONE],
+      ephemeris: alternatingEphemeris,
+      site: SITE,
+      mission: { ...MISSION, relayInOrbit: true, comms: { relayCoverage: 1 }, dataNeedMb: 100 },
+    })
+    const { illumination, thermal, comms, safety, missionInputs } = result.metrics
+    expect(illumination.totalEclipseHours).toBeGreaterThan(illumination.longestEclipseHours)
+    expect(illumination.totalEclipseHours).not.toBe(illumination.longestEclipseHours)
+    expect(illumination.sunElevationMeanWindowDeg).not.toBe(illumination.sunElevationMeanSunlitDeg)
+    expect(thermal.heaterPowerSizedW).toBeGreaterThan(thermal.heaterAveragePowerW)
+    expect(thermal.heaterPowerSizedW).toBeGreaterThan(0)
+    expect(thermal.heaterAveragePowerW).toBeGreaterThan(0)
+
+    // Effective availability (relay) vs direct LOS and their gaps.
+    expect(comms.earthVisibleFraction).toBe(1)
+    expect(comms.directEarthVisibleFraction).toBeLessThan(1)
+    expect(comms.maxLosGapHours).toBe(0)
+    expect(comms.directMaxLosGapHours).toBeGreaterThan(0)
+    expect(typeof comms.dataBudgetRatio).toBe('number')
+    expect(comms.dataBudgetRatio).toBeGreaterThan(1)
+    expect(comms.dataBudgetFraction).toBe(comms.dataBudgetRatio)
+    expect(comms.dataBudgetCoverage).toBe(1)
+
+    // Explicit area units for the landing ellipse.
+    expect(safety.ellipse.requiredAreaKm2).toBeGreaterThan(0)
+    expect(Math.abs(safety.ellipse.requiredAreaM2 - safety.ellipse.requiredAreaKm2 * 1e6)).toBeLessThan(1000)
+    expect(Math.abs(safety.ellipse.availableAreaM2 - safety.ellipse.availableAreaKm2 * 1e6)).toBeLessThan(1000)
+
+    // The exact scored mission inputs are echoed for the UI.
+    expect(missionInputs.powerNeedW).toBe(120)
+    expect(missionInputs.batteryCapacityWh).toBeNull()
+    expect(missionInputs.startTime).toBe(MISSION.startTime)
+  })
+
+  it('changes the input signature for battery, heater and thermal edits', () => {
+    const base = computeInputSignature({ terrain, mission: normalizeMission(MISSION), ephemeris: makeEphemeris(), options: { maxZones: 8 } })
+    for (const patch of [
+      { batteryCapacityWh: 1000 },
+      { heaterMaxW: 100 },
+      { minOperatingTemperatureC: -20 },
+      { thermal: { nightTemperatureC: -160 } },
+    ]) {
+      const changed = computeInputSignature({
+        terrain,
+        mission: normalizeMission({ ...MISSION, ...patch }),
+        ephemeris: makeEphemeris(),
+        options: { maxZones: 8 },
+      })
+      expect(changed).not.toBe(base)
+    }
   })
 })

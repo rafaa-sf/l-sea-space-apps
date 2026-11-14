@@ -22,6 +22,7 @@ import {
   landingZoneToSite,
   nearestCuratedSite,
   rankLandingZones,
+  sortZoneEntriesByFeasibility,
 } from './zoneAutopilot.js'
 
 /**
@@ -419,5 +420,65 @@ describe('rankLandingZones', () => {
     expect(second.zones.map((entry) => [entry.zone.id, entry.score])).toEqual(
       first.zones.map((entry) => [entry.zone.id, entry.score]),
     )
+  })
+})
+
+
+describe('feasibility-first ranking', () => {
+  const flatTerrain = () => makePlane({ width: 64, height: 64, elevationFn: () => 0 })
+
+  it('sorts feasible zones before infeasible ones, then by score', () => {
+    const entries = [
+      { feasible: false, score: 90, zone: { id: 'infeasible-high' } },
+      { feasible: true, score: 50, zone: { id: 'feasible-low' } },
+      { feasible: false, score: 60, zone: { id: 'infeasible-low' } },
+      { feasible: true, score: 70, zone: { id: 'feasible-high' } },
+    ]
+    sortZoneEntriesByFeasibility(entries)
+    expect(entries.map((entry) => entry.zone.id)).toEqual([
+      'feasible-high',
+      'feasible-low',
+      'infeasible-high',
+      'infeasible-low',
+    ])
+  })
+
+  it('reports no feasible zones and caps scores when the mission is under-powered', () => {
+    const result = rankLandingZones({
+      terrain: flatTerrain(),
+      ephemeris: makeEphemeris(),
+      sites: [{ id: 'anchor', name: 'Anchor', lat: -89.9, lon: 0 }],
+      mission: { ...MISSION, powerNeedW: 5000 },
+      options: { minAreaKm2: 0.1, maxRoughnessM: null },
+    })
+    expect(result.zones.length).toBeGreaterThan(0)
+    expect(result.meta.feasibleZones).toBe(0)
+    expect(result.meta.hasFeasibleZones).toBe(false)
+    expect(result.meta.feasibility.message).toBe('no-feasible-zone')
+    expect(result.meta.recommendedZoneId).toBeNull()
+    expect(result.meta.rankingRule).toBe('feasible-first-then-score')
+    for (const entry of result.zones) {
+      expect(entry.feasible).toBe(false)
+      expect(entry.score).toBeLessThanOrEqual(55)
+      expect(['conditional', 'poor']).toContain(entry.grade)
+      expect(entry.feasibility.violations.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('recommends the best feasible zone and ranks it first', () => {
+    const result = rankLandingZones({
+      terrain: flatTerrain(),
+      ephemeris: makeEphemeris(),
+      sites: [{ id: 'anchor', name: 'Anchor', lat: -89.9, lon: 0 }],
+      mission: MISSION,
+      options: { minAreaKm2: 0.1, maxRoughnessM: null },
+    })
+    if (result.meta.hasFeasibleZones) {
+      expect(result.zones[0].feasible).toBe(true)
+      expect(result.meta.recommendedZoneId).toBe(result.zones[0].zone.id)
+      expect(result.meta.feasibleZones).toBeGreaterThan(0)
+    } else {
+      expect(result.meta.recommendedZoneId).toBeNull()
+    }
   })
 })

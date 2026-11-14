@@ -120,6 +120,36 @@ function detectCraterHazards(terrain, mission, options) {
 }
 
 /**
+ * Ranking order: fully feasible zones first, then infeasible/undetermined ones,
+ * each group sorted by score (best first). Ties keep the deterministic detection
+ * order (Array.prototype.sort is stable).
+ *
+ * @param {Object} a Ranked zone entry.
+ * @param {Object} b Ranked zone entry.
+ * @returns {number} Negative when `a` must rank before `b`.
+ */
+export function compareZoneEntries(a, b) {
+  const aFeasible = a?.feasible === true ? 0 : 1
+  const bFeasible = b?.feasible === true ? 0 : 1
+  if (aFeasible !== bFeasible) return aFeasible - bFeasible
+  if (a.score == null && b.score == null) return 0
+  if (a.score == null) return 1
+  if (b.score == null) return -1
+  return b.score - a.score
+}
+
+/**
+ * Sort ranked zone entries in place with the documented feasibility-first order.
+ *
+ * @param {Array<Object>} entries
+ * @returns {Array<Object>} The same array (sorted).
+ */
+export function sortZoneEntriesByFeasibility(entries) {
+  if (!Array.isArray(entries)) return []
+  return entries.sort(compareZoneEntries)
+}
+
+/**
  * Rank landing zones for a mission profile.
  *
  * Every call recomputes all metrics from the current terrain, mission profile
@@ -241,6 +271,10 @@ export function rankLandingZones({ terrain, ephemeris, sites, mission, options }
       siteName: zone.name,
       site: zoneSite,
       score: metricsResult.score,
+      rawScore: metricsResult.rawScore,
+      scoreCapApplied: metricsResult.scoreCapApplied,
+      feasible: metricsResult.feasible,
+      feasibility: metricsResult.feasibility,
       grade: metricsResult.grade,
       gradeCode: metricsResult.gradeCode,
       confidence: metricsResult.confidence,
@@ -256,12 +290,7 @@ export function rankLandingZones({ terrain, ephemeris, sites, mission, options }
     }
   })
 
-  entries.sort((a, b) => {
-    if (a.score == null && b.score == null) return 0
-    if (a.score == null) return 1
-    if (b.score == null) return -1
-    return b.score - a.score
-  })
+  sortZoneEntriesByFeasibility(entries)
   let rank = 0
   for (const entry of entries) {
     if (entry.score != null) {
@@ -285,6 +314,11 @@ export function rankLandingZones({ terrain, ephemeris, sites, mission, options }
 
   const finishedAt = typeof performance !== 'undefined' ? performance.now() : Date.now()
   const scoredEntries = entries.filter((entry) => entry.score != null)
+  const feasibleEntries = entries.filter((entry) => entry.feasible === true)
+  const undeterminedEntries = entries.filter((entry) => entry.feasibility?.status === 'undetermined')
+  const infeasibleEntries = entries.filter(
+    (entry) => entry.feasible !== true && entry.feasibility?.status !== 'undetermined',
+  )
   return {
     zones: entries,
     meta: {
@@ -293,6 +327,20 @@ export function rankLandingZones({ terrain, ephemeris, sites, mission, options }
       syntheticTerrain: detection.meta.synthetic === true,
       zoneCount: entries.length,
       scoredCount: scoredEntries.length,
+      // Hard feasibility gate summary (see docs/architecture.md).
+      feasibleZones: feasibleEntries.length,
+      infeasibleZones: infeasibleEntries.length,
+      undeterminedZones: undeterminedEntries.length,
+      hasFeasibleZones: feasibleEntries.length > 0,
+      recommendedZoneId: feasibleEntries[0]?.zone?.id ?? null,
+      rankingRule: 'feasible-first-then-score',
+      feasibility: {
+        feasibleZones: feasibleEntries.length,
+        infeasibleZones: infeasibleEntries.length,
+        undeterminedZones: undeterminedEntries.length,
+        hasFeasibleZones: feasibleEntries.length > 0,
+        message: feasibleEntries.length > 0 ? 'ok' : 'no-feasible-zone',
+      },
       detection: detection.meta,
       approximation: ZONE_EPHEMERIS_APPROXIMATION,
       ephemerisApproxMaxErrorDeg: 0.1,
