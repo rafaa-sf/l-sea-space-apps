@@ -376,7 +376,28 @@ await sleep(1200)
 report.zoneMetricsText = await evaluate(`document.querySelector('.zone-detail')?.textContent ?? null`)
 const signatureOf = () => evaluate(`document.querySelector('[data-testid="landing-zone-signature"]')?.textContent?.trim() ?? null`)
 const zonePanelText = () => bodyText()
-report.defaultFeasible = /FEASIBLE/i.test(await zonePanelText()) && !/NOT FEASIBLE/i.test(await zonePanelText())
+const rowStates = () => evaluate(`(() => {
+  const rows = [...document.querySelectorAll('[data-testid="landing-zone-row"]')];
+  return {
+    count: rows.length,
+    notFeasible: rows.filter((row) => row.innerText.includes('NOT FEASIBLE')).length,
+    feasible: rows.filter((row) => row.innerText.includes('FEASIBLE') && !row.innerText.includes('NOT FEASIBLE')).length,
+    firstFeasible: rows.length > 0 && rows[0].innerText.includes('FEASIBLE') && !rows[0].innerText.includes('NOT FEASIBLE'),
+    order: rows.map((row) => row.innerText.includes('NOT FEASIBLE')),
+  };
+})()`)
+const feasibleFirst = (state) => {
+  if (!state || state.count === 0 || !state.firstFeasible) return false
+  let sawInfeasible = false
+  for (const infeasible of state.order ?? []) {
+    if (infeasible) sawInfeasible = true
+    else if (sawInfeasible) return false
+  }
+  return true
+}
+const defaultRows = await rowStates()
+report.defaultRows = defaultRows
+report.defaultFeasible = defaultRows.feasible > 0 && feasibleFirst(defaultRows)
 report.zoneDuplicateLabels = await evaluate(`(() => {
   const labels = [...document.querySelectorAll('.zone-detail dt')].map((el) => el.textContent.trim());
   const dup = labels.filter((label, index) => labels.indexOf(label) !== index);
@@ -409,7 +430,9 @@ for (let attempt = 0; attempt < 20 && !/NOT FEASIBLE/i.test(infeasibleText); att
 }
 report.infeasibleSignature = infeasibleSignature
 report.infeasibleState = report.zoneRecomputed
-report.infeasibleBadge = /NOT FEASIBLE/i.test(infeasibleText)
+const infeasibleRows = await rowStates()
+report.infeasibleRows = infeasibleRows
+report.infeasibleBadge = infeasibleRows.notFeasible > 0
 report.infeasibleAlert = /No fully feasible landing zone|no fully feasible landing zone/i.test(infeasibleText)
 
 report.restorePower = await setPowerNeed(120)
@@ -418,12 +441,13 @@ for (let attempt = 0; attempt < 30 && restoredSignature === infeasibleSignature;
   await sleep(500)
   restoredSignature = await signatureOf()
 }
-let restoredText = await zonePanelText()
-for (let attempt = 0; attempt < 20 && !(/FEASIBLE/i.test(restoredText) && !/NOT FEASIBLE/i.test(restoredText)); attempt += 1) {
+let restoredRows = await rowStates()
+for (let attempt = 0; attempt < 30 && restoredRows.count === 0; attempt += 1) {
   await sleep(500)
-  restoredText = await zonePanelText()
+  restoredRows = await rowStates()
 }
-report.restoredFeasible = /FEASIBLE/i.test(restoredText) && !/NOT FEASIBLE/i.test(restoredText)
+report.restoredRows = restoredRows
+report.restoredFeasible = restoredRows.feasible > 0 && feasibleFirst(restoredRows)
 
 report.export = await click('Export JSON brief')
 await sleep(4000)
