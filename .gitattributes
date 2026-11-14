@@ -19,3 +19,6 @@
 *.yml text eol=lf
 *.yaml text eol=lf
 *.sh text eol=lf
+
+# Apache hosting configuration shipped with the static build.
+.htaccess text eol=lf

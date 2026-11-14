@@ -31,6 +31,7 @@ credentials.
 ```text
 dist/
 ├── index.html          # entry point
+├── .htaccess           # Apache config copied from public/.htaccess
 ├── assets/             # hashed JS/CSS (and .map sourcemaps)
 ├── data/               # copied from public/data/ (POIs, ephemeris, layers, terrain)
 └── ...                 # anything else placed in public/
@@ -41,6 +42,9 @@ dist/
 
 Notes:
 
+- `.htaccess` is tracked as `public/.htaccess` and Vite copies it into `dist/`,
+  so the caching, MIME type, HTTPS redirect and SPA fallback rules ship with
+  every build (section 5).
 - Asset files under `assets/` have content hashes in their names. They can be
   cached forever; a new build produces new names.
 - `public/data/` is copied verbatim to `dist/data/`. Missing data files are a
@@ -68,6 +72,8 @@ dirty working tree.
 - [ ] `npm run build` succeeds and `dist/index.html` exists.
 - [ ] `dist/data/` contains the required datasets (`pois.json`, `ephemeris/`,
       `layers.json`, `terrain/`) and every file loads (see HTTP checks below).
+- [ ] `dist/.htaccess` exists and contains the SPA fallback, the HTTPS redirect
+      and the caching rules from section 5.
 - [ ] No secrets in the build:
       `grep -rIl -E 'NASA_API_KEY|api_key=|Bearer |BEGIN (RSA|PRIVATE)' dist || true`
       prints nothing; no `.env` file inside `dist/`.
@@ -100,8 +106,9 @@ dirty working tree.
 8. Keep the previous hashed assets on the server until the next deployment.
    Deleting them immediately can break visitors who still have the old
    `index.html`; they can be pruned in a later deployment.
-9. Upload `.htaccess` (section 5) if the plan allows it; otherwise apply the
-   fallback described there.
+9. `.htaccess` is inside the uploaded zip (shipped from `public/.htaccess`). If
+   the plan ignores it or forces its own configuration, apply the fallback
+   described in section 5.
 10. Run the post-deploy verification in section 7.
 
 Alternative transport: FileZilla/FTP or SFTP into the same document root, or
@@ -117,11 +124,13 @@ added later, unknown paths must return `index.html`; otherwise a refresh on a
 deep link returns a 404.
 
 The plan must allow `.htaccess` (Apache on cPanel typically does, with
-`mod_rewrite` and `mod_headers` enabled). Create `.htaccess` at the document
-root:
+`mod_rewrite` and `mod_headers` enabled). The canonical file is tracked at
+`public/.htaccess` and is copied to `dist/.htaccess` by the build, so it is
+deployed with the rest of the site — do not create it by hand on the server.
+Current contents:
 
 ```apache
-# L-SEA Space Apps - static hosting configuration
+# L-SEA Space Apps - static hosting configuration (Apache / GoDaddy cPanel).
 Options -MultiViews
 
 # SPA fallback: serve index.html for client-side routes, keep real files.
@@ -134,16 +143,19 @@ Options -MultiViews
   RewriteRule . /index.html [L]
 </IfModule>
 
-# Redirect HTTP to HTTPS once the certificate is active.
+# Force HTTPS once the cPanel certificate is active; the X-Forwarded-Proto
+# guard avoids a redirect loop behind a TLS-terminating proxy.
 <IfModule mod_rewrite.c>
   RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
   RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 </IfModule>
 
-# Correct MIME types for the data files.
+# MIME types for the pre-computed datasets.
 <IfModule mod_mime.c>
   AddType application/json .json
   AddType application/geo+json .geojson
+  AddType application/octet-stream .bin
 </IfModule>
 
 # Compression.
@@ -151,23 +163,23 @@ Options -MultiViews
   AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
 </IfModule>
 
-# Caching: hashed assets forever, HTML always revalidated, data short-lived.
+# Caching: hashed assets immutable for a year, datasets revalidated daily,
+# HTML always revalidated.
 <IfModule mod_headers.c>
   <FilesMatch "\.(js|css|woff2?|png|jpe?g|webp|svg)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
+  <FilesMatch "\.(json|bin|geojson)$">
+    Header set Cache-Control "public, max-age=86400, must-revalidate"
+  </FilesMatch>
   <FilesMatch "index\.html$">
     Header set Cache-Control "no-cache, must-revalidate"
-  </FilesMatch>
-  <FilesMatch "\.json$">
-    Header set Cache-Control "public, max-age=3600"
   </FilesMatch>
 </IfModule>
 ```
 
-To ship it automatically with every build, the Lead can approve adding the same
-file as `public/.htaccess` (Vite copies `public/` into `dist/`); `public/` is not
-owned by reviewer-pusher, so this is a coordinated change.
+If the cPanel plan forces its own configuration, this file is the documented
+fallback: disable it and apply the equivalent settings from cPanel.
 
 **If the plan does not allow `.htaccess` or `mod_rewrite`:**
 
@@ -217,7 +229,8 @@ From a machine outside the hosting account, in a private/incognito window:
 - [ ] The JSON brief export downloads a file and the QuickMap/Moon Trek links
       open in a new tab.
 - [ ] Response headers: `index.html` is `no-cache`, `/assets/*` is
-      `immutable` (check with `curl -I`).
+      `immutable`, `/data/*.json` and `/data/**/*.bin` revalidate daily
+      (check with `curl -I`).
 - [ ] The page is usable on a phone viewport and the demo flow runs end to end.
 - [ ] The public URL works without login/registration, as required for the
       Project page "Final Project" link.
@@ -227,6 +240,7 @@ Useful commands:
 ```bash
 curl -sI "https://<domain>/" | head -20
 curl -sI "https://<domain>/assets/<hashed-file>.js" | head -20
+curl -sI "https://<domain>/data/terrain/south-pole-875s-20m.bin" | head -20
 curl -s "https://<domain>/data/pois.json" | head -c 200
 ```
 
