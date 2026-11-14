@@ -38,3 +38,11 @@ the project. It also supports `--force`, `--only=<id[,id]>` and `--dry-run`.
 
 Do not edit files under `public/data/` by hand: regenerate them with these
 scripts so the provenance stays reproducible.
+
+## Source verification
+
+`node scripts/nasa/verify-sources.mjs` re-checks the official NASA sources and
+the shipped provenance metadata: PDS LOLA products and labels (data set
+`LRO-L-LOLA-4-GDR-V1.0`, scaling factor and offset), JPL Horizons, NASA Moon
+Trek, LROC QuickMap, and that no non-NASA ephemeris library is used. Requires
+network access; exits non-zero on any failure.

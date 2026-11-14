@@ -432,3 +432,67 @@ disappears, and terrain only if the grid geometry changes. `npm run build` copie
 | WMS request instead of WMTS | 404; Moon Trek exposes WMTS only | use the RESTful WMTS template documented in section 3 |
 | Static hosting blocks third-party images | tiles blocked | the layer catalogue records `viewerUrl` for opening Moon Trek directly |
 | Network offline during a demo | live layers fail | sites, ephemerides and terrain are local; the application has a no-WebGL 2D fallback |
+
+## 13. Official-source verification
+
+Every value shipped in `public/data/` comes from an official NASA source. The
+command below re-checks the sources and the shipped artefacts against their
+provenance metadata:
+
+```bash
+node scripts/nasa/verify-sources.mjs
+```
+
+Last run (2026-11-14): **all 12 checks passed**.
+
+| Check | Result |
+| --- | --- |
+| `south-pole-875s-20m` metadata matches PDS `ldem_875s_20m.jp2` (7584 x 7584, R = 1,737,400 m) | PASS |
+| `south-pole-80s-80m` metadata matches PDS `ldem_80s_80m.jp2` (7600 x 7600, R = 1,737,400 m) | PASS |
+| Terrain index references both LOLA regions | PASS |
+| PDS `ldem_875s_20m.jp2` downloadable, 21,462,406 bytes | PASS |
+| PDS `ldem_80s_80m.jp2` downloadable, 29,837,992 bytes | PASS |
+| PDS label declares data set `LRO-L-LOLA-4-GDR-V1.0`, scaling 0.5, offset 1,737,400 | PASS |
+| JPL Horizons API reachable (`ssd.jpl.nasa.gov`) | PASS |
+| NASA Moon Trek south-pole layer catalogue reachable (`trek.nasa.gov`) | PASS |
+| LROC QuickMap reachable (`quickmap.lroc.asu.edu`) | PASS |
+| No non-NASA ephemeris library in the dependencies | PASS |
+| No forbidden ephemeris library imported anywhere in `src/` or `scripts/` | PASS |
+| `index.html` loads no external scripts or styles | PASS |
+
+The four data sources used by the project are all NASA or NASA-partner official
+resources:
+
+| Data | Official provider |
+| --- | --- |
+| Sun/Earth ephemerides | NASA/JPL Horizons (DE441) |
+| Lunar terrain | NASA LRO LOLA, PDS Geosciences Node |
+| Map layers | NASA Moon Trek (NASA/GSFC) |
+| Site cross-checks and links | NASA LROC QuickMap (NASA/GSFC/ASU) |
+
+No third-party ephemeris library (Skyfield, astropy, pyephem) is used anywhere
+in the project. The ephemerides are retrieved directly from the JPL Horizons API
+by `scripts/nasa/fetch-horizons.mjs` and committed as pre-computed datasets.
+
+Runtime check (live deployment, 2026-11-14): a headless-browser network capture
+of <https://l-sea-space-apps.vercel.app> showed only same-origin requests
+(application assets and `/data/{terrain,ephemeris,layers,pois}`); the terrain
+grid fetched by the viewer is `/data/terrain/south-pole-80s-80m.bin` and the
+ephemeris file is `/data/ephemeris/<site>.json`. No external astronomy service
+and no third-party positional library is called by the browser: the interface
+receives Sun/Earth azimuth/elevation values already computed from the committed
+JPL Horizons datasets and only renders them.
+
+### LOLA download record
+
+| Product | URL | Size | SHA-256 of the downloaded file |
+| --- | --- | --- | --- |
+| LDEM_875S_20M | `.../polar/jp2/ldem_875s_20m.jp2` | 21,462,406 bytes | `fff7c2017a192788066a0867d78fd1ccf783216e26974b5e65287669aa472bac` |
+| LDEM_80S_80M | `.../polar/jp2/ldem_80s_80m.jp2` | 29,837,992 bytes | `c088dd4f510e879375ee7e6f0d320ba84115f535f45fb592dd7f83a7d2e83ae3` |
+
+Base directory:
+`https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/jp2/`
+
+The files are resampled locally by `scripts/nasa/build-terrain.py` (Python 3 +
+rasterio) into the browser-ready int16 grids described in section 4. The source
+files are cached outside the repository.
