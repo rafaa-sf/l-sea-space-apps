@@ -86,7 +86,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--id", required=True, help="region id")
     parser.add_argument("--name", required=True, help="human-readable region name")
     parser.add_argument("--role", required=True, help="high-resolution | wide-area | custom")
-    parser.add_argument("--size", required=True, type=int, help="output grid size in pixels (square)")
+    parser.add_argument("--width", type=int, default=None, help="output grid width in pixels")
+    parser.add_argument("--height", type=int, default=None, help="output grid height in pixels")
+    parser.add_argument("--size", type=int, default=None, help="output grid size in pixels (square; legacy alias)")
     parser.add_argument("--min-x", type=float, default=None, help="extent min X in projected metres")
     parser.add_argument("--min-y", type=float, default=None, help="extent min Y in projected metres")
     parser.add_argument("--max-x", type=float, default=None, help="extent max X in projected metres")
@@ -99,8 +101,12 @@ def main() -> None:
     source = Path(args.source)
     if not source.is_file():
         fail(f"source product not found: {source}")
-    if args.size < 2:
-        fail("--size must be at least 2 pixels")
+    width_px = args.width if args.width is not None else args.size
+    height_px = args.height if args.height is not None else args.size
+    if width_px is None or height_px is None:
+        fail("provide --width and --height (or --size for a square grid)")
+    if width_px < 2 or height_px < 2:
+        fail("--width and --height must be at least 2 pixels")
     if args.role not in ("high-resolution", "wide-area", "custom"):
         fail("--role must be high-resolution, wide-area or custom")
 
@@ -121,8 +127,6 @@ def main() -> None:
             fail("extent must satisfy minX < maxX and minY < maxY")
         width_m = max_x - min_x
         height_m = max_y - min_y
-        if abs(width_m - height_m) > 1e-6 * max(width_m, height_m):
-            fail(f"extent must be square (got {width_m:.3f} x {height_m:.3f} m); use --extent-km")
         tolerance = 1e-3
         if (
             min_x < b.left - tolerance
@@ -144,13 +148,13 @@ def main() -> None:
         if full_extent:
             # Same call as build-terrain.py, so regenerated standard regions stay
             # byte-identical to the committed grids.
-            raw = ds.read(1, out_shape=(args.size, args.size), resampling=Resampling.average)
+            raw = ds.read(1, out_shape=(height_px, width_px), resampling=Resampling.average)
         else:
             window = from_bounds(min_x, min_y, max_x, max_y, transform=ds.transform)
             raw = ds.read(
                 1,
                 window=window,
-                out_shape=(args.size, args.size),
+                out_shape=(height_px, width_px),
                 resampling=Resampling.average,
             )
             # The window is derived exactly from the requested extent; metadata
@@ -158,8 +162,8 @@ def main() -> None:
         source_shape = ds.shape
 
     grid = (raw.astype("float64") * SCALING_FACTOR).round().astype("<i2")
-    if grid.size != args.size * args.size:
-        fail(f"unexpected grid size {grid.size}, expected {args.size ** 2}")
+    if grid.size != width_px * height_px:
+        fail(f"unexpected grid size {grid.size}, expected {width_px * height_px}")
 
     out_bin = Path(args.out_bin)
     out_meta = Path(args.out_meta)
@@ -167,7 +171,9 @@ def main() -> None:
     out_bin.parent.mkdir(parents=True, exist_ok=True)
     grid.tofile(out_bin)
 
-    pixel_size_m = (max_x - min_x) / args.size
+    pixel_size_x_m = (max_x - min_x) / width_px
+    pixel_size_y_m = (max_y - min_y) / height_px
+    square_pixels = abs(pixel_size_x_m - pixel_size_y_m) <= 1e-3 * max(pixel_size_x_m, pixel_size_y_m)
     meta = {
         "id": args.id,
         "name": args.name,
@@ -179,9 +185,9 @@ def main() -> None:
         "datumNote": DATUM_NOTE,
         "projection": PROJECTION,
         "grid": {
-            "width": args.size,
-            "height": args.size,
-            "pixelSizeM": round(pixel_size_m, 4),
+            "width": width_px,
+            "height": height_px,
+            "pixelSizeM": round(pixel_size_x_m, 4),
             "minX": float(min_x),
             "maxX": float(max_x),
             "minY": float(min_y),
@@ -193,6 +199,15 @@ def main() -> None:
             "layout": "row-major",
             "file": bin_name,
             "fileBytes": int(out_bin.stat().st_size),
+            **(
+                {}
+                if args.role != "custom"
+                else {
+                    "pixelSizeXM": round(pixel_size_x_m, 4),
+                    "pixelSizeYM": round(pixel_size_y_m, 4),
+                    "squarePixels": bool(square_pixels),
+                }
+            ),
         },
         "elevationRangeM": [int(grid.min()), int(grid.max())],
         "attribution": "NASA/GSFC/LOLA (PDS Geosciences Node)",
@@ -205,9 +220,12 @@ def main() -> None:
                 "id": args.id,
                 "bin": str(out_bin),
                 "meta": str(out_meta),
-                "width": args.size,
-                "height": args.size,
+                "width": width_px,
+                "height": height_px,
                 "pixelSizeM": meta["grid"]["pixelSizeM"],
+                "pixelSizeXM": round(pixel_size_x_m, 4),
+                "pixelSizeYM": round(pixel_size_y_m, 4),
+                "squarePixels": bool(square_pixels),
                 "boundsM": {
                     "minX": meta["grid"]["minX"],
                     "maxX": meta["grid"]["maxX"],

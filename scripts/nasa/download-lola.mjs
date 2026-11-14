@@ -123,14 +123,16 @@ its DEM area selector, so new regions appear after a reload.
 Standard regions:
   --region=high-detail|wide-area|both   (default both)
   --product=ldem_875s_20m|ldem_80s_80m
-  --size=<px>  (default 2048 high-detail, 1024 wide-area)
+  --size=<px>|WxH  (default 2048/2048 high-detail, 1024/1024 wide-area)
   --mpp=<m/px>
 
-Custom local terrain (square, centred on the pole unless --center-* is given):
-  --extent-km=<km>                       e.g. --extent-km=400
-  --extent=<minX,minY,maxX,maxY>         projected metres, e.g. --extent=-200000,-200000,200000,200000
-  --center-x=<m> --center-y=<m>
-  --id=<region-id>                       default custom-<extentKm>km-<size>px
+Custom local terrain (rectangular; centred on the pole unless --center-* is given):
+  --extent-km=WxH|<km>                   e.g. --extent-km=400x300 or --extent-km=400
+  --extent=<minX,minY,maxX,maxY>         projected metres, arbitrary rectangle
+  --center-x=<m> --center-y=<m>          shift a --extent-km window off the pole
+  --size=<px>|WxH                        output grid, e.g. --size=1024x768
+  --mpp=<m/px>                           square pixels: width/height from the extent
+  --id=<region-id>                       default custom-<W>x<H>km-<w>x<h>px
 
 Other:
   --out-dir=<dir>   --cache-dir=<dir>   --force   --overwrite   --dry-run   --help
@@ -139,6 +141,9 @@ Examples:
   npm run data:lola
   npm run data:lola -- --region=high-detail --size=1024
   npm run data:lola -- --extent-km=400 --size=1024
+  npm run data:lola -- --extent-km=400x300 --size=1024x768
+  npm run data:lola -- --extent-km=400x300 --size=1024x768 --center-x=-50000 --center-y=40000
+  npm run data:lola -- --extent=-200000,-300000,200000,300000 --mpp=400
   npm run data:lola -- --product=ldem_80s_80m --mpp=250
   npm run data:lola -- --dry-run
 `
@@ -191,10 +196,10 @@ function parseArgs(argv) {
     switch (key) {
       case 'region': args.region = value; break
       case 'product': args.product = value; break
-      case 'size': args.size = Number(value); break
+      case 'size': args.size = value; break
       case 'mpp': args.mpp = Number(value); break
       case 'extent': args.extent = value; break
-      case 'extent-km': args.extentKm = Number(value); break
+      case 'extent-km': args.extentKm = value; break
       case 'center-x': args.centerX = Number(value); break
       case 'center-y': args.centerY = Number(value); break
       case 'id': args.id = value; break
@@ -206,16 +211,46 @@ function parseArgs(argv) {
   return args
 }
 
-function resolveSize(args, spanM, defaultSize) {
+/** Parse "WxH" or a single number into a positive integer pair. */
+function parseGridSpec(value, label) {
+  const parts = String(value).trim().toLowerCase().split('x')
+  if (parts.length > 2) throw new UsageError(`${label} must be a number or WxH (e.g. 1024x768)`)
+  const numbers = parts.map((part) => Number(part))
+  if (numbers.some((n) => !Number.isInteger(n) || n < 2)) {
+    throw new UsageError(`${label} must contain integers of at least 2 pixels`)
+  }
+  return { width: numbers[0], height: numbers.length === 2 ? numbers[1] : numbers[0] }
+}
+
+/** Resolve the output grid (pixels) for an extent and the --size/--mpp options. */
+function resolveGridSize(args, extent, defaultSize) {
+  const widthM = extent.maxX - extent.minX
+  const heightM = extent.maxY - extent.minY
   if (args.size != null) {
-    if (!Number.isInteger(args.size) || args.size < 2) throw new UsageError('--size must be an integer of at least 2 pixels')
-    return args.size
+    const grid = parseGridSpec(args.size, '--size')
+    return { ...grid, mppPixels: false }
   }
   if (args.mpp != null) {
     if (!Number.isFinite(args.mpp) || args.mpp <= 0) throw new UsageError('--mpp must be a positive number')
-    return Math.max(2, Math.round(spanM / args.mpp))
+    return {
+      width: Math.max(2, Math.round(widthM / args.mpp)),
+      height: Math.max(2, Math.round(heightM / args.mpp)),
+      mppPixels: true,
+    }
   }
-  return defaultSize
+  if (typeof defaultSize === 'number') return { width: defaultSize, height: defaultSize, mppPixels: false }
+  // Rectangular custom extent without --size/--mpp: keep the aspect ratio at 1024 px on the long side.
+  if (widthM >= heightM) {
+    return { width: 1024, height: Math.max(2, Math.round((1024 * heightM) / widthM)), mppPixels: false }
+  }
+  return { width: Math.max(2, Math.round((1024 * widthM) / heightM)), height: 1024, mppPixels: false }
+}
+
+/** True when both output axes have the same pixel size (within rounding). */
+function isSquarePixelGrid(extent, grid) {
+  const pixelX = (extent.maxX - extent.minX) / grid.width
+  const pixelY = (extent.maxY - extent.minY) / grid.height
+  return Math.abs(pixelX - pixelY) <= 1e-3 * Math.max(pixelX, pixelY)
 }
 
 function parseExtent(value) {
@@ -229,12 +264,18 @@ function parseExtent(value) {
 function validateExtent(extent) {
   const { minX, minY, maxX, maxY } = extent
   if (!(minX < maxX && minY < maxY)) throw new UsageError('extent must satisfy minX < maxX and minY < maxY')
-  const width = maxX - minX
-  const height = maxY - minY
-  if (Math.abs(width - height) > 1e-6 * Math.max(width, height)) {
-    throw new UsageError(`extent must be square (got ${width} x ${height} m); use --extent-km`)
+  return { widthM: maxX - minX, heightM: maxY - minY }
+}
+
+/** Parse "--extent-km=WxH" or "--extent-km=<km>" (square) into kilometre sizes. */
+function parseExtentKmSpec(value) {
+  const parts = String(value).trim().toLowerCase().split('x')
+  if (parts.length > 2) throw new UsageError('--extent-km must be a number or WxH in kilometres (e.g. 400x300)')
+  const numbers = parts.map((part) => Number(part))
+  if (numbers.some((n) => !Number.isFinite(n) || n <= 0)) {
+    throw new UsageError('--extent-km values must be positive numbers of kilometres')
   }
-  return width
+  return { widthKm: numbers[0], heightKm: numbers.length === 2 ? numbers[1] : numbers[0] }
 }
 
 function productCoverageError(extent) {
@@ -254,6 +295,11 @@ function selectProductForExtent(extent) {
     if (extent.minX >= -c && extent.minY >= -c && extent.maxX <= c && extent.maxY <= c) return product
   }
   throw productCoverageError(extent)
+}
+
+/** Human label for one dimension pair, e.g. "400km" or "400x300km". */
+function dimensionLabel(a, b, unit, format) {
+  return a === b ? `${format(a)}${unit}` : `${format(a)}x${format(b)}${unit}`
 }
 
 /** Resolve CLI arguments into download candidates and build jobs. */
@@ -280,33 +326,44 @@ function resolvePlan(args) {
 
   if (custom) {
     let extent
-    let extentKmLabel
+    let extentLabel
     const cx = args.centerX ?? 0
     const cy = args.centerY ?? 0
     if (args.extentKm != null) {
-      if (!Number.isFinite(args.extentKm) || args.extentKm <= 0) throw new UsageError('--extent-km must be positive')
-      const half = (args.extentKm * 1000) / 2
-      extent = { minX: cx - half, minY: cy - half, maxX: cx + half, maxY: cy + half }
-      extentKmLabel = formatKm(args.extentKm)
+      const km = parseExtentKmSpec(args.extentKm)
+      const halfW = (km.widthKm * 1000) / 2
+      const halfH = (km.heightKm * 1000) / 2
+      extent = { minX: cx - halfW, minY: cy - halfH, maxX: cx + halfW, maxY: cy + halfH }
+      extentLabel = dimensionLabel(km.widthKm, km.heightKm, 'km', formatKm)
     } else {
-      if (args.centerX != null || args.centerY != null) throw new UsageError('--center-x/--center-y cannot be combined with --extent')
+      if (args.centerX != null || args.centerY != null) throw new UsageError('--center-x/--center-y cannot be combined with --extent; use --extent-km')
       extent = parseExtent(args.extent)
-      const span = validateExtent(extent)
-      extentKmLabel = formatKm(span / 1000)
+      const { widthM, heightM } = validateExtent(extent)
+      extentLabel = dimensionLabel(widthM / 1000, heightM / 1000, 'km', formatKm)
     }
-    const span = validateExtent(extent)
+    const { widthM, heightM } = validateExtent(extent)
     const product = selectProductForExtent(extent)
-    const size = resolveSize(args, span, 1024)
+    const grid = resolveGridSize(args, extent, null)
+    const sizeLabel = dimensionLabel(grid.width, grid.height, 'px', String)
+    const compact = widthM === heightM && grid.width === grid.height
+    const centerX = (extent.minX + extent.maxX) / 2
+    const centerY = (extent.minY + extent.maxY) / 2
+    // Encode an off-pole centre in the id so two windows of the same size do not collide.
+    const centerSuffix =
+      Math.abs(centerX) > 0.5 || Math.abs(centerY) > 0.5
+        ? `-cx${formatKm(centerX / 1000)}km-cy${formatKm(centerY / 1000)}km`
+        : ''
+    const id = args.id
+      ? sanitizeId(args.id)
+      : (compact
+          ? `custom-${formatKm(widthM / 1000)}km-${grid.width}px`
+          : `custom-${formatKm(widthM / 1000)}x${formatKm(heightM / 1000)}km-${grid.width}x${grid.height}px`) +
+        centerSuffix
+    const name = compact
+      ? `Custom LOLA south-pole terrain, ${formatKm(widthM / 1000)} km at ${grid.width} px (LOLA ${product.label})`
+      : `Custom LOLA south-pole terrain, ${formatKm(widthM / 1000)} x ${formatKm(heightM / 1000)} km at ${grid.width} x ${grid.height} px (LOLA ${product.label})`
     productKeys.add(product.key)
-    jobs.push({
-      mode: 'custom',
-      product,
-      size,
-      extent,
-      id: args.id ? sanitizeId(args.id) : `custom-${extentKmLabel}km-${size}px`,
-      name: `Custom LOLA south-pole terrain, ${extentKmLabel} km at ${size} px (LOLA ${product.label})`,
-      role: 'custom',
-    })
+    jobs.push({ mode: 'custom', product, grid, extent, id, name, role: 'custom' })
   } else {
     let keys
     if (args.region === 'both' || (args.region == null && args.product == null)) keys = [...PRODUCT_ORDER]
@@ -314,13 +371,19 @@ function resolvePlan(args) {
     else keys = [args.product]
     for (const key of keys) {
       const product = PRODUCTS[key]
-      const size = resolveSize(args, product.spanM, product.defaultSize)
+      const extent = {
+        minX: -product.coverageM,
+        minY: -product.coverageM,
+        maxX: product.coverageM,
+        maxY: product.coverageM,
+      }
+      const grid = resolveGridSize(args, extent, product.defaultSize)
       productKeys.add(key)
       jobs.push({
         mode: 'standard',
         product,
-        size,
-        extent: { minX: -product.coverageM, minY: -product.coverageM, maxX: product.coverageM, maxY: product.coverageM },
+        grid,
+        extent,
         id: product.standardRegion.id,
         name: product.standardRegion.name,
         role: product.standardRegion.role,
@@ -435,7 +498,8 @@ function runHelper(job, plan, sourcePath, stagedBin, stagedMeta) {
     '--id', job.id,
     '--name', job.name,
     '--role', job.role,
-    '--size', String(job.size),
+    '--width', String(job.grid.width),
+    '--height', String(job.grid.height),
     '--min-x', String(job.extent.minX),
     '--min-y', String(job.extent.minY),
     '--max-x', String(job.extent.maxX),
@@ -455,7 +519,7 @@ function runHelper(job, plan, sourcePath, stagedBin, stagedMeta) {
 }
 
 function buildIndexEntry(meta) {
-  return {
+  const entry = {
     id: meta.id,
     role: meta.role,
     meta: `${meta.id}.json`,
@@ -471,6 +535,17 @@ function buildIndexEntry(meta) {
     },
     elevationRangeM: meta.elevationRangeM,
   }
+  // Custom grids also record the per-axis pixel size when the output is not square.
+  if (Number.isFinite(Number(meta.grid.pixelSizeXM)) && Number.isFinite(Number(meta.grid.pixelSizeYM))) {
+    entry.pixelSizeXM = meta.grid.pixelSizeXM
+    entry.pixelSizeYM = meta.grid.pixelSizeYM
+    entry.squarePixels = meta.grid.squarePixels === true
+    // Bounds also as lower/upper corner strings: the UI region label reads these to
+    // show "Custom W x H km at N m/px" for non-standard regions.
+    entry.boundsM.lower = `${entry.boundsM.minX} ${entry.boundsM.minY}`
+    entry.boundsM.upper = `${entry.boundsM.maxX} ${entry.boundsM.maxY}`
+  }
+  return entry
 }
 
 async function buildRegion(job, plan, sourcePath) {
@@ -479,7 +554,18 @@ async function buildRegion(job, plan, sourcePath) {
   const binPath = path.join(plan.outDir, `${job.id}.bin`)
   const metaPath = path.join(plan.outDir, `${job.id}.json`)
 
-  log(`building ${job.id}: ${job.size}x${job.size} px from ${job.product.file} (${displayPath(plan.outDir)})`)
+  const pixelX = (job.extent.maxX - job.extent.minX) / job.grid.width
+  const pixelY = (job.extent.maxY - job.extent.minY) / job.grid.height
+  if (!isSquarePixelGrid(job.extent, job.grid)) {
+    log(
+      `  note: non-square output pixels (${pixelX.toFixed(3)} m x ${pixelY.toFixed(3)} m); ` +
+        'the analysis core assumes one pixel size, so prefer --mpp or a proportional --size for analysis-grade regions',
+    )
+  }
+  log(
+    `building ${job.id}: ${job.grid.width}x${job.grid.height} px from ${job.product.file} ` +
+      `(${displayPath(plan.outDir)})`,
+  )
   try {
     const summary = runHelper(job, plan, sourcePath, stagedBin, stagedMeta)
     const sha256 = await hashFile(stagedBin)
@@ -502,8 +588,12 @@ async function buildRegion(job, plan, sourcePath) {
     await rename(stagedMeta, metaPath)
     const info = await stat(binPath)
     log(
-      `  wrote ${job.id}.bin: ${formatBytes(info.size)}, ${summary.pixelSizeM} m/px, ` +
-        `bounds plus/minus ${Math.max(Math.abs(summary.boundsM.minX), Math.abs(summary.boundsM.maxX)).toFixed(0)} m, ` +
+      `  wrote ${job.id}.bin: ${formatBytes(info.size)}, ` +
+        `${summary.width}x${summary.height} px, ` +
+        (summary.squarePixels
+          ? `${summary.pixelSizeM} m/px`
+          : `${summary.pixelSizeXM} m/px (x) x ${summary.pixelSizeYM} m/px (y)`) +
+        `, bounds [${summary.boundsM.minX},${summary.boundsM.minY},${summary.boundsM.maxX},${summary.boundsM.maxY}] m, ` +
         `elevation ${summary.elevationRangeM[0]}..${summary.elevationRangeM[1]} m, sha256 ${sha256}`,
     )
     return {
@@ -517,6 +607,9 @@ async function buildRegion(job, plan, sourcePath) {
       width: summary.width,
       height: summary.height,
       pixelSizeM: summary.pixelSizeM,
+      pixelSizeXM: summary.pixelSizeXM,
+      pixelSizeYM: summary.pixelSizeYM,
+      squarePixels: summary.squarePixels,
       boundsM: summary.boundsM,
       elevationRangeM: summary.elevationRangeM,
       indexEntry,
@@ -590,7 +683,7 @@ function printPlan(plan) {
   }
   for (const job of plan.jobs) {
     log(
-      `  region  ${job.id}: ${job.size}x${job.size} px from ${job.product.file}, ` +
+      `  region  ${job.id}: ${job.grid.width}x${job.grid.height} px from ${job.product.file}, ` +
         `extent [${job.extent.minX},${job.extent.minY},${job.extent.maxX},${job.extent.maxY}] m -> ` +
         `${path.join(plan.outDir, `${job.id}.bin`)}, ${path.join(plan.outDir, `${job.id}.json`)}`,
     )
@@ -653,6 +746,9 @@ async function main() {
       width: region.width,
       height: region.height,
       pixelSizeM: region.pixelSizeM,
+      pixelSizeXM: region.pixelSizeXM,
+      pixelSizeYM: region.pixelSizeYM,
+      squarePixels: region.squarePixels,
       boundsM: region.boundsM,
       elevationRangeM: region.elevationRangeM,
     })),
