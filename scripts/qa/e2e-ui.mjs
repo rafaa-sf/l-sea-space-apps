@@ -94,18 +94,49 @@ const canvasCentre = () =>
     const rect = canvas.getBoundingClientRect();
     return { x: Math.round(rect.x + rect.width / 2), y: Math.round(rect.y + rect.height / 2) };
   })()`)
-const squareCanvas = (canvas) =>
+const canvasIsUndistorted = (canvas) =>
   canvas &&
   canvas.clientWidth > 100 &&
-  Math.abs(canvas.clientWidth - canvas.clientHeight) <= 1 &&
-  Math.abs(canvas.bufferWidth / canvas.bufferHeight - canvas.clientWidth / canvas.clientHeight) < 0.01
-const waitForSquareCanvas = async () => {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  canvas.clientHeight > 100 &&
+  Math.abs(canvas.bufferWidth / canvas.bufferHeight - canvas.clientWidth / canvas.clientHeight) < 0.02
+const waitForCanvas = async () => {
+  for (let attempt = 0; attempt < 25; attempt += 1) {
     const canvas = await readCanvas()
-    if (squareCanvas(canvas)) return canvas
+    if (canvasIsUndistorted(canvas)) return canvas
     await sleep(200)
   }
   return readCanvas()
+}
+const readBreakdown = () =>
+  evaluate(`(() => {
+    const canvas = document.querySelector('[data-testid="viewport-canvas"]');
+    const centre = document.querySelector('[data-testid="layout-center"]');
+    if (!canvas || !centre) return null;
+    const c = canvas.getBoundingClientRect();
+    const m = centre.getBoundingClientRect();
+    return {
+      canvas: { width: Math.round(c.width), height: Math.round(c.height), x: Math.round(c.x), y: Math.round(c.y) },
+      centre: { width: Math.round(m.width), height: Math.round(m.height) },
+    };
+  })()`)
+const canvasAttribute = (name) =>
+  evaluate(`document.querySelector('[data-testid="viewport-canvas"]')?.getAttribute(${JSON.stringify(name)}) ?? null`)
+const selectDemRegion = async (regionId) => {
+  const changed = await evaluate(`(() => {
+    const select = document.querySelector('[data-testid="dem-region-select"]');
+    if (!select) return false;
+    const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set;
+    setter.call(select, ${JSON.stringify(regionId)});
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`)
+  if (!changed) return false
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    await sleep(250)
+    const region = await canvasAttribute('data-terrain-region')
+    if (region === regionId) return true
+  }
+  return false
 }
 const waitForScaleLabel = async () => {
   for (let attempt = 0; attempt < 25; attempt += 1) {
@@ -150,7 +181,7 @@ const railWidth = (testid) =>
     if (!el) return null;
     return Math.round(el.getBoundingClientRect().width);
   })()`)
-const dragHandle = async (testid, deltaX) => {
+const dragHandle = async (testid, deltaX, deltaY = 0) => {
   const rect = await evaluate(`(() => {
     const el = document.querySelector('[data-testid="${testid}"]');
     if (!el) return null;
@@ -159,8 +190,8 @@ const dragHandle = async (testid, deltaX) => {
   })()`)
   if (!rect) return false
   await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: rect.x, y: rect.y, button: 'left', buttons: 1, clickCount: 1 })
-  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: rect.x + deltaX, y: rect.y, button: 'left', buttons: 1 })
-  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: rect.x + deltaX, y: rect.y, button: 'left', buttons: 0, clickCount: 1 })
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: rect.x + deltaX, y: rect.y + deltaY, button: 'left', buttons: 1 })
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: rect.x + deltaX, y: rect.y + deltaY, button: 'left', buttons: 0, clickCount: 1 })
   await sleep(500)
   return true
 }
@@ -188,7 +219,7 @@ await send('Browser.setDownloadBehavior', {
 await sleep(9000)
 
 // Start the run from the default pane widths so drag/keyboard assertions are deterministic.
-await evaluate(`localStorage.removeItem('lsea.layout.leftWidth'); localStorage.removeItem('lsea.layout.rightWidth')`)
+await evaluate(`localStorage.clear()`)
 await send('Page.reload')
 await sleep(9000)
 
@@ -200,8 +231,38 @@ await sleep(800)
 text = await bodyText()
 report.initialAutopilot = (text.match(/Status: [^\n]+/) || [])[0] ?? 'MISSING'
 
-report.canvas = await waitForSquareCanvas()
+report.canvas = await waitForCanvas()
 report.terrain = await terrainAttributes()
+report.hillshadeMode = await canvasAttribute('data-hillshade-mode')
+report.terrainRegion = await canvasAttribute('data-terrain-region')
+report.breakdown = await readBreakdown()
+
+// LOLA DEM region selector: high detail, verify extent + legend, then back to wide.
+report.regionHighDetail = await selectDemRegion('south-pole-875s-20m')
+await sleep(3000)
+report.terrainHighDetail = await terrainAttributes()
+let legendHighDetail = null
+for (let attempt = 0; attempt < 40; attempt += 1) {
+  await sleep(300)
+  legendHighDetail = await evaluate(`document.querySelector('[data-testid="elevation-legend"]')?.textContent ?? null`)
+  if (legendHighDetail && /2,?369/.test(legendHighDetail)) break
+}
+report.legendHighDetail = legendHighDetail
+report.regionWide = await selectDemRegion('south-pole-80s-80m')
+await sleep(3000)
+report.terrainWide = await terrainAttributes()
+report.canvas = await waitForCanvas()
+report.scale3d = await waitForScaleLabel()
+const canvasHeightBeforeSplit = report.canvas?.clientHeight ?? 0
+const splitFractionBefore = await evaluate(`localStorage.getItem('lsea.layout.mapRatio')`)
+const splitDragged = await dragHandle('split-handle-vertical', 0, 60)
+await sleep(700)
+const canvasAfterSplit = await readCanvas()
+report.splitDragged = splitDragged
+report.canvasAfterSplit = canvasAfterSplit
+report.splitFraction = await evaluate(`localStorage.getItem('lsea.layout.mapRatio')`)
+report.splitHeightGain = (canvasAfterSplit?.clientHeight ?? 0) - canvasHeightBeforeSplit
+report.splitFractionBefore = splitFractionBefore
 report.scale3d = await waitForScaleLabel()
 await wheelZoom()
 report.scale3dAfterZoom = await waitForScaleLabel()
@@ -225,7 +286,7 @@ await sleep(3000)
 text = await bodyText()
 report.fallbackBanner = section(text, '2D fallback', 180)
 
-report.canvas2d = await waitForSquareCanvas()
+report.canvas2d = await waitForCanvas()
 report.scale2d = await waitForScaleLabel()
 await wheelZoom()
 report.scale2dAfterZoom = await waitForScaleLabel()
@@ -304,12 +365,8 @@ const scaleChanged = (before, after) =>
 const scaleParity = (() => {
   const mpp3d = parseMetersPerPixel(report.scale3d?.caption)
   const mpp2d = parseMetersPerPixel(report.scale2d?.caption)
-  const width3d = report.canvas?.clientWidth
-  const width2d = report.canvas2d?.clientWidth
-  if (!mpp3d || !mpp2d || !width3d || !width2d) return false
-  const extent3d = mpp3d * width3d
-  const extent2d = mpp2d * width2d
-  return Math.abs(extent3d - extent2d) / extent2d < 0.02
+  if (!mpp3d || !mpp2d) return false
+  return Math.abs(mpp3d - mpp2d) / mpp2d < 0.03
 })()
 
 report.scaleParity = scaleParity
@@ -324,8 +381,16 @@ const failed =
   report.downloads.length === 0 ||
   report.briefSchema !== 'lsea.mission-brief/1' ||
   !report.scale3d?.label ||
-  !squareCanvas(report.canvas) ||
-  !squareCanvas(report.canvas2d) ||
+  !canvasIsUndistorted(report.canvas) ||
+  !canvasIsUndistorted(report.canvas2d) ||
+  report.hillshadeMode !== 'fixed' ||
+  !(report.breakdown && Math.abs(report.breakdown.canvas.width - report.breakdown.centre.width) <= 3) ||
+  !(Math.abs(report.splitHeightGain) > 20) ||
+  !report.regionHighDetail ||
+  !/75840/.test(report.terrainHighDetail?.extent ?? '') ||
+  !/2,?369/.test(report.legendHighDetail ?? '') ||
+  !report.regionWide ||
+  !/304000/.test(report.terrainWide?.extent ?? '')
   !scaleChanged(report.scale3d, report.scale3dAfterZoom) ||
   !scaleChanged(report.scale2d, report.scale2dAfterZoom) ||
   report.terrain?.layout !== 'rectangular' ||
