@@ -287,7 +287,7 @@ Additional layout fixes required by the larger type scale and targets:
 
 | Check | Result |
 | --- | --- |
-| `npm test` | 108/108 tests passing |
+| `npm test` | 143/143 tests passing |
 | `npm run build` | green |
 | Device matrix — tool `#/tool`, English, **all 51 boxes + 2 no-WebGL probes** | **53/53 pass**, all 7 `@ui/*` checks (no horizontal overflow, no console errors, boxes in viewport, panels rendered, **targets ≥ 24 px**, **fonts ≥ 12 px**) |
 | Landing at 1440 / 390 / 320 px | no horizontal overflow, no console errors, targets ≥ 24 px, minimum font 12 px |
