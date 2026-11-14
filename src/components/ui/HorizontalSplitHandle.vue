@@ -52,8 +52,8 @@ function onPointerMove(event) {
     rafId = null
     const delta = pendingY - startY
     const height = Math.max(120, window.innerHeight - 160)
-    // Dragging up (negative delta) enlarges the map.
-    emitRatio(startRatio - delta / height)
+    // Dragging down enlarges the map (it is the top pane of the split).
+    emitRatio(startRatio + delta / height)
   })
 }
 
@@ -66,7 +66,7 @@ function onPointerUp(event) {
   }
   const delta = (event.clientY ?? pendingY) - startY
   const height = Math.max(120, window.innerHeight - 160)
-  emitRatio(startRatio - delta / height)
+  emitRatio(startRatio + delta / height)
   emit('commit')
   document.body.classList.remove('is-resizing-panes')
 }
@@ -78,13 +78,13 @@ function reset() {
 
 function onKeydown(event) {
   const step = event.shiftKey ? 0.12 : 0.04
-  if (event.key === 'ArrowUp') {
+  if (event.key === 'ArrowDown') {
     event.preventDefault()
     emitRatio(props.ratio + step)
     emit('commit')
     return
   }
-  if (event.key === 'ArrowDown') {
+  if (event.key === 'ArrowUp') {
     event.preventDefault()
     emitRatio(props.ratio - step)
     emit('commit')

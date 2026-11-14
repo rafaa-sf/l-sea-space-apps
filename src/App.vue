@@ -59,7 +59,7 @@ function readStoredWidth(side) {
 const MAP_RATIO_KEY = 'lsea.layout.mapRatio'
 const MAP_RATIO_MIN = 0.55
 const MAP_RATIO_MAX = 1
-const MAP_RATIO_DEFAULT = 0.92
+const MAP_RATIO_DEFAULT = 0.85
 
 function readStoredRatio() {
   try {
