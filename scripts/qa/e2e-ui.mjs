@@ -127,6 +127,43 @@ const wheelZoom = async (deltaY = -240) => {
   })
   await sleep(900)
 }
+const parseMetersPerPixel = (caption) => {
+  if (!caption) return null
+  const match = /([\d.,]+)\s*m\s*\/\s*px|1\s*px\s*=\s*([\d.,]+)\s*m/.exec(caption)
+  if (!match) return null
+  const value = Number((match[1] ?? match[2] ?? '').replace(/,/g, ''))
+  return Number.isFinite(value) ? value : null
+}
+const terrainAttributes = () =>
+  evaluate(`(() => {
+    const canvas = document.querySelector('[data-testid="viewport-canvas"]');
+    const root = document.querySelector('[data-markers-anchored]') ?? document.body;
+    return {
+      layout: canvas?.getAttribute('data-terrain-layout') ?? null,
+      extent: canvas?.getAttribute('data-terrain-extent') ?? null,
+      markersAnchored: root?.getAttribute('data-markers-anchored') ?? null,
+    };
+  })()`)
+const railWidth = (testid) =>
+  evaluate(`(() => {
+    const el = document.querySelector('[data-testid="${testid}"]');
+    if (!el) return null;
+    return Math.round(el.getBoundingClientRect().width);
+  })()`)
+const dragHandle = async (testid, deltaX) => {
+  const rect = await evaluate(`(() => {
+    const el = document.querySelector('[data-testid="${testid}"]');
+    if (!el) return null;
+    const box = el.getBoundingClientRect();
+    return { x: Math.round(box.x + box.width / 2), y: Math.round(box.y + box.height / 2) };
+  })()`)
+  if (!rect) return false
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: rect.x, y: rect.y, button: 'left', buttons: 1, clickCount: 1 })
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: rect.x + deltaX, y: rect.y, button: 'left', buttons: 1 })
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: rect.x + deltaX, y: rect.y, button: 'left', buttons: 0, clickCount: 1 })
+  await sleep(500)
+  return true
+}
 const bodyText = () => evaluate('document.body.innerText')
 const section = (text, needle, length = 200) => {
   const index = text.indexOf(needle)
@@ -159,6 +196,7 @@ text = await bodyText()
 report.initialAutopilot = (text.match(/Status: [^\n]+/) || [])[0] ?? 'MISSING'
 
 report.canvas = await waitForSquareCanvas()
+report.terrain = await terrainAttributes()
 report.scale3d = await waitForScaleLabel()
 await wheelZoom()
 report.scale3dAfterZoom = await waitForScaleLabel()
@@ -197,6 +235,12 @@ await sleep(800)
 text = await bodyText()
 report.ranking = (text.match(/#1[^\n]*\n?[^\n]*/) || [])[0]?.replace(/\n/g, ' ') ?? 'MISSING'
 
+report.railLeftBefore = await railWidth('layout-left-rail')
+report.resizeHandleDragged = await dragHandle('resize-handle-left', 90)
+report.railLeftAfterDrag = await railWidth('layout-left-rail')
+report.canvasAfterDrag = await readCanvas()
+report.scaleAfterDrag = await waitForScaleLabel()
+
 report.export = await click('Export JSON brief')
 await sleep(4000)
 const downloads = readdirSync(DOWNLOAD_DIR)
@@ -207,6 +251,33 @@ if (downloads.length > 0) {
   report.briefSites = Array.isArray(brief.rankedSites) ? brief.rankedSites.length : 'MISSING'
 }
 
+await sleep(3000)
+report.storagePersisted = await evaluate(`localStorage.getItem('lsea.layout.leftWidth')`)
+await send('Page.reload')
+await sleep(9000)
+report.railLeftAfterReload = await railWidth('layout-left-rail')
+const focusHandle = await evaluate(`(() => {
+  const el = document.querySelector('[data-testid="resize-handle-left"]');
+  if (!el) return false; el.focus(); return true;
+})()`)
+if (focusHandle) {
+  await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowLeft', code: 'ArrowLeft', windowsVirtualKeyCode: 37 })
+  await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowLeft', code: 'ArrowLeft', windowsVirtualKeyCode: 37 })
+  await sleep(500)
+}
+report.railLeftAfterKeyboard = await railWidth('layout-left-rail')
+// Moon Trek layer coverage/zoom check using the ?layers= pre-enable hook.
+const origin = await evaluate('location.origin')
+if (origin) {
+  await send('Page.navigate', { url: `${origin}/?lang=en&layers=lola-color-hillshade-5m` })
+  await sleep(11000)
+  await click('Layers')
+  await sleep(1500)
+  const layerDialog = await evaluate(`(() => { const d = document.querySelector('[role="dialog"]'); return d ? d.innerText : ''; })()`)
+  report.layerCoverage = (/Coverage\s+152\s*x\s+152\s*km/.exec(layerDialog) || [])[0] ?? 'MISSING'
+  report.layerZoom = (/Zoom\s+\d+,[^\n]*/.exec(layerDialog) || [])[0] ?? 'MISSING'
+}
+
 report.consoleErrors = consoleErrors.slice(0, 10)
 console.log(JSON.stringify(report, null, 2))
 
@@ -214,6 +285,16 @@ ws.close()
 await fetch(`${CDP}/json/close/${target.id}`)
 const scaleChanged = (before, after) =>
   Boolean(before?.label && after?.label && before.label !== after.label)
+const scaleParity = (() => {
+  const mpp3d = parseMetersPerPixel(report.scale3d?.caption)
+  const mpp2d = parseMetersPerPixel(report.scale2d?.caption)
+  const width3d = report.canvas?.clientWidth
+  const width2d = report.canvas2d?.clientWidth
+  if (!mpp3d || !mpp2d || !width3d || !width2d) return false
+  const extent3d = mpp3d * width3d
+  const extent2d = mpp2d * width2d
+  return Math.abs(extent3d - extent2d) / extent2d < 0.02
+})()
 
 const failed =
   consoleErrors.length > 0 ||
@@ -224,5 +305,14 @@ const failed =
   !squareCanvas(report.canvas) ||
   !squareCanvas(report.canvas2d) ||
   !scaleChanged(report.scale3d, report.scale3dAfterZoom) ||
-  !scaleChanged(report.scale2d, report.scale2dAfterZoom)
+  !scaleChanged(report.scale2d, report.scale2dAfterZoom) ||
+  report.terrain?.layout !== 'rectangular' ||
+  !report.terrain?.extent ||
+  report.terrain?.markersAnchored !== 'true' ||
+  !scaleParity ||
+  !(report.railLeftAfterDrag > report.railLeftBefore + 20) ||
+  Math.abs((report.railLeftAfterDrag ?? 0) - (report.railLeftAfterReload ?? -999)) > 2 ||
+  report.layerCoverage === 'MISSING' ||
+  !/Zoom\s+[5-9],/.test(report.layerZoom ?? '') ||
+  report.consoleErrors.length > 0
 process.exit(failed ? 1 : 0)
