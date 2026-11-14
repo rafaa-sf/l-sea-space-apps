@@ -8,25 +8,33 @@
  * 1. detects flat zones with {@link module:core/zones.detectLandingZones} on the
  *    *currently loaded* DEM region (the same terrain the user sees),
  * 2. for every zone picks the nearest curated site and reuses that site's
- *    precomputed Sun/Earth ephemeris (topocentric difference across ≤100 km is
- *    negligible at the lunar south pole — reported as an
- *    `ephemeris-nearest-site` warning),
- * 3. scores the zone with the regular `scoreSite` mission model, using the zone
- *    coordinates and the terrain horizon at the zone,
- * 4. returns the ranked entries plus metadata describing the approximation.
+ *    precomputed Sun/Earth ephemeris (topocentric difference across the south
+ *    pole is negligible — reported as an `ephemeris-nearest-site` warning),
+ * 3. computes the full mission-feasibility variables with
+ *    {@link module:core/landingMetrics.computeLandingMetrics}: safety, illumination,
+ *    power in Watts/Wh (battery + heater sizing), thermal, communications,
+ *    logistics and science proximity,
+ * 4. returns the ranked entries and metadata including a deterministic
+ *    `inputSignature` proving that everything was recomputed for the current
+ *    terrain region, mission profile and time window.
  *
  * @module core/zoneAutopilot
  */
 
 import { clamp, greatCircleDistanceM } from './geometry.js'
-import { terrainReferenceRadiusM } from './terrain.js'
+import { findCraters, terrainReferenceRadiusM } from './terrain.js'
 import {
   normalizeMission,
   normalizeSiteForScoring,
   resolveEphemerisForSite,
-  scoreSite,
 } from './autopilot.js'
-import { detectLandingZones } from './zones.js'
+import { detectLandingZones, normalizeZoneOptions } from './zones.js'
+import {
+  LANDING_MODEL_VERSION,
+  computeInputSignature,
+  computeLandingMetrics,
+  normalizeLandingWeights,
+} from './landingMetrics.js'
 
 /**
  * Documented approximation used when a zone borrows the ephemeris of the
@@ -43,8 +51,7 @@ export const ZONE_EPHEMERIS_APPROXIMATION =
  * @param {{lat: number, lon: number}} zone Zone centroid.
  * @param {Array<Object>} sites Curated sites (POI list).
  * @param {number} [referenceRadiusM] Lunar reference radius in meters.
- * @returns {{site: Object, distanceM: number}|null} Nearest site or `null`
- *   when the list is empty/invalid.
+ * @returns {{site: Object, distanceM: number}|null} Nearest site or `null`.
  */
 export function nearestCuratedSite(zone, sites, referenceRadiusM = 1737400) {
   if (!zone || !Array.isArray(sites) || sites.length === 0) return null
@@ -64,8 +71,7 @@ export function nearestCuratedSite(zone, sites, referenceRadiusM = 1737400) {
  * Build a scoring site record from a detected zone.
  *
  * The zone area is converted into an equivalent circular perimeter so the
- * regular mission logistics component sees how much room the zone offers; the
- * antenna mast height comes from the mission profile (the lander carries it).
+ * landing/safety metrics see how much room the zone offers.
  *
  * @param {Object} zone Detected zone.
  * @param {{mastM?: number|null, source?: string}} [extras]
@@ -89,14 +95,44 @@ export function landingZoneToSite(zone, extras = {}) {
 }
 
 /**
+ * Detect crater hazards once for the whole ranking run.
+ *
+ * @param {Object|null} terrain
+ * @param {Object} mission Normalized mission.
+ * @param {Object} options Detection options (may contain `detectCraterHazards`).
+ * @returns {{craters: Array<Object>, cratersAvailable: boolean}}
+ */
+function detectCraterHazards(terrain, mission, options) {
+  if (!terrain || options?.detectCraterHazards === false) return { craters: [], cratersAvailable: false }
+  try {
+    const craters = findCraters(terrain, {
+      minDiameterM: mission.craterHazardMinDiameterM,
+      maxDiameterM: Math.max(60000, mission.craterHazardReachM * 4),
+      minDepthM: 30,
+      maxCraters: 40,
+      maxCandidates: 600,
+    })
+    return { craters, cratersAvailable: true }
+  } catch (error) {
+    console.warn(`[landingZones] crater hazard detection failed: ${error instanceof Error ? error.message : String(error)}`)
+    return { craters: [], cratersAvailable: false }
+  }
+}
+
+/**
  * Rank landing zones for a mission profile.
+ *
+ * Every call recomputes all metrics from the current terrain, mission profile
+ * (including battery/thermal fields), ephemeris datasets and mission time
+ * window; nothing is cached at this level. `meta.inputSignature` changes
+ * whenever any of those inputs change.
  *
  * @param {{
  *   terrain: import('./terrain.js').Terrain|null,
- *   ephemeris: *, // single dataset, Map/object keyed by curated site id, or function
- *   sites: Array<Object>, // curated POIs used as ephemeris anchors
+ *   ephemeris: *,
+ *   sites: Array<Object>,
  *   mission?: Object,
- *   options?: Object, // detection options, plus `maxZones`
+ *   options?: Object,
  * }} input
  * @returns {{
  *   zones: Array<{
@@ -104,6 +140,7 @@ export function landingZoneToSite(zone, extras = {}) {
  *     rank: number|null,
  *     siteId: string,
  *     siteName: string,
+ *     site: Object,
  *     score: number|null,
  *     grade: string,
  *     gradeCode: string,
@@ -115,37 +152,50 @@ export function landingZoneToSite(zone, extras = {}) {
  *     ephemerisSiteId: string|null,
  *     nearestSiteId: string|null,
  *     nearestSiteDistanceM: number|null,
+ *     zoneLabel: string,
+ *     inputSignature: string,
  *   }>,
  *   meta: Object,
- * }} Ranked zone entries plus approximation metadata.
+ * }}
  */
 export function rankLandingZones({ terrain, ephemeris, sites, mission, options } = {}) {
   const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now()
   const normalizedMission = normalizeMission(mission ?? {})
   const curatedSites = Array.isArray(sites) ? sites : []
-  const detection = detectLandingZones(terrain, options ?? {})
+  const zoneOptions = options ?? {}
+  const detection = detectLandingZones(terrain, zoneOptions)
   const referenceRadiusM = terrainReferenceRadiusM(terrain)
-  const terrainId = terrain?.id ?? null
+  const cratersInfo = detectCraterHazards(terrain, normalizedMission, zoneOptions)
+  const detectionOptions = normalizeZoneOptions(zoneOptions)
+  const weights = normalizeLandingWeights(normalizedMission.weights ?? zoneOptions.weights)
+  const ephemerisSiteIds = new Set()
 
   const entries = detection.zones.map((zone) => {
-    const zoneSite = landingZoneToSite(zone, {
-      mastM: normalizedMission.mastM,
-      source: 'zone',
-    })
+    const zoneSite = landingZoneToSite(zone, { mastM: normalizedMission.mastM, source: 'zone' })
     const nearest = nearestCuratedSite(zone, curatedSites, referenceRadiusM)
     const ephemerisSource = nearest ? nearest.site : zoneSite
     const resolution = resolveEphemerisForSite(ephemeris, ephemerisSource)
-    const score = scoreSite({
-      site: zoneSite,
+    const ephemerisSiteId = nearest?.site.id ?? resolution.dataset?.siteId ?? null
+    if (ephemerisSiteId) ephemerisSiteIds.add(ephemerisSiteId)
+
+    const metricsResult = computeLandingMetrics({
       terrain,
+      zone,
+      zones: detection.zones,
       ephemeris: resolution.dataset,
+      site: zoneSite,
       mission: normalizedMission,
+      nearestSite: nearest,
+      craters: cratersInfo.craters,
+      cratersAvailable: cratersInfo.cratersAvailable,
+      options: {
+        ...zoneOptions,
+        maxSlopeDeg: zoneOptions.maxSlopeDeg ?? detection.meta.maxSlopeDeg,
+      },
+      ephemerisSiteId,
     })
 
-    // The regular scoreSite flags a single dataset as "shared"; for zones the
-    // per-zone nearest-site ephemeris is an explicit, documented approximation
-    // (reported below), so drop the generic warning to avoid double reporting.
-    const warnings = (score.warnings ?? []).filter((warning) => warning.code !== 'data.sharedEphemeris')
+    const warnings = [...metricsResult.warnings]
     if (nearest) {
       warnings.push({
         code: 'ephemeris-nearest-site',
@@ -167,14 +217,6 @@ export function rankLandingZones({ terrain, ephemeris, sites, mission, options }
         text: 'No curated site is available to anchor the Sun/Earth ephemeris for this zone.',
       })
     }
-    if (resolution.shared) {
-      warnings.push({
-        code: 'data.sharedEphemeris',
-        severity: 'info',
-        params: { zoneId: zone.id },
-        text: 'A single ephemeris dataset is shared by all zones; topocentric differences are ignored.',
-      })
-    }
 
     const reasons = [
       {
@@ -189,7 +231,7 @@ export function rankLandingZones({ terrain, ephemeris, sites, mission, options }
           `Flat landing zone of ${round1(zone.areaKm2)} km² ` +
           `(mean slope ${round2(zone.meanSlopeDeg)}°, max ${round2(zone.maxSlopeDeg)}°).`,
       },
-      ...(score.reasons ?? []),
+      ...metricsResult.reasons,
     ]
 
     return {
@@ -198,25 +240,19 @@ export function rankLandingZones({ terrain, ephemeris, sites, mission, options }
       siteId: zone.id,
       siteName: zone.name,
       site: zoneSite,
-      score: score.score,
-      grade: score.grade,
-      gradeCode: score.gradeCode,
-      confidence: score.confidence,
-      components: score.components,
-      metrics: {
-        ...score.metrics,
-        zoneAreaKm2: round2(zone.areaKm2),
-        zoneMeanSlopeDeg: round2(zone.meanSlopeDeg),
-        zoneMaxSlopeDeg: round2(zone.maxSlopeDeg),
-        zoneReliefM: round1(zone.reliefM),
-        zoneCellCount: zone.cellCount,
-        zoneSuitability: round2(zone.suitability),
-      },
+      score: metricsResult.score,
+      grade: metricsResult.grade,
+      gradeCode: metricsResult.gradeCode,
+      confidence: metricsResult.confidence,
+      components: metricsResult.components,
+      metrics: metricsResult.metrics,
       reasons,
       warnings,
-      ephemerisSiteId: nearest?.site.id ?? resolution.dataset?.siteId ?? null,
+      ephemerisSiteId,
       nearestSiteId: nearest?.site.id ?? null,
       nearestSiteDistanceM: nearest ? round1(nearest.distanceM) : null,
+      zoneLabel: null,
+      inputSignature: metricsResult.inputSignature,
     }
   })
 
@@ -234,12 +270,25 @@ export function rankLandingZones({ terrain, ephemeris, sites, mission, options }
     }
   }
 
+  // One run-wide signature: covers the terrain, the normalized mission, the
+  // detection options and every ephemeris dataset actually used.
+  const signature = computeInputSignature({
+    terrain,
+    mission: normalizedMission,
+    ephemeris: {
+      sites: [...ephemerisSiteIds].sort(),
+      sampleCount: detection.zones.length > 0 ? (ephemeris && typeof ephemeris === 'object' && typeof ephemeris.samples?.length === 'number' ? ephemeris.samples.length : null) : null,
+    },
+    options: detectionOptions,
+  })
+  for (const entry of entries) entry.inputSignature = signature
+
   const finishedAt = typeof performance !== 'undefined' ? performance.now() : Date.now()
   const scoredEntries = entries.filter((entry) => entry.score != null)
   return {
     zones: entries,
     meta: {
-      terrainId,
+      terrainId: terrain?.id ?? null,
       terrainKind: detection.meta.terrainKind,
       syntheticTerrain: detection.meta.synthetic === true,
       zoneCount: entries.length,
@@ -248,12 +297,38 @@ export function rankLandingZones({ terrain, ephemeris, sites, mission, options }
       approximation: ZONE_EPHEMERIS_APPROXIMATION,
       ephemerisApproxMaxErrorDeg: 0.1,
       ephemerisMode: curatedSites.length > 0 ? 'nearest-curated-site' : 'unavailable',
+      weights,
+      modelVersion: LANDING_MODEL_VERSION,
+      inputSignature: signature,
+      computedAt: new Date().toISOString(),
+      computeMs: Math.round((finishedAt - startedAt) * 100) / 100,
+      inputs: {
+        terrainId: terrain?.id ?? null,
+        terrainWidth: terrain?.width ?? null,
+        terrainHeight: terrain?.height ?? null,
+        terrainSynthetic: terrain?.synthetic === true,
+        missionStart: normalizedMission.startTime,
+        missionDays: normalizedMission.missionDays,
+        powerNeedW: normalizedMission.powerNeedW,
+        batteryCapacityWh: normalizedMission.batteryCapacityWh,
+        heaterMaxW: normalizedMission.heaterMaxW,
+        thermalLimitsC: [normalizedMission.minOperatingTemperatureC, normalizedMission.maxOperatingTemperatureC],
+        maxSlopeDeg: detectionOptions.maxSlopeDeg,
+        minAreaKm2: detectionOptions.minAreaKm2,
+        maxZones: detectionOptions.maxZones,
+        ephemerisSiteIds: [...ephemerisSiteIds].sort(),
+      },
       mission: {
         missionDays: normalizedMission.missionDays,
         powerNeedW: normalizedMission.powerNeedW,
         sunDaysNeeded: normalizedMission.sunDaysNeeded,
         relayInOrbit: normalizedMission.relayInOrbit,
         startTime: normalizedMission.startTime,
+        batteryCapacityWh: normalizedMission.batteryCapacityWh,
+        heaterMaxW: normalizedMission.heaterMaxW,
+        minOperatingTemperatureC: normalizedMission.minOperatingTemperatureC,
+        maxOperatingTemperatureC: normalizedMission.maxOperatingTemperatureC,
+        landingEllipseRadiusM: normalizedMission.landingEllipseRadiusM,
       },
       rankingMs: Math.round((finishedAt - startedAt) * 100) / 100,
     },

@@ -25,7 +25,7 @@ TypeScript. The developer workflow and commands are in the [README](../README.md
 
 | Path | Contents |
 | --- | --- |
-| `src/core/` | Pure domain logic: geometry, engine, terrain, ephemeris, power, comms, autopilot |
+| `src/core/` | Pure domain logic: geometry, engine, terrain, ephemeris, power, comms, autopilot, zones, landingMetrics |
 | `src/services/` | Data access and integration adapters (Horizons, LOLA, Moon Trek, export, sites, storage) |
 | `src/workers/` | Background Web Worker (single CPU thread) |
 | `src/components/` | Vue components and feature panels |
@@ -183,6 +183,23 @@ Mission profile input:
   sunDaysNeeded: 10,         // consecutive lunar days of sunlight required
   perimeterM: 200,
   mastM: 10,
+  // optional mission-feasibility fields (backward compatible defaults):
+  batteryCapacityWh: null,   // null = battery is a sizing recommendation
+  batteryRoundTripEfficiency: 0.9,
+  batteryDepthOfDischarge: 0.8,
+  heaterMaxW: 400,
+  heaterWPerK: 2,
+  minOperatingTemperatureC: -40,
+  maxOperatingTemperatureC: 50,
+  landingEllipseRadiusM: 500,
+  craterHazardMinDiameterM: 500,
+  craterHazardReachM: 5000,
+  scienceReachM: 5000,
+  thermal: {                 // single-layer radiative model parameters
+    albedo: 0.12, emissivity: 0.95, solarConstantWm2: 1361,
+    nightTemperatureC: -180, psrTemperatureC: -200,
+  },
+  weights: null,             // optional zone component weight overrides
 }
 ```
 
@@ -199,23 +216,69 @@ Mission profile input:
 - Zone shape: `{ id, name, lat, lon, xMeters, yMeters, areaKm2, meanSlopeDeg,
   maxSlopeDeg, elevationM, reliefM, cellCount, suitability }`.
 
-### `src/core/zoneAutopilot.js`
+### `src/core/zoneAutopilot.js` and `src/core/landingMetrics.js`
 
 - `rankLandingZones({ terrain, ephemeris, sites, mission, options }) -> { zones, meta }`
-  — scores the detected zones with the regular mission model (`scoreSite`) using
-  the zone coordinates and the terrain horizon at the zone; each zone selects the
-  nearest curated site and borrows its precomputed Sun/Earth ephemeris.
-- **Approximation note:** the borrowed ephemeris is reported as an
-  `ephemeris-nearest-site` warning and in `meta.approximation`. It is safe in
-  practice: the topocentric Earth parallax difference is below 0.1° even across
-  the 608 km wide south-pole DEM (the Sun is effectively unaffected), which is
-  well inside the terrain-horizon uncertainty; the terrain itself is always
-  evaluated at the zone. Only the **currently loaded DEM region** is used (not
-  all regions), because that is the terrain the user sees, and the zone autopilot
-  is meant to run in the background worker.
-- Ranked entry: `{ zone, rank, score, grade, components, reasons, warnings,
-  ephemerisSiteId }` plus convenience fields (`siteId`, `siteName`, `metrics`,
-  `nearestSiteId`, `nearestSiteDistanceM`).
+  — detects zones on the loaded DEM, anchors each zone to the nearest curated
+  site's precomputed Sun/Earth ephemeris and computes the full mission variables
+  with `computeLandingMetrics` (safety, illumination, power W/Wh, thermal, comms,
+  logistics, science). Everything is recomputed on every call: terrain region,
+  mission profile, mission start time and ephemeris window all feed the metrics,
+  and the deterministic `meta.inputSignature` (short hex, also on each entry)
+  changes whenever any of them changes. `meta.computedAt` / `meta.computeMs`
+  record when the run happened.
+- Ranked entry: `{ zone, rank, score, grade, gradeCode, confidence, components,
+  metrics, reasons, warnings, ephemerisSiteId, nearestSiteId,
+  nearestSiteDistanceM, zoneLabel, inputSignature }`.
+- `metrics.safety` — mean/max/std slope [deg], roughness [m], relief [m], flat
+  fraction [0..1], `ellipse` fit (`fitRatio`, required/available area [km²],
+  required/equivalent radius [m], margin [m]) and `hazard` (nearest crater
+  distance/diameter/depth [m], clearance [0..1], craters within reach).
+- `metrics.illumination` — sunlit fraction [0..1], sunlit hours [h], continuous
+  sun days [d], longest eclipse [h], min/max/mean sun elevation [deg], eclipse
+  count, sunset/sunrise count, window hours.
+- `metrics.power` — average/max/min/peak solar power [W], eclipse hours [h],
+  eclipse deficit [Wh], required battery energy [Wh], heater power/energy [W/Wh],
+  average heater load [W], margin vs `powerNeedW` [W, ratio], battery capacity and
+  coverage, `meetsPowerNeed`, daily energy [Wh/day].
+- `metrics.thermal` — day/night/PSR surface temperature [°C], min/max and cycling
+  ΔT [°C], cycle count, heater [W/Wh], operating range flags.
+- `metrics.comms` — direct/effective Earth visibility [0..1], longest LOS gap
+  [h] and its start, available hours, relay coverage and benefit, data budget
+  [Mb] vs need, data-rate and mast-clearance heuristic [deg].
+- `metrics.logistics` — nearest curated site [m], nearest flat pad [m, km²],
+  traverse distance/difficulty index, equivalent perimeter [m].
+- `metrics.science` — nearest crater distance/diameter/depth [m], craters within
+  reach, crater proximity score, PSR proximity (inferred from zero illumination).
+- Legacy flat fields (`averageW`, `sunlitFraction`, `meanSlopeDeg`,
+  `earthVisibleFraction`, `requiredBatteryWh`, `heaterWh`, `minTempC`,
+  `maxTempC`, `maxLosGapHours`, …) are kept for backward compatibility.
+
+Scoring weights (configurable through `mission.weights`, normalized to sum 1):
+power 0.25, sun 0.20, comms 0.20, safety 0.15, thermal 0.10, logistics 0.05,
+science 0.05. Every component is 0..100; `components.terrain` is a
+backward-compatible alias of `components.safety`.
+
+Documented formulas/approximations:
+
+- Thermal: `T = [ (1 − A)·S·sin(el) / (ε·σ) ]^(1/4)` for sunlit terrain
+  (`σ = 5.670374419e-8`), fixed night/PSR temperatures for eclipse and
+  permanently shadowed terrain, and `heaterWh = clip((minOperating − minTemp)·W/K,
+  0, heaterMaxW) · eclipseHours`.
+- Battery: `requiredBatteryWh = (powerNeedW + heaterPowerW)·eclipseHours /
+  (batteryRoundTripEfficiency · batteryDepthOfDischarge)`.
+- Landing ellipse: circular approximation `π·landingEllipseRadiusM²`; crater
+  hazards and science proximity come from the DEM crater detector (a dedicated
+  PSR raster is not shipped; PSR proximity is inferred from zero illumination).
+- Ephemeris: each zone borrows the nearest curated site's precomputed dataset
+  (`ephemeris-nearest-site` warning); the topocentric Earth parallax difference
+  is <0.1° even across the 608 km wide DEM and the Sun is effectively
+  unaffected, so the approximation is well inside the terrain-horizon
+  uncertainty. Only the currently loaded DEM region is used.
+- Missing data degrades gracefully: metrics are zeroed where impossible, explicit
+  warnings (`data.ephemerisMissing`, `battery-capacity-not-specified`,
+  `no-crater-hazard-data`, `psr-map-unavailable`, `zone.is-psr`, …) are attached
+  and `confidence` is reduced instead of failing.
 
 ### `src/services/`
 
