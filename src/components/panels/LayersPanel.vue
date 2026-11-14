@@ -87,17 +87,6 @@ function statusLabel(layer) {
             </span>
           </span>
         </label>
-        <a
-          v-if="layer.attributionUrl || layer.url"
-          class="button button--quiet button--tiny layer-item__open"
-          :href="layer.attributionUrl || layer.url"
-          target="_blank"
-          rel="noopener noreferrer"
-          :title="t('layers.openExternal')"
-          :aria-label="t('layers.openExternal')"
-        >
-          {{ t('common.open') }}
-        </a>
       </li>
     </ul>
     <p v-if="state.layers.length === 0" class="empty">{{ t('layers.empty') }}</p>

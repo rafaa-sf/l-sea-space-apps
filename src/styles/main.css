@@ -1917,10 +1917,6 @@ body.is-resizing-panes * {
   flex-wrap: wrap;
 }
 
-.layer-item__open {
-  flex: 0 0 auto;
-}
-
 .crater-list {
   max-height: 150px;
   overflow-y: auto;

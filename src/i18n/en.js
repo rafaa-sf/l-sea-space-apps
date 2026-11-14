@@ -310,10 +310,9 @@ export default {
   },
   layers: {
     title: 'Moon Trek layers',
-    hint: 'Enable raster overlays where the dataset provides WMS/XYZ services. Reference entries open externally.',
+    hint: 'Enable raster overlays where the dataset provides WMS/XYZ services. Tiles are fetched from the NASA Moon Trek WMTS services and draped on the loaded DEM.',
     sourceNote: 'Layer catalogue source',
     listLabel: 'Layer catalogue',
-    openExternal: 'Open layer source',
     empty: 'No layer catalogue loaded.',
     overlayNote: 'Overlays are stitched from live Moon Trek WMTS tiles and draped on the DEM; availability depends on the NASA service.',
     coverage: 'Coverage {width} x {height} km',

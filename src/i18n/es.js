@@ -310,10 +310,9 @@ export default {
   },
   layers: {
     title: 'Capas de Moon Trek',
-    hint: 'Activa capas ráster cuando el dataset proporcione servicios WMS/XYZ. Las entradas de referencia se abren externamente.',
+    hint: 'Activa capas ráster cuando el dataset proporcione servicios WMS/XYZ. Los tiles se descargan de los servicios WMTS de NASA Moon Trek y se superponen al MDE cargado.',
     sourceNote: 'Fuente del catálogo de capas',
     listLabel: 'Catálogo de capas',
-    openExternal: 'Abrir fuente de la capa',
     empty: 'No hay catálogo de capas cargado.',
     overlayNote: 'Las capas se montan con teselas WMTS de Moon Trek en vivo y se proyectan sobre el MDE; su disponibilidad depende del servicio NASA.',
     coverage: 'Cobertura {width} x {height} km',
