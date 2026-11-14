@@ -252,6 +252,13 @@ All AI-generated content was reviewed by the team, which remains responsible for
 decisions, verification and authorship of the submission. No AI-generated media with
 identifiable people is included.
 
+The declaration also covers the follow-up hardening rounds: UX compliance against
+the event support guide (contrast, type scale, targets, hierarchy, first-run flow
+and error copy), the playback/time-control fix and Sun/Earth direction alignment,
+the whole-page and device-matrix QA sweeps, the Monte Carlo simulations over the
+scientific core and the interface cleanup. The full list of agent-opened issues and
+pull requests is recorded in the declaration.
+
 ## 7. Readiness checklist
 
 Mapped to the official Project page fields (see [challenge.md](challenge.md) for the
