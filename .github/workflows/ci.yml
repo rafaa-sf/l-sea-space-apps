@@ -3,7 +3,8 @@ name: CI
 # Lightweight, secret-free continuous integration for the L-SEA Space Apps
 # static application. Every push to main/develop and every pull request must
 # install the locked dependencies, run the unit tests and produce a production
-# build with Node.js 24.
+# build with Node.js 24. The Miro MCP server is a separate package with its own
+# lockfile and test suite.
 
 on:
   push:
@@ -52,3 +53,29 @@ jobs:
         run: |
           test -f dist/index.html
           test -d dist/assets
+          test -f dist/data/pois.json
+          test -f dist/data/layers.json
+          test -f dist/data/terrain/index.json
+          test -f dist/data/ai-usage.md
+
+  mcp-tests:
+    name: Miro MCP tests (Node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: mcp/miro/package-lock.json
+
+      - name: Install locked MCP dependencies
+        run: npm --prefix mcp/miro ci --no-audit --no-fund
+
+      - name: Run MCP tests
+        run: npm --prefix mcp/miro test
