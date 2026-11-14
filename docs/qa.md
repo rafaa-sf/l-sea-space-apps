@@ -71,11 +71,11 @@ contains `dist/index.html`, `dist/assets`, the three JSON datasets and
 ## 4. Data integrity results
 
 Executed with two independent tools (Node `DataView` decoder and Python) against the
-committed terrain files; 2 regions, 0 failures.
+committed terrain files; 2 source regions + 4 DEM area presets, 0 failures.
 
 | ID | Check | Observed result | Verdict |
 | --- | --- | --- | --- |
-| D-01 | `index.json` parses; schema fields present | reference radius 1,737,400 m; polar_stereographic; default region `south-pole-875s-20m`; 2 regions | PASS |
+| D-01 | `index.json` parses; schema fields present | reference radius 1,737,400 m; polar_stereographic; default region `south-pole-875s-20m`; 2 source regions + 4 area presets | PASS |
 | D-02 | Binary size versus width x height x 2 bytes | high resolution 8,388,608 B = 2048 x 2048 x 2; wide 2,097,152 B = 1024 x 1024 x 2; `meta.grid.fileBytes` matches | PASS |
 | D-03 | int16 little-endian decode, dtype, endianness, layout | decoded row-major; all values inside the int16 range; no decode errors | PASS |
 | D-04 | Decoded min and max versus declared `elevationRangeM` | high resolution [-4,378, 2,369] exactly; wide [-7,274, 7,001] exactly | PASS |

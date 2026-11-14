@@ -229,7 +229,7 @@ intellectual-property moat.
 | What is the market? | Public agency budget and CLPS records plus interviews | A sourced, modest estimate, not a top-down TAM guess |
 
 Evidence today: the workflow gap is given by the challenge brief; the terrain data
-pipeline is validated (two regions, 0 failures, cross-region r = 0.9993); the
+pipeline is validated (two source regions + four DEM area presets, 0 failures, cross-region r = 0.9993); the
 application is implemented, tested and deployed. No business validation has been
 performed.
 
@@ -281,7 +281,7 @@ project should emphasise:
 | --- | --- | --- | --- |
 | Impact: problem, audience, quality and scope of benefit, and the evidence supporting it | The audience and operational pain are concrete; the benefit is plausible and the evidence for the workflow gap is the challenge itself | Problem and audience stated by the brief (CLPS and other lunar missions, south-pole water ice, schedule slips); two-market framing; quantified benefit is a hypothesis, not measured | No user interviews, no timed usability result, no customer |
 | Creativity: originality of the approach or a significant improvement over alternatives | The combination is new: rapid scenario comparison, mission-profile autopilot, bilingual no-WebGL static UI and JSON brief over the existing authoritative tools | Differentiation argued from the brief's explicit gap; autopilot scoring is implemented and unit-tested | The creativity is in the integration and experience, not in a novel algorithm |
-| Validity: scientific soundness and technical, functional or logical viability; evidence and limitations | The physics is standard and disclosed; the terrain pipeline is real and validated; limits are stated before the judge asks | LOLA terrain shipped and validated (2 regions, 0 failures, cross-region r = 0.9993); production build green; 104 app tests plus 8 MCP tests pass; live end-to-end check passes | Accuracy against live JPL Horizons references not yet validated; no formal usability test |
+| Validity: scientific soundness and technical, functional or logical viability; evidence and limitations | The physics is standard and disclosed; the terrain pipeline is real and validated; limits are stated before the judge asks | LOLA terrain shipped and validated (2 source regions + 4 area presets, 0 failures, cross-region r = 0.9993); production build green; 143 app tests plus 8 MCP tests pass; live end-to-end check passes | Accuracy against live JPL Horizons references not yet validated; no formal usability test |
 | Relevance: answer to the challenge and substantial integration of NASA resources | Directly answers challenge 10 with the three named data streams; LOLA terrain, JPL Horizons ephemerides and the Moon Trek layer catalogue are shipped and consumed | Challenge answered feature for feature (site comparison, dates, Sun and Earth versus horizon, time-to-set, power, communications, layers, autopilot, export); all three NASA resources implemented and consumed | End-to-end accuracy validation still pending |
 | Presentation: clarity, structure and effectiveness | Slides are legible, honest, structured and in English; the demo shows something real; the limits slide is confident rather than defensive | Seven-slide deck and 30-second video script designed; demo runbook and fallbacks prepared | Final deck or video assets and the public link |
 

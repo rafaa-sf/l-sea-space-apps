@@ -72,10 +72,15 @@ async function checkTerrainMetadata() {
     )
   }
   const index = readJson('public/data/terrain/index.json')
+  const regions = Array.isArray(index.regions) ? index.regions : []
+  const sourceRegions = ['south-pole-875s-20m', 'south-pole-80s-80m']
+  const present = sourceRegions.filter((id) => regions.some((region) => region.id === id))
+  // The DEM area selector adds derived 100–400 km presets, so the contract is
+  // "both source regions are present", not a fixed region count.
   record(
-    'terrain index references both regions',
-    Array.isArray(index.regions) && index.regions.length === 2,
-    `${index.regions?.length ?? 0} regions`,
+    'terrain index includes both source regions',
+    present.length === sourceRegions.length,
+    `${regions.length} regions incl. ${present.join(', ') || 'none'}`,
   )
 }
 
