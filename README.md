@@ -51,7 +51,7 @@ Full grouped index: **[docs/README.md](docs/README.md)**.
 
 - **Project and challenge:** [challenge](docs/challenge.md) · [architecture](docs/architecture.md) · [NASA data](docs/data.md) · [AI use declaration](docs/ai-usage.md)
 - **Product, impact and submission:** [submission](docs/submission.md) · [demo](docs/demo.md) · [impact and scalability](docs/scalability.md) · [commercial case](docs/commercial.md)
-- **Quality and operations:** [QA and test bench](docs/qa.md) · [deployment](docs/deployment.md) · [contributing](docs/contributing.md) · [security](docs/security.md) · [decisions](docs/decisions.md) · [Miro integration](docs/miro.md)
+- **Quality and operations:** [QA and test bench](docs/qa.md) · [UX compliance](docs/ux-compliance.md) · [deployment](docs/deployment.md) · [contributing](docs/contributing.md) · [security](docs/security.md) · [decisions](docs/decisions.md) · [Miro integration](docs/miro.md)
 - **Reproducible test bench:** [qa/README.md](qa/README.md) · [qa/REPORT.md](qa/REPORT.md)
 
 ## NASA data

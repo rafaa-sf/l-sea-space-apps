@@ -31,6 +31,7 @@ document is written in English and kept in sync with the implementation.
 | Document | What it covers |
 | --- | --- |
 | [qa.md](qa.md) | Test strategy and executed QA evidence (unit, contract, Monte Carlo bench, device matrix, live checks) |
+| [ux-compliance.md](ux-compliance.md) | Compliance with the Málaga 2026 UX support guide: 7 requirements, measured audit, gaps and change-control process |
 | [deployment.md](deployment.md) | Vercel deployment, verification checklist and rollback |
 | [contributing.md](contributing.md) | Language, commit and branch conventions plus the two-machine collaboration protocol |
 | [security.md](security.md) | Secrets policy, protected files and repository safety |
