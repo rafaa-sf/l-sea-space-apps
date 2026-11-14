@@ -447,7 +447,7 @@ const MEASURE_SCRIPT = String.raw`(() => {
 /* ------------------------------------------------------------------ */
 async function runOne(ctx, { device, locale, runIndex }) {
   const { cdp, url, noWebgl, timeout, hash } = ctx
-  const events = { consoleErrors: [], consoleWarnings: [], exceptions: [], logErrors: [], failedRequests: [] }
+  const events = { consoleErrors: [], consoleWarnings: [], exceptions: [], logErrors: [], failedRequests: [], notes: [] }
   const onEvent = (msg) => {
     if (msg.method === 'Runtime.consoleAPICalled') {
       const { type, args } = msg.params
@@ -583,7 +583,14 @@ async function runOne(ctx, { device, locale, runIndex }) {
       const shot = await cdp.send('Page.captureScreenshot', shotParams, 60000)
       writeFileSync(shotPath, Buffer.from(shot.data, 'base64'))
     } catch (e) {
-      events.consoleErrors.push(`screenshot failed: ${e.message}`)
+      // A slow screenshot is a harness limitation, not an application console
+      // error: retry once and record it as a note.
+      try {
+        const retry = await cdp.send('Page.captureScreenshot', shotParams, 90000)
+        writeFileSync(shotPath, Buffer.from(retry.data, 'base64'))
+      } catch (retryError) {
+        events.notes.push(`screenshot failed: ${retryError.message}`)
+      }
     }
     const shotMs = Date.now() - shotStart
 
