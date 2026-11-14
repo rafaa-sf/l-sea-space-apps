@@ -1,0 +1,61 @@
+# ---------------------------------------------------------------------------
+# L-SEA SPACE APPS - Git ignore rules
+#
+# Never commit secrets, environment values or generated artifacts.
+# The .env files listed below must stay local.
+# ---------------------------------------------------------------------------
+
+# Environment files (real values never leave the machine)
+.env
+.env.*
+!.env.example
+
+# Secrets and credentials
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials/
+.aws/
+.npmrc
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+dist/
+build/
+.next/
+out/
+coverage/
+.turbo/
+.vercel/
+.parcel-cache/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Logs
+*.log
+logs/
+
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*~
