@@ -68,7 +68,10 @@ export const DEFAULT_MISSION = Object.freeze({
   comms: DEFAULT_COMMS_MODEL,
   // Mission-feasibility fields added for the landing-zone autopilot (optional,
   // backward compatible: older mission objects simply get these defaults).
-  batteryCapacityWh: null,
+  // Documented default battery class for this lander (40 kWh). Missions can
+  // override it; when the value is not specified the default is used and the
+  // feasibility gate reports `feasibility.batteryNotSpecified` as a warning.
+  batteryCapacityWh: 40000,
   batteryRoundTripEfficiency: 0.9,
   batteryDepthOfDischarge: 0.8,
   heaterMaxW: DEFAULT_THERMAL_MODEL.heaterMaxW,
@@ -81,6 +84,10 @@ export const DEFAULT_MISSION = Object.freeze({
   scienceReachM: 5000,
   thermal: DEFAULT_THERMAL_MODEL,
   weights: null,
+  // Power source: 'solar' (default, eclipse/battery/continuous-sun gated) or
+  // 'rtg' (constant power, unaffected by eclipses; needs rtgPowerW).
+  powerSource: 'solar',
+  rtgPowerW: null,
 })
 
 /** Component weights, summing to 1. */
@@ -154,10 +161,23 @@ export function normalizeMission(mission = {}) {
     heaterWPerK: Math.max(0, Number.isFinite(heaterWPerK) ? heaterWPerK : 2),
     heaterMaxW: Math.max(0, Number.isFinite(heaterMaxW) ? heaterMaxW : 400),
   }
-  const batteryCapacityWh =
-    merged.batteryCapacityWh != null && Number.isFinite(Number(merged.batteryCapacityWh))
-      ? Math.max(0, Number(merged.batteryCapacityWh))
-      : null
+  const missionInput = mission && typeof mission === 'object' ? mission : {}
+  // Idempotent normalisation: an already-normalized mission carries
+  // `batterySpecified`, which must survive re-normalisation (otherwise the
+  // documented default battery would look like a user-specified value).
+  const batterySpecified =
+    missionInput.batterySpecified === true
+      ? true
+      : missionInput.batterySpecified === false
+        ? false
+        : missionInput.batteryCapacityWh != null && Number.isFinite(Number(missionInput.batteryCapacityWh))
+  const batteryCapacityWh = batterySpecified
+    ? Math.max(0, Number(missionInput.batteryCapacityWh))
+    : DEFAULT_MISSION.batteryCapacityWh
+  const powerSource = missionInput.powerSource === 'rtg' ? 'rtg' : 'solar'
+  const rtgPowerW = Number.isFinite(Number(missionInput.rtgPowerW))
+    ? Math.max(0, Number(missionInput.rtgPowerW))
+    : null
   return {
     missionDays: clamp(Number(merged.missionDays) || DEFAULT_MISSION.missionDays, 1 / 24, 365),
     powerNeedW: Math.max(0, Number(merged.powerNeedW) || 0),
@@ -175,6 +195,9 @@ export function normalizeMission(mission = {}) {
     power: normalizePowerModel(powerOverrides),
     comms: normalizeCommsModel(commsOverrides),
     batteryCapacityWh,
+    batterySpecified,
+    powerSource,
+    rtgPowerW,
     batteryRoundTripEfficiency: clamp(Number(merged.batteryRoundTripEfficiency) || 0.9, 0.1, 1),
     batteryDepthOfDischarge: clamp(Number(merged.batteryDepthOfDischarge) || 0.8, 0.05, 1),
     heaterMaxW: thermal.heaterMaxW,

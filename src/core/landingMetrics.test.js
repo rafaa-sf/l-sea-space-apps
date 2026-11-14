@@ -238,7 +238,10 @@ describe('component weights and mission defaults', () => {
 
   it('extends the mission defaults backward-compatibly', () => {
     const legacy = normalizeMission({ missionDays: 14, powerNeedW: 120 })
-    expect(legacy.batteryCapacityWh).toBeNull()
+    expect(legacy.batteryCapacityWh).toBe(40000)
+    expect(legacy.batterySpecified).toBe(false)
+    expect(legacy.powerSource).toBe('solar')
+    expect(legacy.rtgPowerW).toBeNull()
     expect(legacy.dataNeedMb).toBeNull()
     expect(legacy.batteryRoundTripEfficiency).toBe(0.9)
     expect(legacy.batteryDepthOfDischarge).toBe(0.8)
@@ -265,6 +268,10 @@ describe('component weights and mission defaults', () => {
     expect(mission.thermal.minOperatingC).toBe(-30)
     expect(mission.thermal.nightTemperatureC).toBe(-160)
     expect(mission.weights).toEqual({ power: 1, sun: 0 })
+    const rtg = normalizeMission({ powerSource: 'rtg', rtgPowerW: 850 })
+    expect(rtg.powerSource).toBe('rtg')
+    expect(rtg.rtgPowerW).toBe(850)
+    expect(rtg.batterySpecified).toBe(false)
   })
 })
 
@@ -548,7 +555,9 @@ describe('metric audit (unambiguous keys and units)', () => {
 
     // The exact scored mission inputs are echoed for the UI.
     expect(missionInputs.powerNeedW).toBe(120)
-    expect(missionInputs.batteryCapacityWh).toBeNull()
+    expect(missionInputs.batteryCapacityWh).toBe(40000)
+    expect(missionInputs.batterySpecified).toBe(false)
+    expect(missionInputs.powerSource).toBe('solar')
     expect(missionInputs.startTime).toBe(MISSION.startTime)
   })
 
@@ -564,6 +573,212 @@ describe('metric audit (unambiguous keys and units)', () => {
         terrain,
         mission: normalizeMission({ ...MISSION, ...patch }),
         ephemeris: makeEphemeris(),
+        options: { maxZones: 8 },
+      })
+      expect(changed).not.toBe(base)
+    }
+  })
+})
+
+
+describe('eclipse battery sizing, illumination gate and RTG power source (task-24)', () => {
+  const terrain = makePlane()
+
+  // The local makeEphemeris helper passes the 30-min SAMPLE INDEX to the body
+  // functions. Two eclipses: 10 h (index 200-219) and 59 h (index 528-645).
+  const twoEclipses = (index) => {
+    const inEclipse = (index >= 200 && index < 220) || (index >= 528 && index < 646)
+    return { az: 270, el: inEclipse ? -2 : 2 }
+  }
+
+  it('sizes the battery from the LONGEST eclipse, not the total eclipse time', () => {
+    const result = computeLandingMetrics({
+      terrain,
+      zone: ZONE,
+      zones: [ZONE],
+      ephemeris: makeEphemeris({ sun: twoEclipses, hours: 14 * 24 }),
+      site: SITE,
+      mission: {
+        ...MISSION,
+        missionDays: 14,
+        sunDaysNeeded: 0.5,
+        batteryCapacityWh: 200000,
+      },
+    })
+    const power = result.metrics.power
+    const heater = result.metrics.thermal.heaterPowerSizedW
+    expect(power.longestEclipseHours).toBeCloseTo(59, 0)
+    expect(power.totalEclipseHours).toBeCloseTo(69, 0)
+    expect(power.eclipseDeficitWh).toBeCloseTo((120 + heater) * 59, 0)
+    expect(power.totalEclipseEnergyWh).toBeCloseTo((120 + heater) * 69, 0)
+    expect(power.totalEclipseEnergyWh).toBeGreaterThan(power.eclipseDeficitWh)
+    expect(power.requiredBatteryWh).toBeCloseTo(((120 + heater) * 59) / (0.9 * 0.8), 0)
+    expect(result.feasible).toBe(true)
+  })
+
+  it("does not rank the user's ~30,000 Wh / 59 h eclipse case as feasible", () => {
+    const result = computeLandingMetrics({
+      terrain,
+      zone: ZONE,
+      zones: [ZONE],
+      ephemeris: makeEphemeris({ sun: twoEclipses, hours: 14 * 24 }),
+      site: SITE,
+      mission: {
+        ...MISSION,
+        missionDays: 14,
+        sunDaysNeeded: 5, // longest continuous sun here is ~6.4 days
+        powerNeedW: 228, // 228 W load + 280 W heater = 508 W over 59 h ≈ 30 kWh
+        batteryCapacityWh: 40000,
+      },
+    })
+    expect(result.metrics.power.longestEclipseHours).toBeCloseTo(59, 0)
+    expect(result.metrics.power.eclipseDeficitWh).toBeGreaterThan(29000)
+    expect(result.metrics.power.eclipseDeficitWh).toBeLessThan(31000)
+    expect(result.metrics.power.requiredBatteryWh).toBeGreaterThan(40000)
+    expect(result.feasible).toBe(false)
+    expect(result.feasibility.violations.map((violation) => violation.code)).toContain(
+      'feasibility.batteryInsufficient',
+    )
+    expect(result.score).toBeLessThanOrEqual(55)
+    expect(['conditional', 'poor']).toContain(result.grade)
+
+    // The same terrain is feasible with a battery large enough for that eclipse.
+    const withBigBattery = computeLandingMetrics({
+      terrain,
+      zone: ZONE,
+      zones: [ZONE],
+      ephemeris: makeEphemeris({ sun: twoEclipses, hours: 14 * 24 }),
+      site: SITE,
+      mission: {
+        ...MISSION,
+        missionDays: 14,
+        sunDaysNeeded: 5,
+        powerNeedW: 228,
+        batteryCapacityWh: 60000,
+      },
+    })
+    expect(withBigBattery.feasible).toBe(true)
+  })
+
+  it('enforces the continuous-sun requirement as a hard gate', () => {
+    const result = computeLandingMetrics({
+      terrain,
+      zone: ZONE,
+      zones: [ZONE],
+      ephemeris: makeEphemeris({
+        sun: (hour) => ({ az: 270, el: Math.floor(hour / 120) % 2 === 0 ? 2 : -2 }),
+        hours: 14 * 24,
+      }),
+      site: SITE,
+      mission: { ...MISSION, missionDays: 14, sunDaysNeeded: 10, batteryCapacityWh: 200000 },
+    })
+    expect(result.metrics.illumination.continuousSunDays).toBeLessThan(10)
+    expect(result.feasible).toBe(false)
+    expect(result.feasibility.illuminationFeasible).toBe(false)
+    expect(result.feasibility.violations.map((violation) => violation.code)).toContain(
+      'feasibility.illuminationInsufficient',
+    )
+    expect(result.feasibility.illuminationMeetsRequirement).toBe(false)
+
+    // sunDaysNeeded = 0 disables the requirement.
+    const disabled = computeLandingMetrics({
+      terrain,
+      zone: ZONE,
+      zones: [ZONE],
+      ephemeris: makeEphemeris({
+        sun: (hour) => ({ az: 270, el: Math.floor(hour / 120) % 2 === 0 ? 2 : -2 }),
+        hours: 14 * 24,
+      }),
+      site: SITE,
+      mission: { ...MISSION, missionDays: 14, sunDaysNeeded: 0, batteryCapacityWh: 200000 },
+    })
+    expect(disabled.feasibility.illuminationFeasible).toBe(true)
+  })
+
+  it('treats an unspecified battery as the documented 40 kWh default and warns', () => {
+    const result = computeLandingMetrics({
+      terrain,
+      zone: ZONE,
+      zones: [ZONE],
+      ephemeris: makeEphemeris(),
+      site: SITE,
+      mission: { ...MISSION, batterySpecified: undefined, batteryCapacityWh: undefined },
+    })
+    expect(result.metrics.missionInputs.batteryCapacityWh).toBe(40000)
+    expect(result.metrics.missionInputs.batterySpecified).toBe(false)
+    expect(result.feasibility.violations.map((violation) => violation.code)).toContain(
+      'feasibility.batteryNotSpecified',
+    )
+    expect(result.feasible).toBe(true)
+  })
+
+  it('makes an RTG power source feasible in a permanently shadowed zone', () => {
+    const shadowed = makeEphemeris({ sun: () => ({ az: 270, el: -3 }) })
+    const result = computeLandingMetrics({
+      terrain,
+      zone: ZONE,
+      zones: [ZONE],
+      ephemeris: shadowed,
+      site: SITE,
+      mission: {
+        ...MISSION,
+        powerSource: 'rtg',
+        rtgPowerW: 1000,
+        powerNeedW: 120,
+        sunDaysNeeded: 10,
+      },
+    })
+    expect(result.feasibility.powerSource).toBe('rtg')
+    expect(result.feasibility.rtgFeasible).toBe(true)
+    expect(result.feasibility.illuminationFeasible).toBe(true) // not required for RTG
+    expect(result.feasibility.illuminationMeetsRequirement).toBe(true)
+    expect(result.feasibility.powerFeasible).toBe(true)
+    expect(result.feasibility.batteryFeasible).toBe(true)
+    expect(result.metrics.power.source).toBe('rtg')
+    expect(result.metrics.power.averageW).toBe(1000)
+    expect(result.metrics.power.requiredBatteryWh).toBe(0)
+    expect(result.metrics.power.eclipseDeficitWh).toBe(0)
+    expect(result.feasible).toBe(true)
+    const codes = result.feasibility.violations.map((violation) => violation.code)
+    expect(codes).not.toContain('feasibility.illuminationInsufficient')
+    expect(codes).not.toContain('feasibility.powerDeficit')
+    expect(codes).not.toContain('feasibility.batteryInsufficient')
+  })
+
+  it('flags an insufficient RTG', () => {
+    const shadowed = makeEphemeris({ sun: () => ({ az: 270, el: -3 }) })
+    const result = computeLandingMetrics({
+      terrain,
+      zone: ZONE,
+      zones: [ZONE],
+      ephemeris: shadowed,
+      site: SITE,
+      mission: { ...MISSION, powerSource: 'rtg', rtgPowerW: 50, powerNeedW: 120 },
+    })
+    expect(result.feasible).toBe(false)
+    expect(result.feasibility.rtgFeasible).toBe(false)
+    expect(result.feasibility.violations.map((violation) => violation.code)).toContain(
+      'feasibility.rtgInsufficient',
+    )
+    expect(result.score).toBeLessThanOrEqual(55)
+  })
+
+  it('keeps the unspecified-battery flag through repeated normalisation', () => {
+    const once = normalizeMission({ missionDays: 14, powerNeedW: 120 })
+    const twice = normalizeMission(once)
+    expect(twice.batterySpecified).toBe(false)
+    expect(twice.batteryCapacityWh).toBe(40000)
+    expect(normalizeMission({ batteryCapacityWh: 5000 }).batterySpecified).toBe(true)
+  })
+
+  it('changes the input signature for power source and RTG edits', () => {
+    const ephemeris = makeEphemeris()
+    const base = computeInputSignature({ terrain, mission: normalizeMission(MISSION), ephemeris, options: { maxZones: 8 } })
+    for (const patch of [{ powerSource: 'rtg', rtgPowerW: 900 }, { batteryCapacityWh: 5000 }]) {
+      const changed = computeInputSignature({
+        terrain,
+        mission: normalizeMission({ ...MISSION, ...patch }),
+        ephemeris,
         options: { maxZones: 8 },
       })
       expect(changed).not.toBe(base)

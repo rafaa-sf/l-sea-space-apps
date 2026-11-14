@@ -354,55 +354,100 @@ export function computePowerMetrics({ terrain, site, ephemeris, mission, window,
   const averageW = sumW / count
   const powerNeedW = mission.powerNeedW
   const heaterPowerSizedW = thermal.heaterPowerSizedW ?? thermal.heaterPowerW
+  // Battery must survive the LONGEST continuous eclipse; the total eclipse time
+  // is reported separately as an energy figure (not used for battery sizing).
+  const longestEclipseHours = Number.isFinite(illumination.longestEclipseHours)
+    ? Math.max(0, illumination.longestEclipseHours)
+    : 0
   const totalEclipseHours = Number.isFinite(illumination.totalEclipseHours)
     ? illumination.totalEclipseHours
     : illumination.eclipseHours
-  const eclipseHours = totalEclipseHours
-  const eclipseDeficitWh = (powerNeedW + heaterPowerSizedW) * eclipseHours
+  const heaterAveragePowerW = thermal.heaterAveragePowerW ?? thermal.averageHeaterPowerW
+  const demandW = Math.max(powerNeedW + heaterAveragePowerW, 1e-6)
   const roundTrip = mission.batteryRoundTripEfficiency
   const depthOfDischarge = mission.batteryDepthOfDischarge
-  const requiredBatteryWh = eclipseDeficitWh / Math.max(roundTrip * depthOfDischarge, 1e-6)
-  const heaterAveragePowerW = thermal.heaterAveragePowerW ?? thermal.averageHeaterPowerW
-  const powerMarginW = averageW - powerNeedW - heaterAveragePowerW
-  const demandW = Math.max(powerNeedW + heaterAveragePowerW, 1e-6)
-  const batteryCapacityWh = mission.batteryCapacityWh
-  const batteryCoverage =
-    batteryCapacityWh == null
-      ? clamp(powerMarginW >= 0 ? 1 : 1 + powerMarginW / demandW, 0, 1)
-      : clamp(batteryCapacityWh / Math.max(requiredBatteryWh, 1e-9), 0, 1)
-  const meetsPowerNeed =
-    powerMarginW >= 0 && (batteryCapacityWh == null || requiredBatteryWh <= batteryCapacityWh)
+  const batteryCapacityWh = Math.max(0, Number(mission.batteryCapacityWh) || 0)
 
-  return {
-    averageW: round2(averageW),
-    maxW: round2(maxW),
-    minW: round2(Number.isFinite(minW) ? minW : 0),
-    peakW: round2(maxW),
-    eclipseAverageW: 0,
-    eclipseHours: round2(eclipseHours),
-    eclipseDeficitWh: round2(eclipseDeficitWh),
-    requiredBatteryWh: round2(requiredBatteryWh),
-    heaterWh: round2(thermal.heaterWh),
-    // Legacy aliases (deprecated): the thermal group is authoritative.
-    heaterPowerW: round2(thermal.heaterPowerSizedW ?? thermal.heaterPowerW),
-    averageHeaterPowerW: round2(heaterAveragePowerW),
-    heaterPowerSizedW: round2(thermal.heaterPowerSizedW ?? thermal.heaterPowerW),
-    heaterAveragePowerW: round2(heaterAveragePowerW),
-    totalEclipseHours: round2(totalEclipseHours),
+  const base = {
     powerNeedW: round2(powerNeedW),
-    powerMarginW: round2(powerMarginW),
-    powerMarginFraction: round4(powerMarginW / demandW),
-    batteryCapacityWh: batteryCapacityWh == null ? null : round2(batteryCapacityWh),
-    batteryCoverage: round4(batteryCoverage),
-    meetsPowerNeed,
-    dailyWh: round2(energyWh / Math.max(windowHours / 24, 1e-6)),
-    totalEnergyWh: round2(energyWh),
-    sunlitEnergyWh: round2(sunlitEnergyWh),
+    heaterWh: round2(thermal.heaterWh),
+    // Sized heater power (during eclipse) vs window-average heater load.
+    heaterPowerW: round2(heaterPowerSizedW),
+    averageHeaterPowerW: round2(heaterAveragePowerW),
+    heaterPowerSizedW: round2(heaterPowerSizedW),
+    heaterAveragePowerW: round2(heaterAveragePowerW),
+    longestEclipseHours: round2(longestEclipseHours),
+    totalEclipseHours: round2(totalEclipseHours),
+    eclipseHours: round2(totalEclipseHours), // deprecated alias
     model: {
       panelAreaM2: model.panelAreaM2,
       panelEfficiency: model.panelEfficiency,
       systemDerate: model.systemDerate,
     },
+  }
+
+  // RTG: constant power source, unaffected by eclipses. No solar/battery sizing;
+  // the requirement is rtgPowerW >= powerNeedW + average heater load.
+  if (mission.powerSource === 'rtg') {
+    const rtgPowerW = Math.max(0, Number(mission.rtgPowerW) || 0)
+    const rtgMarginW = rtgPowerW - powerNeedW - heaterAveragePowerW
+    const meetsPowerNeed = rtgMarginW >= 0
+    return {
+      source: 'rtg',
+      rtgPowerW: round2(rtgPowerW),
+      rtgMarginW: round2(rtgMarginW),
+      ...base,
+      averageW: round2(rtgPowerW),
+      maxW: round2(rtgPowerW),
+      minW: round2(rtgPowerW),
+      peakW: round2(rtgPowerW),
+      eclipseAverageW: round2(rtgPowerW),
+      eclipseDeficitWh: 0,
+      totalEclipseEnergyWh: 0,
+      requiredBatteryWh: 0,
+      heaterLongestEclipseWh: 0,
+      powerMarginW: round2(rtgMarginW),
+      powerMarginFraction: round4(rtgMarginW / demandW),
+      batteryCapacityWh: round2(batteryCapacityWh),
+      batteryCoverage: 1,
+      meetsPowerNeed,
+      dailyWh: round2(rtgPowerW * 24),
+      totalEnergyWh: round2(rtgPowerW * windowHours),
+      sunlitEnergyWh: round2(sunlitEnergyWh),
+    }
+  }
+
+  const eclipseDeficitWh = (powerNeedW + heaterPowerSizedW) * longestEclipseHours
+  const totalEclipseEnergyWh = (powerNeedW + heaterPowerSizedW) * totalEclipseHours
+  const heaterLongestEclipseWh = heaterPowerSizedW * longestEclipseHours
+  const requiredBatteryWh = eclipseDeficitWh / Math.max(roundTrip * depthOfDischarge, 1e-6)
+  const powerMarginW = averageW - powerNeedW - heaterAveragePowerW
+  const batteryCoverage = clamp(batteryCapacityWh / Math.max(requiredBatteryWh, 1e-9), 0, 1)
+  const meetsPowerNeed = powerMarginW >= 0 && requiredBatteryWh <= batteryCapacityWh + 1e-9
+
+  return {
+    source: 'solar',
+    rtgPowerW: null,
+    ...base,
+    averageW: round2(averageW),
+    maxW: round2(maxW),
+    minW: round2(Number.isFinite(minW) ? minW : 0),
+    peakW: round2(maxW),
+    eclipseAverageW: 0,
+    // Energy required for the LONGEST continuous eclipse (battery sizing basis).
+    eclipseDeficitWh: round2(eclipseDeficitWh),
+    // Total energy deficit summed over all eclipses in the window (informational).
+    totalEclipseEnergyWh: round2(totalEclipseEnergyWh),
+    requiredBatteryWh: round2(requiredBatteryWh),
+    heaterLongestEclipseWh: round2(heaterLongestEclipseWh),
+    powerMarginW: round2(powerMarginW),
+    powerMarginFraction: round4(powerMarginW / demandW),
+    batteryCapacityWh: round2(batteryCapacityWh),
+    batteryCoverage: round4(batteryCoverage),
+    meetsPowerNeed,
+    dailyWh: round2(energyWh / Math.max(windowHours / 24, 1e-6)),
+    totalEnergyWh: round2(energyWh),
+    sunlitEnergyWh: round2(sunlitEnergyWh),
   }
 }
 
@@ -665,6 +710,9 @@ export function computeInputSignature({ terrain, mission, ephemeris, options } =
         perimeterM: mission.perimeterM,
         mastM: mission.mastM,
         batteryCapacityWh: mission.batteryCapacityWh,
+        batterySpecified: mission.batterySpecified,
+        powerSource: mission.powerSource,
+        rtgPowerW: mission.rtgPowerW,
         batteryRoundTripEfficiency: mission.batteryRoundTripEfficiency,
         batteryDepthOfDischarge: mission.batteryDepthOfDischarge,
         heaterMaxW: mission.heaterMaxW,
@@ -768,6 +816,8 @@ export function evaluateZoneFeasibility({
   terrainAvailable = true,
 }) {
   const violations = []
+  const powerSource = mission?.powerSource === 'rtg' ? 'rtg' : 'solar'
+  const batterySpecified = mission?.batterySpecified === true
   if (!terrainAvailable || !ephemerisAvailable) {
     violations.push({
       code: 'feasibility.undetermined',
@@ -781,55 +831,123 @@ export function evaluateZoneFeasibility({
       status: 'undetermined',
       feasible: false,
       violations,
+      powerSource,
+      batterySpecified,
       powerFeasible: false,
       batteryFeasible: false,
       thermalFeasible: false,
       dataFeasible: false,
+      illuminationFeasible: false,
       illuminationMeetsRequirement: false,
+      rtgFeasible: powerSource === 'rtg' ? false : null,
       scoreCap: 55,
     }
   }
 
-  // Power margin
-  const powerMarginW = Number(power?.powerMarginW)
-  const powerFeasible = Number.isFinite(powerMarginW) && powerMarginW >= 0
-  if (!powerFeasible) {
-    violations.push({
-      code: 'feasibility.powerDeficit',
-      severity: 'bad',
-      params: {
-        powerNeedW: round2(mission.powerNeedW),
-        heaterAveragePowerW: round2(power?.heaterAveragePowerW ?? 0),
-        averageW: round2(power?.averageW ?? 0),
-        powerMarginW: round2(powerMarginW),
-      },
-      text:
-        `Power margin is ${round2(powerMarginW)} W: average solar power ${round2(power?.averageW ?? 0)} W ` +
-        `cannot cover the ${round2(mission.powerNeedW)} W load plus the ${round2(power?.heaterAveragePowerW ?? 0)} W ` +
-        'average heater demand.',
-    })
-  }
+  const sunDaysNeeded = Math.max(0, Number(mission.sunDaysNeeded) || 0)
+  const continuousSunDays = Math.max(0, Number(illumination?.continuousSunDays) || 0)
+  let powerFeasible = false
+  let batteryFeasible = false
+  let illuminationFeasible = false
+  let rtgFeasible = null
 
-  // Battery capacity (only when the mission specifies one; otherwise the
-  // required energy is a sizing recommendation, not a hard constraint).
-  const batteryCapacityWh = mission.batteryCapacityWh
-  const requiredBatteryWh = Math.max(0, Number(power?.requiredBatteryWh) || 0)
-  const batteryFeasible = batteryCapacityWh == null || requiredBatteryWh <= batteryCapacityWh + 1e-9
-  if (!batteryFeasible) {
-    violations.push({
-      code: 'feasibility.batteryInsufficient',
-      severity: 'bad',
-      params: {
-        requiredBatteryWh: round1(requiredBatteryWh),
-        batteryCapacityWh: round1(batteryCapacityWh),
-        batteryCoverage: round4(power?.batteryCoverage ?? 0),
-        totalEclipseHours: round2(power?.totalEclipseHours ?? 0),
-      },
-      text:
-        `Battery is insufficient: ${round1(requiredBatteryWh)} Wh are required for the total eclipse ` +
-        `time but only ${round1(batteryCapacityWh)} Wh are available ` +
-        `(coverage ${round1((power?.batteryCoverage ?? 0) * 100)}%).`,
-    })
+  if (powerSource === 'rtg') {
+    // RTG: unaffected by eclipses; no battery or continuous-sun requirement. The
+    // only power constraint is that the RTG output covers the load + heater.
+    const rtgPowerW = Math.max(0, Number(power?.rtgPowerW ?? mission.rtgPowerW) || 0)
+    const heaterAveragePowerW = Math.max(0, Number(power?.heaterAveragePowerW) || 0)
+    const demandW = Math.max(0, Number(mission.powerNeedW) || 0) + heaterAveragePowerW
+    rtgFeasible = rtgPowerW >= demandW - 1e-9
+    powerFeasible = rtgFeasible
+    batteryFeasible = true
+    illuminationFeasible = true // RTG does not need sunlight
+    if (!rtgFeasible) {
+      violations.push({
+        code: 'feasibility.rtgInsufficient',
+        severity: 'bad',
+        params: {
+          rtgPowerW: round2(rtgPowerW),
+          demandW: round2(demandW),
+          powerNeedW: round2(mission.powerNeedW),
+          heaterAveragePowerW: round2(heaterAveragePowerW),
+        },
+        text:
+          `RTG output is insufficient: ${round2(rtgPowerW)} W against a ${round2(demandW)} W demand ` +
+          `(${round2(mission.powerNeedW)} W load + ${round2(heaterAveragePowerW)} W average heater).`,
+      })
+    }
+  } else {
+    // Solar + battery power source.
+    const powerMarginW = Number(power?.powerMarginW)
+    powerFeasible = Number.isFinite(powerMarginW) && powerMarginW >= 0
+    if (!powerFeasible) {
+      violations.push({
+        code: 'feasibility.powerDeficit',
+        severity: 'bad',
+        params: {
+          powerNeedW: round2(mission.powerNeedW),
+          heaterAveragePowerW: round2(power?.heaterAveragePowerW ?? 0),
+          averageW: round2(power?.averageW ?? 0),
+          powerMarginW: round2(powerMarginW),
+        },
+        text:
+          `Power margin is ${round2(powerMarginW)} W: average solar power ${round2(power?.averageW ?? 0)} W ` +
+          `cannot cover the ${round2(mission.powerNeedW)} W load plus the ${round2(power?.heaterAveragePowerW ?? 0)} W ` +
+          'average heater demand.',
+      })
+    }
+
+    const batteryCapacityWh = Math.max(0, Number(mission.batteryCapacityWh) || 0)
+    const requiredBatteryWh = Math.max(0, Number(power?.requiredBatteryWh) || 0)
+    batteryFeasible = requiredBatteryWh <= batteryCapacityWh + 1e-9
+    if (!batteryFeasible) {
+      violations.push({
+        code: 'feasibility.batteryInsufficient',
+        severity: 'bad',
+        params: {
+          requiredBatteryWh: round1(requiredBatteryWh),
+          batteryCapacityWh: round1(batteryCapacityWh),
+          batteryCoverage: round4(power?.batteryCoverage ?? 0),
+          longestEclipseHours: round2(power?.longestEclipseHours ?? 0),
+          totalEclipseHours: round2(power?.totalEclipseHours ?? 0),
+          eclipseDeficitWh: round1(power?.eclipseDeficitWh ?? 0),
+        },
+        text:
+          `Battery is insufficient for the longest continuous eclipse: ${round1(requiredBatteryWh)} Wh are ` +
+          `required (${round1(power?.eclipseDeficitWh ?? 0)} Wh deficit over ` +
+          `${round2(power?.longestEclipseHours ?? 0)} h) but only ${round1(batteryCapacityWh)} Wh are ` +
+          `available (coverage ${round1((power?.batteryCoverage ?? 0) * 100)}%).`,
+      })
+    }
+    if (!batterySpecified) {
+      violations.push({
+        code: 'feasibility.batteryNotSpecified',
+        severity: 'warn',
+        params: {
+          defaultBatteryCapacityWh: round1(batteryCapacityWh),
+          requiredBatteryWh: round1(requiredBatteryWh),
+        },
+        text:
+          `No battery capacity was specified: the documented default of ${round1(batteryCapacityWh)} Wh is ` +
+          `used for feasibility (required: ${round1(requiredBatteryWh)} Wh for the longest eclipse).`,
+      })
+    }
+
+    illuminationFeasible = sunDaysNeeded <= 0 || continuousSunDays >= sunDaysNeeded - 1e-9
+    if (!illuminationFeasible) {
+      violations.push({
+        code: 'feasibility.illuminationInsufficient',
+        severity: 'bad',
+        params: {
+          continuousSunDays: round2(continuousSunDays),
+          sunDaysNeeded: round2(sunDaysNeeded),
+          deficitDays: round2(sunDaysNeeded - continuousSunDays),
+        },
+        text:
+          `Continuous sunlight requirement not met: the longest continuous sunlit period is ` +
+          `${round2(continuousSunDays)} days against the required ${round2(sunDaysNeeded)} days.`,
+      })
+    }
   }
 
   // Thermal: can the heater keep the electronics inside the operating range?
@@ -891,20 +1009,21 @@ export function evaluateZoneFeasibility({
     })
   }
 
-  const sunDaysNeeded = mission.sunDaysNeeded
-  const illuminationMeetsRequirement =
-    sunDaysNeeded > 0 ? (illumination?.continuousSunDays ?? 0) >= sunDaysNeeded : true
-
-  const feasible = powerFeasible && batteryFeasible && thermalFeasible && dataFeasible
+  const feasible =
+    powerFeasible && batteryFeasible && thermalFeasible && dataFeasible && illuminationFeasible
   return {
     status: feasible ? 'feasible' : 'infeasible',
     feasible,
     violations,
+    powerSource,
+    batterySpecified,
     powerFeasible,
     batteryFeasible,
     thermalFeasible,
     dataFeasible,
-    illuminationMeetsRequirement,
+    illuminationFeasible,
+    illuminationMeetsRequirement: illuminationFeasible,
+    rtgFeasible,
     scoreCap: feasible ? null : 55,
   }
 }
@@ -1305,6 +1424,9 @@ export function computeLandingMetrics(input = {}) {
     missionInputs: {
       powerNeedW: normalizedMission.powerNeedW,
       batteryCapacityWh: normalizedMission.batteryCapacityWh,
+      batterySpecified: normalizedMission.batterySpecified === true,
+      powerSource: normalizedMission.powerSource,
+      rtgPowerW: normalizedMission.rtgPowerW,
       heaterMaxW: normalizedMission.heaterMaxW,
       heaterWPerK: normalizedMission.heaterWPerK,
       minOperatingC: normalizedMission.minOperatingC,

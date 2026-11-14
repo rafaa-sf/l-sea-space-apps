@@ -208,6 +208,7 @@ export function buildBrief(input = {}) {
     rankedSites,
     rankedLandingZones,
     landingZonesMeta: input.computation?.landingZonesMeta ?? null,
+    cycles: input.computation?.cycles ?? null,
     analysis: input.computation?.analysis ?? null,
     links: {
       quickMap: selectedSite?.links.quickMap ?? buildQuickMapUrl(selectedSite ?? {}),
