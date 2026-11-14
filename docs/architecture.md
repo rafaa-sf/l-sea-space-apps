@@ -184,7 +184,7 @@ Mission profile input:
   perimeterM: 200,
   mastM: 10,
   // optional mission-feasibility fields (backward compatible defaults):
-  batteryCapacityWh: null,   // null = battery is a sizing recommendation
+  batteryCapacityWh: 40000,  // documented default battery class (40 kWh)
   batteryRoundTripEfficiency: 0.9,
   batteryDepthOfDischarge: 0.8,
   heaterMaxW: 400,
@@ -200,8 +200,16 @@ Mission profile input:
     nightTemperatureC: -180, psrTemperatureC: -200,
   },
   weights: null,             // optional zone component weight overrides
+  powerSource: 'solar',      // 'solar' | 'rtg'
+  rtgPowerW: null,           // required when powerSource === 'rtg'
 }
 ```
+
+Battery/feasibility notes: when a mission does not specify
+`batteryCapacityWh`, the documented default of **40,000 Wh** is used and the
+feasibility gate reports a `feasibility.batteryNotSpecified` warning
+(`mission.batterySpecified` is exposed in `metrics.missionInputs`). Battery
+sizing uses the **longest continuous eclipse**, not the total eclipse time.
 
 ### `src/core/zones.js`
 
@@ -237,10 +245,14 @@ Mission profile input:
 - `metrics.illumination` — sunlit fraction [0..1], sunlit hours [h], continuous
   sun days [d], longest eclipse [h], min/max/mean sun elevation [deg], eclipse
   count, sunset/sunrise count, window hours.
-- `metrics.power` — average/max/min/peak solar power [W], eclipse hours [h],
-  eclipse deficit [Wh], required battery energy [Wh], heater power/energy [W/Wh],
-  average heater load [W], margin vs `powerNeedW` [W, ratio], battery capacity and
-  coverage, `meetsPowerNeed`, daily energy [Wh/day].
+- `metrics.power` — `source` (`'solar'`/`'rtg'`), average/max/min/peak power
+  [W], `longestEclipseHours` vs `totalEclipseHours` [h],
+  `eclipseDeficitWh` (energy deficit over the **longest** eclipse, battery
+  sizing basis) vs `totalEclipseEnergyWh` (sum over all eclipses, informational)
+  [Wh], `heaterLongestEclipseWh` [Wh], `requiredBatteryWh` [Wh],
+  heater power/energy [W/Wh], margin vs `powerNeedW` [W, ratio], battery capacity
+  and coverage, `meetsPowerNeed`, daily energy [Wh/day]; for RTG also
+  `rtgPowerW` and `rtgMarginW` [W] with `requiredBatteryWh = 0`.
 - `metrics.thermal` — day/night/PSR surface temperature [°C], min/max and cycling
   ΔT [°C], cycle count, heater [W/Wh], operating range flags.
 - `metrics.comms` — direct/effective Earth visibility [0..1], longest LOS gap
@@ -268,12 +280,25 @@ physically feasible there. The gate is evaluated in
 
 | Violation code | Trigger |
 | --- | --- |
-| `feasibility.powerDeficit` | `powerMarginW < 0` (average solar power below load + average heater) |
-| `feasibility.batteryInsufficient` | a mission battery capacity is specified and `requiredBatteryWh > batteryCapacityWh` |
+| `feasibility.powerDeficit` | solar: `powerMarginW < 0` (average solar power below load + average heater) |
+| `feasibility.batteryInsufficient` | solar: `requiredBatteryWh > batteryCapacityWh`, where the battery is sized from the **longest continuous eclipse** |
+| `feasibility.batteryNotSpecified` | solar: mission did not specify a battery; the documented 40,000 Wh default is used (warning, not fatal by itself) |
+| `feasibility.illuminationInsufficient` | solar: `continuousSunDays < sunDaysNeeded` (disabled when `sunDaysNeeded = 0`) |
+| `feasibility.rtgInsufficient` | RTG: `rtgPowerW < powerNeedW + heaterAveragePowerW` |
 | `feasibility.thermalCold` | `heatedMinTempC < minOperatingTemperatureC` even with the heater at `heaterMaxW` |
 | `feasibility.thermalHot` | `maxTempC > maxOperatingTemperatureC` |
 | `feasibility.dataInsufficient` | `dataNeedMb` is specified and the estimated budget does not cover it |
 | `feasibility.undetermined` | no terrain/ephemeris data to verify the mission (conservatively treated as not feasible) |
+
+Power source model: `mission.powerSource = 'solar'` (default) applies the
+solar/eclipse/battery/continuous-sun gates above. `mission.powerSource = 'rtg'`
+with `mission.rtgPowerW` models a radioisotope generator: eclipses, solar
+availability, battery sizing and the continuous-sun requirement do **not** gate
+feasibility; the only power constraint is `rtgPowerW >= powerNeedW +
+heaterAveragePowerW` (`feasibility.rtgInsufficient`). Thermal and data gates
+still apply. `feasibility` exposes `powerSource`, `batterySpecified`,
+`powerFeasible`, `batteryFeasible`, `thermalFeasible`, `dataFeasible`,
+`illuminationFeasible`, `illuminationMeetsRequirement` and `rtgFeasible`.
 
 Consequences:
 
@@ -325,6 +350,54 @@ Documented formulas/approximations:
   warnings (`data.ephemerisMissing`, `battery-capacity-not-specified`,
   `no-crater-hazard-data`, `psr-map-unavailable`, `zone.is-psr`, …) are attached
   and `confidence` is reduced instead of failing.
+
+### `src/core/cycles.js`
+
+- `computeMissionCycles({ terrain, site, ephemeris, mission, options }) -> cycles`
+  — weekly sunlight/eclipse and Earth-link/no-link cycles over
+  `mission.startTime` + `mission.missionDays`, clipped to the ephemeris coverage.
+  Sun and Earth visibility use the **same ray-traced terrain horizon** (lunar
+  curvature included) at a sampling step capped at 30 minutes; interval
+  boundaries are bisection-refined, contiguous samples are merged and every row
+  is a complete partition of the window clipped at both ends.
+- Return shape: `window` (`startMs`, `endMs`, `start`, `end`, `days`, `weeks`,
+  `clamped`); `weeks[]` with 7-day `index/startMs/endMs/start/end/days` plus
+  hour summaries (`sunHours`, `eclipseHours`, `sunPeriods`, `eclipsePeriods`,
+  `linkHours`, `gapHours`, `linkPeriods`, `gapPeriods`, `relayLinkHours`,
+  `relayGapHours`, `relayBenefitHours`, fractions) and clipped interval arrays
+  for rendering; `sunlight` (`intervals` with kind `sun|eclipse`, `sunHours`,
+  `eclipseHours`, `eclipseCount`, `sunPeriods`, `sunFraction`); `direct`
+  (`intervals` kind `link|gap`, `linkHours`, `gapHours`, `gapCount`,
+  `linkPeriods`, `linkFraction`); `relay` (`enabled`, `coverage`,
+  `periodMinutes`, `intervals` = effective availability, `linkHours`,
+  `gapHours`, `gapCount`, `linkPeriods`, `benefitHours`, `benefitFraction`,
+  `filledGapCount`, `relayOnlyIntervals`; empty intervals when disabled);
+  `effective` (`enabled`, `source: 'direct'|'relay'`, intervals/hours) for the
+  "Earth link with relay" row; `meta` (`modelVersion: 'mission-cycles/1'`,
+  `inputSignature`, `computedAt`, `computeMs`, `site`, `terrainId`,
+  `ephemerisSiteId`, `samplingSeconds`, `minIntervalSeconds`,
+  `profileStepDeg`, `weekCount`, `warnings`, `assumptions`).
+- Relay follows the documented `comms.js` time-fraction coverage model
+  (`relayCoverage` per `relayPeriodMinutes`) unioned with the direct
+  line-of-sight windows; `benefitHours` is the extra connected time. It is not
+  an orbit propagation.
+- Weeks are 7-day blocks measured from the mission start; first/last can be
+  partial. Per-week period counts include intervals that cross a week boundary
+  (they appear in both weeks), while hours always sum to the window totals.
+- Visibility intervals shorter than the ephemeris resolution (≤30 min) are
+  dropped as unresolvable sampling slivers.
+- Performance target: <150 ms for 14 days with a cached horizon profile
+  (measured on the wide 1024² DEM: ~44 ms cold including the horizon profile,
+  ~5 ms warm).
+
+Worker request (same protocol as `autopilot`/`landingZones`):
+
+```js
+// request
+{ id, type: 'missionCycles', payload: { site, terrain, ephemeris, mission, options? } }
+// response
+{ id, type: 'result', payload: { window, weeks, sunlight, direct, relay, effective, meta } }
+```
 
 ### `src/services/`
 
@@ -389,6 +462,7 @@ answered with `{ zones, meta }`:
 | 11 | Background worker (single CPU thread) | workers |
 | 12 | Adapter for PCs without WebGL | render/fallback2d |
 | 13 | Orbital variation | ephemeris |
+| 16 | Weekly sunlight and link/relay cycles | cycles |
 | 14 | English/Spanish UI | i18n |
 | 15 | JSON brief export (QuickMap, Moon Trek) | export |
 
