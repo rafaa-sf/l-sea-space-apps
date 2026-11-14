@@ -261,10 +261,12 @@ the app reloads.
 
 ```bash
 npm run data:lola                                   # both standard regions (2048 px / 1024 px)
-npm run data:lola -- --region=high-detail --size=1024
+npm run data:lola -- --region=high-detail --size=1024 --overwrite   # resize a committed standard region
 npm run data:lola -- --product=ldem_80s_80m --mpp=250
-npm run data:lola -- --extent-km=400 --size=1024    # custom 400 km square, wide-area product
-npm run data:lola -- --extent=-150000,-150000,150000,150000 --size=512 --id=custom-300km-512px
+npm run data:lola -- --extent-km=400x300 --size=1024x768
+npm run data:lola -- --extent-km=400x300 --size=1024x768 --center-x=-50000 --center-y=40000
+npm run data:lola -- --extent=-200000,-300000,200000,300000 --mpp=400
+npm run data:lola -- --extent-km=100x60 --size=512x384 --id=custom-window
 npm run data:lola -- --dry-run                      # plan only, no downloads or writes
 npm run data:lola -- --region=both --force          # re-download the products
 npm run data:lola -- --extent-km=400 --overwrite    # replace a changed existing region
@@ -274,28 +276,58 @@ npm run data:lola -- --extent-km=400 --overwrite    # replace a changed existing
   backoff) and are verified against the exact byte size and SHA-256 above before
   use; a corrupt cache file is re-downloaded automatically.
 - Output follows the same contract as the committed grids: `<id>.bin` (int16
-  metres, little-endian, row 0 = maxY) and `<id>.json` with the projection and
-  grid metadata, built with a rasterio windowed crop and average resample
-  (`scripts/nasa/lola_crop.py`).
+  metres, little-endian, row 0 = maxY) and `<id>.json` with the projection, grid
+  `width`/`height` and bounds, built with a rasterio windowed crop and average
+  resample (`scripts/nasa/lola_crop.py`).
 - `index.json` is updated in place: existing regions, `defaultRegionId`,
   `projection` and `attribution` are preserved and the new or refreshed region is
   added. Standard regions regenerate **byte-identically** from the verified
   products (the two committed bins keep their SHA-256
   `146dff6a...a656dc0` and `b916c7aa...bbb6514`), so a standard run does not
   modify the committed data.
-- Custom regions are square and are named like `custom-400km-1024px`. The source
-  product is selected automatically from the extent: high-detail up to
+- Extents are **rectangular**: `--extent-km=WxH` (or one number for a square) or
+  `--extent=minX,minY,maxX,maxY` in projected metres, with `--center-x/--center-y`
+  shifting a `--extent-km` window. Output grids are `--size=WxH` (or one number)
+  or `--mpp` for square pixels. Custom regions are named like
+  `custom-400x300km-1024x768px` (compact `custom-400km-1024px` when both are
+  square); off-pole windows add a `-cx<km>km-cy<km>km` suffix.
+- The source product is selected automatically from the extent: high-detail up to
   plus/minus 75,840 m, wide area up to plus/minus 304,000 m; larger extents are
-  rejected. `--center-x/--center-y` shift a square extent within the product.
+  rejected. With `--mpp`, width and height are derived from the extent so pixels
+  stay square.
+- Custom index entries also carry `boundsM.lower` and `boundsM.upper` corner
+  strings (`"minX minY"`, `"maxX maxY"`) next to the numeric bounds, because the
+  application's DEM selector uses them to label non-standard regions with their
+  window size (for example "Custom 400 x 300 km at 391 m/px").
+- Rectangular grids may have square pixels (the preferred case: `--mpp`, or a
+  `--size` whose aspect matches the extent such as 400x300 km at 1024x768) or
+  non-square pixels (for example 200x350 km at 800x700). Custom metadata and
+  index entries then record `pixelSizeXM` and `pixelSizeYM` next to
+  `pixelSizeM` (the x-axis size) and a `squarePixels` flag. The analysis core
+  currently assumes one pixel size per grid, so square-pixel regions are the safe
+  choice for horizon/analysis work; the CLI prints a note for non-square output.
 - `--overwrite` is required when a generated region differs from an existing
   region with the same id, which protects committed grids from accidental change.
-- Generated region files are ordinary files under `public/data/terrain/`; commit them
-  only if you want that custom region shipped with the application.
-- Verified on 2026-11-14: custom `--extent-km=400 --size=1024` (1024 x 1024 px,
-  390.625 m/px, bounds plus/minus 200,000 m, elevation -5,494 to +7,020 m,
-  SHA-256 `103c4eec...c1cb52e4`) is byte-identical to an independent rasterio
-  recomputation of the same source window; sampled cells agree with the source
-  point values within 19 m (a 390 m cell averages about 24 source pixels).
+- Generated region files are ordinary files under `public/data/terrain/`; commit
+  them only if you want that custom region shipped with the application.
+- Verified on 2026-11-14 against independent rasterio recomputation (byte-identical,
+  maximum absolute difference 0 over every cell):
+  - `--extent-km=400x300 --size=1024x768` -> 1024 x 768 px, 390.625 m/px
+    (square), bounds [-200,000, -150,000, 200,000, 150,000] m, elevation
+    -5,494 to +7,020 m, SHA-256 `70f576a95af31a410f2780f3fa8ca0d589ced11ea34a64bc68f43ae469461b81`.
+  - `--extent-km=400x300 --size=1024x768 --center-x=-50000 --center-y=40000`
+    -> bounds [-250,000, -110,000, 150,000, 190,000] m, id
+    `custom-400x300km-1024x768px-cx-50km-cy40km`, SHA-256
+    `ec2e12605a3b872a19ee6c4830284a9a3a15b74771259d39a861728044b8ece2`.
+  - `--extent-km=200x350 --size=800x700` -> 800 x 700 px, pixelSizeXM 250 m,
+    pixelSizeYM 500 m, SHA-256
+    `1d567c15a0c1a4cd8d06de9cd890600c146a13134848ccbacd010fea79913f93`.
+  - `--extent=-200000,-300000,200000,300000 --mpp=400` -> 1000 x 1500 px,
+    400 m/px (square), SHA-256
+    `f761b9022da9e99e55a6533e8dd3cf71499a402d7fbee6203f0b372dd9a57270`.
+  Sampled cells agree with source point values within 32 m, which is the expected
+  effect of averaging each cell over many source pixels (the exact recomputation
+  is the zero-difference proof).
 
 ## 5. LROC QuickMap: links only
 
