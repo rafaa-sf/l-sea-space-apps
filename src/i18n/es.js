@@ -514,7 +514,7 @@ export default {
   },
   landing: {
     badge: 'NASA Space Apps · Málaga 2026',
-    challengeBadge: 'Reto 11 · CSA',
+    challengeBadge: 'Reto 10 · CSA',
     title: 'Navegador de aterrizaje lunar',
     subtitle: 'Compara lugares y fechas de alunizaje en el polo sur lunar: Sol, Tierra, energía y comunicaciones en un solo lugar.',
     cta: 'Abrir la herramienta',

@@ -514,7 +514,7 @@ export default {
   },
   landing: {
     badge: 'NASA Space Apps · Málaga 2026',
-    challengeBadge: 'Challenge 11 · CSA',
+    challengeBadge: 'Challenge 10 · CSA',
     title: 'Lunar Landing Site Navigator',
     subtitle: 'Compare lunar south-pole landing sites and dates — Sun, Earth, power and communications in one place.',
     cta: 'Open the tool',
