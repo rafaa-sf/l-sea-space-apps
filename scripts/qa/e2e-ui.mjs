@@ -127,6 +127,14 @@ const readBreakdown = () =>
       centre: { width: Math.round(m.width), height: Math.round(m.height) },
     };
   })()`)
+const siteCounters = () =>
+  evaluate(`(() => {
+    const canvas = document.querySelector('[data-testid="viewport-canvas"]');
+    return {
+      visible: Number(canvas?.getAttribute('data-sites-visible') ?? -1),
+      outside: Number(canvas?.getAttribute('data-sites-outside') ?? -1),
+    };
+  })()`)
 const canvasAttribute = (name) =>
   evaluate(`document.querySelector('[data-testid="viewport-canvas"]')?.getAttribute(${JSON.stringify(name)}) ?? null`)
 const selectDemRegion = async (regionId) => {
@@ -243,6 +251,7 @@ report.canvas = await waitForCanvas()
 report.terrain = await terrainAttributes()
 report.hillshadeMode = await canvasAttribute('data-hillshade-mode')
 report.terrainRegion = await canvasAttribute('data-terrain-region')
+report.sitesInitial = await siteCounters()
 report.breakdown = await readBreakdown()
 
 // LOLA DEM region selector: high detail, verify extent + legend, then back to wide.
@@ -255,10 +264,13 @@ for (let attempt = 0; attempt < 40; attempt += 1) {
   legendHighDetail = await evaluate(`document.querySelector('[data-testid="elevation-legend"]')?.textContent ?? null`)
   if (legendHighDetail && /2,?369/.test(legendHighDetail)) break
 }
+report.sitesHighDetail = await siteCounters()
 report.legendHighDetail = legendHighDetail
 report.regionWide = await selectDemRegion('south-pole-80s-80m')
 await sleep(3000)
 report.terrainWide = await terrainAttributes()
+report.sitesWideAgain = await siteCounters()
+report.regionOptions = await evaluate(`[...(document.querySelector('[data-testid="dem-region-select"]')?.options ?? [])].map((o) => o.value)`)
 report.canvas = await waitForCanvas()
 report.scale3d = await waitForScaleLabel()
 const canvasHeightBeforeSplit = report.canvas?.clientHeight ?? 0
@@ -398,7 +410,13 @@ const failed =
   !/75840/.test(report.terrainHighDetail?.extent ?? '') ||
   !/2,?369/.test(report.legendHighDetail ?? '') ||
   !report.regionWide ||
-  !/304000/.test(report.terrainWide?.extent ?? '')
+  !/304000/.test(report.terrainWide?.extent ?? '') ||
+  report.sitesInitial?.visible !== 10 || report.sitesInitial?.outside !== 0 ||
+  !(report.sitesHighDetail?.visible >= 3) ||
+  report.sitesHighDetail.visible + report.sitesHighDetail.outside !== 10 ||
+  !(report.sitesHighDetail.visible < 10) ||
+  report.sitesWideAgain?.visible !== 10 ||
+  !(Array.isArray(report.regionOptions) && report.regionOptions.length >= 2)
   !scaleChanged(report.scale3d, report.scale3dAfterZoom) ||
   !scaleChanged(report.scale2d, report.scale2dAfterZoom) ||
   report.terrain?.layout !== 'rectangular' ||
