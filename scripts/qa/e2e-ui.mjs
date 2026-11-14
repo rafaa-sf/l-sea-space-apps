@@ -89,14 +89,21 @@ await sleep(9000)
 const report = { errors: [] }
 let text = await bodyText()
 report.workerBadge = (text.match(/Worker: [^\n]+/) || [])[0] ?? 'MISSING'
+await click('Autopilot', true)
+await sleep(800)
+text = await bodyText()
 report.initialAutopilot = (text.match(/Status: [^\n]+/) || [])[0] ?? 'MISSING'
 
 report.selectSite = await click('de Gerlache rim 1')
-await sleep(3000)
+await sleep(1000)
+// The redesigned analysis rail shows one tab at a time; open Position to read
+// the LOLA readout.
+await click('Position', true)
+await sleep(2000)
 text = await bodyText()
 report.lolaPanel = section(text, 'COORDINATES & LOLA', 220)
 
-report.compare = await click('⚖', true)
+report.compare = await click('Compare', true)
 await sleep(2000)
 text = await bodyText()
 report.comparator = section(text, 'COMPARATOR', 120)
@@ -110,6 +117,9 @@ report.toggle3d = await click('3D', true)
 await sleep(1500)
 report.runRanking = await click('Run ranking')
 await sleep(6000)
+text = await bodyText()
+await click('Autopilot', true)
+await sleep(800)
 text = await bodyText()
 report.ranking = (text.match(/#1[^\n]*\n?[^\n]*/) || [])[0]?.replace(/\n/g, ' ') ?? 'MISSING'
 
