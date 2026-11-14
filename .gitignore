@@ -1,11 +1,11 @@
 # ---------------------------------------------------------------------------
-# L-SEA SPACE APPS - Git ignore rules
+# L-SEA Space Apps - ignore rules
 #
-# Never commit secrets, environment values or generated artifacts.
-# The .env files listed below must stay local.
+# Environment values, credentials and generated artifacts never leave the
+# machine. The tracked .env.example template is explicitly re-included.
 # ---------------------------------------------------------------------------
 
-# Environment files (real values never leave the machine)
+# Environment files
 .env
 .env.*
 !.env.example
@@ -23,8 +23,6 @@ credentials/
 # Node.js
 node_modules/
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 pnpm-debug.log*
 .pnpm-store/
 dist/
@@ -59,7 +57,3 @@ Thumbs.db
 .idea/
 *.swp
 *~
-# Vercel CLI and local environment values; keep the tracked template addable.
-.vercel
-.env*
-!.env.example
