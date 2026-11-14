@@ -49,6 +49,7 @@ export default {
     loading: 'Loading…',
     computing: 'Computing…',
     retry: 'Retry',
+    firstRunHint: 'Tip: pick a site, choose a landing date, then compare horizon, power and communications — or run the autopilot and export the mission brief.',
     none: '—',
     notAvailable: 'Not available',
     selected: 'Selected',
@@ -587,6 +588,15 @@ export default {
       contributing: 'Contributing and workflow',
       decisions: 'Decision log',
       miro: 'Miro integration',
+    },
+    howto: {
+      title: 'How it works',
+      s1t: 'Pick a site',
+      s1b: 'Choose one of the curated south-pole sites or enter custom coordinates.',
+      s2t: 'Choose a date',
+      s2b: 'Set the landing date and inspect Sun and Earth against the terrain horizon.',
+      s3t: 'Compare and export',
+      s3b: 'Compare sites and dates, run the autopilot and export the JSON mission brief.',
     },
     footer: {
       built: 'Built by AI agent teams under human direction.',

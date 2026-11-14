@@ -194,12 +194,28 @@ function closeTools() {
   drawer.open = false
 }
 
-function showToast(error) {
-  toast.value = `${error.scope}: ${error.message}`
+function showMessage(text) {
+  toast.value = text
   if (toastTimer) clearTimeout(toastTimer)
   toastTimer = setTimeout(() => {
     toast.value = null
   }, 9000)
+}
+
+function showToast(error) {
+  showMessage(`${error.scope}: ${error.message}`)
+}
+
+const FIRST_RUN_HINT_KEY = 'lsea.firstRunHintSeen'
+
+function maybeShowFirstRunHint() {
+  try {
+    if (window.localStorage.getItem(FIRST_RUN_HINT_KEY)) return
+    showMessage(t('common.firstRunHint'))
+    window.localStorage.setItem(FIRST_RUN_HINT_KEY, '1')
+  } catch {
+    /* storage unavailable: skip the hint */
+  }
 }
 
 watch(
@@ -215,9 +231,12 @@ onMounted(() => {
   centerObserver = new ResizeObserver(() => computeMapSide())
   if (centerRef.value) centerObserver.observe(centerRef.value)
   window.addEventListener('resize', onWindowResize)
-  actions.boot().catch((error) => {
-    console.error('[lsea] boot failed', error)
-  })
+  actions
+    .boot()
+    .then(() => maybeShowFirstRunHint())
+    .catch((error) => {
+      console.error('[lsea] boot failed', error)
+    })
 })
 
 onBeforeUnmount(() => {

@@ -49,6 +49,7 @@ export default {
     loading: 'Cargando…',
     computing: 'Calculando…',
     retry: 'Reintentar',
+    firstRunHint: 'Consejo: elige un sitio, selecciona la fecha de alunizaje y compara horizonte, energía y comunicaciones — o lanza el autopiloto y exporta el briefing de misión.',
     none: '—',
     notAvailable: 'No disponible',
     selected: 'Seleccionado',
@@ -587,6 +588,15 @@ export default {
       contributing: 'Contribución y flujo',
       decisions: 'Registro de decisiones',
       miro: 'Integración con Miro',
+    },
+    howto: {
+      title: 'Cómo funciona',
+      s1t: 'Elige un sitio',
+      s1b: 'Selecciona uno de los sitios del polo sur o introduce coordenadas propias.',
+      s2t: 'Elige una fecha',
+      s2b: 'Fija la fecha de alunizaje e inspecciona Sol y Tierra frente al horizonte del terreno.',
+      s3t: 'Compara y exporta',
+      s3b: 'Compara sitios y fechas, lanza el autopiloto y exporta el briefing JSON de misión.',
     },
     footer: {
       built: 'Creado por equipos de agentes de IA bajo dirección humana.',
