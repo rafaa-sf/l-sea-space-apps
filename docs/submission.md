@@ -158,7 +158,7 @@ Method in one pass over a scenario:
   against live Horizons is not yet asserted.
 - **No commercial validation.** No customer interviews, pricing evidence or
   market-size figures are claimed anywhere in this submission; the commercial framing
-  is explicitly a set of hypotheses (see [commercial.md](commercial.md)).
+  is explicitly a set of hypotheses (see [scalability.md](scalability.md)).
 
 ## 4. NASA Data
 

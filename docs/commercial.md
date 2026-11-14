@@ -1,7 +1,7 @@
-# Commercial case, impact and judging
+# Commercial case and judging criteria
 
-Business case, impact and scalability assessment, and the judging-criteria mapping for
-L-SEA Space Apps. This is a decision and narrative document, not a validated business
+Business case and the judging-criteria mapping for L-SEA Space Apps. Impact and
+scalability are assessed in the companion document [scalability.md](scalability.md). This is a decision and narrative document, not a validated business
 plan: every concrete claim cites the challenge brief, the event material, the
 repository or a named source, and anything unverified is labelled as a hypothesis. No
 market-size, price or traction figures are asserted, because no verified source for
@@ -203,161 +203,7 @@ disclosed tolerance, a trusted comparison experience, integrations into agency
 workflows and institutional relationships: an execution and trust moat, not an
 intellectual-property moat.
 
-## 9. Impact assessment
-
-### 9.1 Beneficiaries
-
-| Beneficiary | Need | How the tool helps |
-| --- | --- | --- |
-| Mission planners and systems engineers (agencies, CLPS providers) | Fast trade-offs between candidate sites and dates | Side-by-side scenarios with illumination, Earth visibility, power, communications and time-to-set metrics |
-| Science teams | Preserve science value while meeting engineering constraints | Same comparison layer, with terrain and permanently shadowed region context |
-| Commercial lunar landers | De-risk site and date selection on tight schedules | Install-free, shareable JSON scenario briefs |
-| ISRU and resource teams | Understand illumination and shadowing near ice-bearing regions | Terrain, horizon and illumination views over the region |
-| Educators and the public | Understand why the Moon is hard | Bilingual, accessible, no specialist tooling |
-| Partner agencies and NASA programmes (Artemis, CLPS) | Accessible decision support and outreach | Aligns with the challenge's dual mission: planning plus education |
-
-### 9.2 Operational, economic, scientific and educational impact
-
-- **Cycle-time reduction.** The tool collapses multiple interfaces and manual
-  interpretation into one comparison surface. Target KPI: time to compare 3 candidate
-  sites x 3 dates, baseline "hours to days", target under 10 minutes (estimate, to be
-  measured in a usability test).
-- **Resilience to schedule change.** Re-answering "which alternative site or date
-  still works?" in minutes directly reduces the cost of the most common
-  mission-planning disruption.
-- **Risk reduction.** Two failure modes become visible before commitment: a site whose
-  solar illumination is marginal for the mission's power needs, and a site and date
-  where direct-to-Earth communication is unavailable longer than planned.
-- **Qualitative economic effect.** Avoided re-planning cost, risk-adjusted mission
-  value, a recurring value per mission in the CLPS cadence, and education and outreach
-  value. No public price or cost figures are asserted.
-- **Scientific and educational impact.** The science-versus-operability trade-off is
-  made explicit; lunar conditions (no atmosphere, slow Sun, long shadows) become
-  intuitive when visualised; the bilingual, install-free format lowers the barrier for
-  Spanish-speaking audiences and classrooms.
-
-### 9.3 Alignment with NASA and CSA strategy
-
-| Strategic theme | Connection |
-| --- | --- |
-| Artemis and lunar south pole | Site selection and surface-operations planning |
-| CLPS | Rapid, repeatable site and date trade studies for commercial landers |
-| Open data | LOLA (PDS), JPL Horizons ephemerides, Moon Trek layers |
-| Science enablement | Illumination and shadowing context for ice-bearing regions |
-| Workforce and education | Accessible, bilingual, web-native tool for non-specialists |
-
-### 9.4 Impact KPIs (to instrument in the product and in user tests)
-
-| KPI | Definition | Target (hypothesis) |
-| --- | --- | --- |
-| Time-to-comparison | Minutes to compare N sites x M dates end to end | 10 minutes or less for 3 x 3 |
-| Scenario throughput | Site and date scenarios evaluated per session | 5 or more |
-| Decision confidence | Self-reported confidence after using the tool | 4 of 5 or more |
-| Accuracy | Illumination and Earth visibility against JPL Horizons reference | Matches within a stated tolerance |
-| Accessibility | Works without WebGL; EN/ES parity; keyboard usable | All core flows |
-| Reuse | Exported briefs shared or opened by a second person | At least 1 per session |
-| Reach | Non-specialist completion of the guided flow | 80 percent or more unassisted |
-
-### 9.5 Evidence status
-
-| Claim | Evidence today | Needed to call it proven |
-| --- | --- | --- |
-| Workflow gap exists | Challenge brief and repository documentation | Given by NASA/CSA |
-| Tool reduces comparison time | Design and user-experience reasoning | Timed usability test with 3-5 users |
-| Tool improves decision quality | Architecture supports the metrics | Scenario test against Horizons reference |
-| Tool is usable by non-specialists | Accessibility design | Moderated test with an educator or public user |
-| Economic value | Qualitative | One structured interview with a mission-planning professional |
-
-## 10. Scalability
-
-### 10.1 Technical scalability
-
-**Terrain and geography.** Today two LOLA polar stereographic subsets are shipped
-(`south-pole-875s-20m`, 2048 squared at 74.06 m/px, plus/minus 75,840 m;
-`south-pole-80s-80m`, 1024 squared at 593.75 m/px, plus/minus 304,000 m; about 10.5 MB
-of binaries). The pipeline already abstracts DEM products, so scaling is:
-
-| Axis | Today | Next | Then |
-| --- | --- | --- | --- |
-| Coverage | South pole (87.5S-90S, 80S-90S) | North pole | Mercury and Mars polar analogues |
-| Resolution | 74 m and 594 m | Native 20 m and 80 m tiles | Higher-resolution DEM products |
-| Delivery | Two whole binaries | XYZ or quadtree tiles with level of detail, lazy loading | CDN and on-demand region fetch |
-| Volume | About 10.5 MB shipped | Avoid shipping the widest region by default | Quantised, compressed, region-scoped downloads |
-
-Risk: the whole build is about 20 MB, dominated by terrain. On a slow connection that
-is a real risk for a "rapid" tool. Mitigations, in order of value: ship only the
-high-resolution region by default and lazy-load the wide region; tile the DEM and load
-regions on demand; quantise (already int16) and verify server compression; cache
-immutably on a CDN.
-
-**Ephemeris.** Production uses pre-computed datasets because static hosting has no
-server runtime and Horizons does not send CORS headers. Scaling means more sites, more
-epochs and finer time steps, with a documented regeneration pipeline. The dev-only Vite
-proxy is the correct seam for validation against live Horizons without changing the
-production architecture.
-
-**Compute.** Horizon ray tracing and site scoring are the CPU-heavy paths, and the
-architecture already reserves a single-threaded Web Worker for autopilot and ranking.
-Scale path: cache horizon profiles per site and azimuth resolution, precompute where
-possible, keep the UI thread free. Complexity is linear in azimuth samples times
-terrain samples and can be tuned with an explicit accuracy and latency trade-off.
-
-**Architecture contract.** The split into core (pure domain), services (data adapters),
-components and render (UI), workers and data scripts, each with a stable interface, is
-the real scalability asset: pieces can be swapped (new dataset, new renderer, new
-exporter) without rewriting the product, and teams can work in parallel.
-
-### 10.2 Product and business scalability
-
-| Stage | Product shape | Users | Commercial shape |
-| --- | --- | --- | --- |
-| 0, hackathon | Static web tool, curated sites, EN/ES, JSON brief | Judges, educators | Open source, public URL |
-| 1, pilot | Validated metrics, more sites and epochs, shareable briefs, PDF export | Mission planners, classrooms | Partnership with a CLPS or agency team; consulting |
-| 2, platform | API and scenario workspace, saved studies, team sharing, more bodies | Commercial landers, universities, agencies | Subscription or seat licensing; data add-ons |
-| 3, operational | Validated, versioned, auditable, mission-configurable | Programme offices | Enterprise contracts and integration |
-
-**Ecosystem plays.** Integrate rather than compete: close the loop with Moon Trek
-layers, QuickMap links (already designed in the JSON brief), JPL Horizons validation
-and, at platform stage, exporters for STK and GMAT workflows.
-
-**Constraints to respect at scale:** NASA and CSA brand and attribution rules (no logo,
-flag or mission identifier as our branding); data redistribution limits (binary or
-large DEMs and brand-restricted material stay out of the public repository); accuracy
-and validation claims must be bounded and disclosed.
-
-### 10.3 Organisational scalability
-
-- **Contract-first parallel work:** the architecture contract lets coder, UI, data and
-  commercial workstreams run in parallel with low merge friction.
-- **Conventions and CI:** Conventional Commits, short-lived branches, English-only
-  repository and automated checks. Current state: the application suite passes (104
-  tests in 7 files) plus 8 MCP tests, and CI is green; the remaining scale gap is
-  accuracy validation against reference ephemerides and expanded end-to-end coverage.
-- **Two machines to many:** the repository already models a primary and commercial
-  split; adding reviewer roles and branch protection is the natural next step.
-
-### 10.4 Scale limits and mitigations
-
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| 20 MB build, 10.5 MB terrain | Slow first load breaks the "rapid" promise | Lazy-load, tile, CDN, compression |
-| Static hosting, no server | No live Horizons, no heavy server compute | Pre-computed datasets; worker-side compute; dev proxy for validation |
-| DEM accuracy and resolution | Horizon errors at fine scales | State resolution and tolerance; validate against Horizons; ship native-resolution tiles where needed |
-| Ephemeris scope | Wrong conclusions outside covered epochs | Generate wider epochs; show "within validated range" in the UI |
-| Accuracy not yet validated against Horizons | Accuracy claims unproven | Keep the test suite green; add Horizons-reference validation next |
-| Brand and licensing | Submission rejection | Attribution footer; no NASA or CSA logos as own branding |
-| Scope creep | Hackathon deadline | Stage-0 scope discipline: comparison, Sun/Earth, power and communications, fallback |
-
-### 10.5 Roadmap
-
-| Phase | Milestone | Impact proof | Scalability proof |
-| --- | --- | --- | --- |
-| 0 | Submission MVP | Demo of a 3 sites x 3 dates comparison | Static build, EN/ES, JSON brief |
-| 1 | Post-event pilot | Timed usability plus Horizons accuracy test | Second terrain region and more epochs |
-| 2 | Platform | One real planning team uses it | API, workspace and integrations |
-| 3 | Operational | Reused across missions and programmes | Validated, versioned, auditable |
-
-## 11. Risks and mitigations
+## 9. Risks and mitigations
 
 | Risk | Likelihood and impact | Mitigation |
 | --- | --- | --- |
@@ -371,7 +217,7 @@ and validation claims must be bounded and disclosed.
 | Team capacity (small team, two machines) | Medium and medium | Contract-first architecture; fixed interfaces; this documentation separates claims from evidence |
 | AI-generated content policy breach | Low and high | Complete AI declaration; mark generated assets; verify all content |
 
-## 12. Validation plan
+## 10. Validation plan
 
 | Question | Test | Success signal |
 | --- | --- | --- |
@@ -387,7 +233,7 @@ pipeline is validated (two regions, 0 failures, cross-region r = 0.9993); the
 application is implemented, tested and deployed. No business validation has been
 performed.
 
-## 13. Milestones and funding options
+## 11. Milestones and funding options
 
 | Stage | Milestone | Funding or resource route |
 | --- | --- | --- |
@@ -399,9 +245,9 @@ performed.
 Grants and competitions are non-dilutive and fit the public-data and public-good
 framing; none is committed. They are options, not facts.
 
-## 14. Judging-criteria mapping
+## 12. Judging-criteria mapping
 
-### 14.1 How the project is judged
+### 12.1 How the project is judged
 
 | Item | Rule | Status |
 | --- | --- | --- |
@@ -414,7 +260,7 @@ framing; none is committed. They are options, not facts.
 | AI use | Not penalised by itself; authorship, verification, execution, originality and declaration compliance matter | Fixed |
 | Staging | Good staging improves Presentation but does not by itself prove validity, impact or relevance | Fixed |
 
-### 14.2 Málaga judges' professional lenses
+### 12.2 Málaga judges' professional lenses
 
 The Málaga judges guide is a six-slide Spanish deck with a cover and five judge
 profiles; it does not contain a scoring rubric. The five criteria above come from the
@@ -429,7 +275,7 @@ project should emphasise:
 | Exploration, robotics, autonomous vision | Carlos Pérez del Pulgar, Associate Professor at the University of Málaga and research lead at the Space Robotics Laboratory | LOLA terrain, horizon equals terrain plus lunar curvature, no atmosphere or refraction, libration, resolution and tolerances, PDS provenance | Overclaiming flight-certified accuracy; hiding limits |
 | Videogames, community, prototyping | Lucía Pardo, President of Málaga Jam | A working prototype, a clear comparison experience, a shareable public URL, honest built-versus-planned labels | A slide-only pitch with no visible artefact |
 
-### 14.3 Criteria mapped to evidence
+### 12.3 Criteria mapped to evidence
 
 | Criterion (guide definition) | What a high score looks like | Evidence today (honest) | Main gap |
 | --- | --- | --- | --- |
@@ -439,7 +285,7 @@ project should emphasise:
 | Relevance: answer to the challenge and substantial integration of NASA resources | Directly answers challenge 10 with the three named data streams; LOLA terrain, JPL Horizons ephemerides and the Moon Trek layer catalogue are shipped and consumed | Challenge answered feature for feature (site comparison, dates, Sun and Earth versus horizon, time-to-set, power, communications, layers, autopilot, export); all three NASA resources implemented and consumed | End-to-end accuracy validation still pending |
 | Presentation: clarity, structure and effectiveness | Slides are legible, honest, structured and in English; the demo shows something real; the limits slide is confident rather than defensive | Seven-slide deck and 30-second video script designed; demo runbook and fallbacks prepared | Final deck or video assets and the public link |
 
-### 14.4 Honest self-assessment (internal calibration, not a prediction)
+### 12.4 Honest self-assessment (internal calibration, not a prediction)
 
 | Criterion | Self-score | Rationale | What would move it up |
 | --- | --- | --- | --- |
@@ -453,7 +299,7 @@ With the reference 1-5 scale and unknown local weights, the safest reading is th
 Relevance is the strongest card today and Validity is the one at risk. Do not assume
 local percentages.
 
-### 14.5 What would lose points
+### 12.5 What would lose points
 
 | Risk | Why it costs points | Avoid by |
 | --- | --- | --- |
@@ -468,7 +314,7 @@ local percentages.
 | Minor privacy | Explicit rule for materials sent to NASA | No names, voices or images of minors; screen captures only |
 | Broken or private links | Demo and Final Project must open without login | Test in a private window before submitting and re-test after any edit |
 
-## 15. Local pitch delivery
+## 13. Local pitch delivery
 
 The 7-slide deck and the 30-second video script are in [demo.md](demo.md); this section
 covers delivery only.
@@ -486,7 +332,7 @@ covers delivery only.
 - **If the demo fails live:** fall back to the demo screenshots and the terrain render;
   never debug on stage.
 
-## 16. Sources
+## 14. Sources
 
 - Challenge brief 10, Lunar Landing Site Navigator:
   <https://www.spaceappschallenge.org/2026/challenges/>
