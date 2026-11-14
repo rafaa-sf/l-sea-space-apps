@@ -304,7 +304,9 @@ export async function loadTerrain(options = {}) {
         }
       }
       if (raw) {
-        console.warn('[lsea] services/lola returned an unusable terrain payload; reading the .bin directly')
+        // Expected, recoverable fallback (e.g. a slow first fetch on a static host):
+        // the .bin read below produces the same real LOLA grid.
+        console.info('[lsea] services/lola fallback: reading the terrain .bin directly')
       }
     } catch (error) {
       console.warn('[lsea] services/lola.loadTerrain failed, reading the .bin directly', error)
