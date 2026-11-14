@@ -93,18 +93,22 @@ function ensureEphemeris(ephemeris) {
  * @returns {Promise<Array<Object>>}
  */
 async function resolveTerrains(payload) {
+  // An explicit terrain array is authoritative (e.g. a caller that already
+  // loaded both LOLA regions). Otherwise prefer the real region files over a
+  // single payload terrain, so each site is scored on its best DEM (high
+  // resolution inside 87.5°S, wide area outside).
   if (Array.isArray(payload.terrains) && payload.terrains.length > 0) {
     return payload.terrains.map(ensureTerrain).filter(Boolean)
-  }
-  if (payload.terrain) {
-    const terrain = ensureTerrain(payload.terrain)
-    if (terrain) return [terrain]
   }
   try {
     const regions = await loadTerrainRegions()
     if (regions.length > 0) return regions
   } catch (error) {
     console.warn(`[worker] could not load terrain regions: ${error instanceof Error ? error.message : String(error)}`)
+  }
+  if (payload.terrain) {
+    const terrain = ensureTerrain(payload.terrain)
+    if (terrain) return [terrain]
   }
   try {
     const terrain = await loadTerrain(payload.region ?? 'default')
@@ -123,36 +127,56 @@ async function resolveTerrains(payload) {
  * @returns {Promise<Map|Object|null>}
  */
 async function resolveEphemerides(payload, sites) {
-  if (payload.ephemeris) {
-    if (payload.ephemeris instanceof Map) return payload.ephemeris
-    if (Array.isArray(payload.ephemeris)) {
-      const map = new Map()
-      for (const dataset of payload.ephemeris) {
-        const normalized = ensureEphemeris(dataset)
-        if (normalized) map.set(normalized.siteId, normalized)
-      }
-      return map
+  const ids = sites.map((site) => site?.id).filter(Boolean)
+  const provided = payload.ephemeris
+
+  // Explicit multi-site maps and arrays of datasets are authoritative.
+  if (provided instanceof Map) return provided
+  if (
+    Array.isArray(provided) &&
+    provided.length > 0 &&
+    provided[0] &&
+    typeof provided[0] === 'object' &&
+    Array.isArray(provided[0].samples)
+  ) {
+    const map = new Map()
+    for (const dataset of provided) {
+      const normalized = ensureEphemeris(dataset)
+      if (normalized?.siteId) map.set(normalized.siteId, normalized)
     }
-    if (typeof payload.ephemeris === 'object') {
-      if (Array.isArray(payload.ephemeris.samples)) {
-        const dataset = ensureEphemeris(payload.ephemeris)
-        return dataset ?? null
-      }
+    if (map.size > 0) return map
+  }
+  if (provided && typeof provided === 'object' && !Array.isArray(provided)) {
+    const looksLikeSingleDataset =
+      Array.isArray(provided.samples) ||
+      (provided.siteId !== undefined && !Array.isArray(provided[provided.siteId]) && typeof provided[provided.siteId] !== 'object')
+    if (!looksLikeSingleDataset) {
       const map = new Map()
-      for (const [siteId, dataset] of Object.entries(payload.ephemeris)) {
+      for (const [siteId, dataset] of Object.entries(provided)) {
         const normalized = ensureEphemeris(dataset)
         if (normalized) map.set(siteId, normalized)
       }
-      return map
+      if (map.size > 0) return map
     }
   }
-  const ids = sites.map((site) => site?.id).filter(Boolean)
+
+  // Prefer the per-site precomputed files: a single dataset passed by a caller
+  // (usually the currently selected site) is not topocentric for the others.
+  const singleDataset =
+    provided && typeof provided === 'object' && Array.isArray(provided.samples)
+      ? ensureEphemeris(provided)
+      : null
   try {
-    return await loadEphemerisMap(ids)
+    const map = await loadEphemerisMap(ids)
+    if (map.size > 0) {
+      if (singleDataset?.siteId && !map.has(singleDataset.siteId)) map.set(singleDataset.siteId, singleDataset)
+      return map
+    }
   } catch (error) {
     console.warn(`[worker] could not load ephemerides: ${error instanceof Error ? error.message : String(error)}`)
-    return new Map()
   }
+  if (singleDataset) return singleDataset
+  return new Map()
 }
 
 /**
