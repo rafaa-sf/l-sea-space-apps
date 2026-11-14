@@ -280,8 +280,8 @@ Consequence: a loader that checks only `res.ok` will treat a missing data file a
 valid and fail later in `JSON.parse` with a confusing HTML error, while a loader
 that sends `Accept: application/json` gets a clean 404. **All data checks must
 assert `Content-Type` and parse the payload, never trust the status code alone.**
-On Vercel the same behaviour will occur once the `.htaccess` SPA fallback in
-`docs/deployment.md` section 5 is installed. Evidence:
+On Vercel the same behaviour will occur once the SPA rewrite in `vercel.json`
+serves `index.html` for unknown paths. Evidence:
 `preview-mime-behavior.txt`, `preview-missing-data-behavior.txt`.
 
 ### B-11 `dist/` contains no local-only URLs — PASS

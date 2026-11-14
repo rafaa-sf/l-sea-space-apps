@@ -10,7 +10,7 @@
 **Editorial rule:** this page separates **built**, **planned (design contract)** and **not built**. Do not publish a claim in the "Built" column unless the demo shows it working. Every factual claim is traceable to `docs/*`, `public/data/terrain/*` or the event material listed under [Sources](#sources).
 
 > **STATUS REFRESH — do this before Submit for Judging (Lead/coder).**
-> The development status snapshot below is **`origin/develop` @ `5db7603`, 14 Nov 2026**, which already includes the POIs, JPL Horizons ephemerides, Moon Trek layer catalogue and CI added after the first draft. If later commits land engine/panels/export code, update §3.4 (status table), the Summary closing sentences, the Demo description and the pitch deck's "built" labels. Do not upgrade any row to "Built" without a build that runs (`npm run build`) and a clickable demo path. No feature may be described as working only because `docs/architecture.md` specifies it.
+> The development status snapshot below is **`main` @ `af859ef`, 14 Nov 2026**: the application, engine, panels, export code and real NASA datasets are merged on `main`, with 104 app tests in 7 files plus 8 MCP tests passing and a green build/CI. The Vercel deployment and the Project Demo link are still pending (`docs/submission.md` TODOs). Do not describe the app as working end to end until the deployed build is verified; no feature may be described as working only because `docs/architecture.md` specifies it.
 
 ---
 
@@ -28,7 +28,7 @@ Do not use NASA or CSA logos, flags or mission identifiers as project branding; 
 
 ## 2. Summary (50–200 words — final version: **194 words**)
 
-> L-SEA Space Apps is a browser-based tool for comparing lunar south-pole landing sites and dates, built for the NASA Space Apps Challenge Málaga 2026 and challenge #10, "Lunar Landing Site Navigator". Landing on the Moon's south pole means trading sunlight for power, Earth visibility for direct communications, and terrain that hides the horizon. Mission planners face these trade-offs every time a launch date or landing site changes, but the data sits in tools built for specialists. Our design puts site selection, Sun and Earth positions relative to the horizon, time to sunset or earthset, power and communications windows, and an "autopilot" site scorer in one interface for mission planners and educators, with a bilingual EN/ES UI and a JSON mission-brief export. The repository ships real NASA LOLA south-pole terrain, and the tool is designed around pre-computed JPL Horizons ephemerides so it can run as a static site, with a 2D fallback for machines without WebGL. The prototype is implemented in source: a mission-control interface with 11 feature panels, a terrain/horizon engine, ephemeris-driven Sun and Earth visibility, power and communications metrics, a site comparator, autopilot scoring, a JSON mission-brief export and a no-WebGL 2D fallback; the automated test suite passes (98 tests). Remaining work is validation against reference ephemerides, deployment and the final demo; we report what is verified and what is still pending.
+> L-SEA Space Apps is a browser-based tool for comparing lunar south-pole landing sites and dates, built for the NASA Space Apps Challenge Málaga 2026 and challenge #10, "Lunar Landing Site Navigator". Landing on the Moon's south pole means trading sunlight for power, Earth visibility for direct communications, and terrain that hides the horizon. Mission planners face these trade-offs every time a launch date or landing site changes, but the data sits in tools built for specialists. Our design puts site selection, Sun and Earth positions relative to the horizon, time to sunset or earthset, power and communications windows, and an "autopilot" site scorer in one interface for mission planners and educators, with a bilingual EN/ES UI and a JSON mission-brief export. The repository ships real NASA LOLA south-pole terrain, and the tool is designed around pre-computed JPL Horizons ephemerides so it can run as a static site, with a 2D fallback for machines without WebGL. The prototype is implemented and merged on `main`: a mission-control interface with 11 feature panels, a terrain/horizon engine, ephemeris-driven Sun and Earth visibility, power and communications metrics, a site comparator, autopilot scoring, a JSON mission-brief export and a no-WebGL 2D fallback; the automated test suite passes (104 app tests in 7 files plus 8 MCP tests) and CI is green. Remaining work is the Vercel deployment, the Project Demo link and validation against reference ephemerides; we report what is verified and what is still pending.
 
 **Word count:** 194 (limit 50–200). Re-count after any edit (`wc -w` on the paragraph).
 
@@ -54,13 +54,13 @@ The tool is designed as a rapid scenario-comparison surface: pick candidate site
 
 The architecture is a contract, documented in `docs/architecture.md`, with a pure domain core, services, UI and a static build:
 
-| Layer | Technology / method | Status (`origin/develop` @ `5db7603`) |
+| Layer | Technology / method | Status (`main` @ `af859ef`) |
 | --- | --- | --- |
 | UI | Vue 3 (Composition API) | **Built** — mission-control shell with 11 feature panels |
 | 3D view | Three.js | **Built** — Three.js scene with a no-WebGL Canvas 2D fallback |
 | Build | Vite, static output in `dist/` | **Built** — green; Three.js chunk ≈742.93 kB (gzip ≈187.84 kB) with a chunk-size warning |
 | i18n | vue-i18n, English + Spanish catalogues | **Built** — English and Spanish catalogues cover the UI |
-| Tests | Vitest | **Built** — 98 tests in 7 files, all passing (`npm test`); the MCP package has its own suite/job |
+| Tests | Vitest | **Built** — 104 app tests in 7 files plus 8 MCP tests, all passing (`npm test`); build and CI green on `main` |
 | Terrain data | Real LOLA polar DEMs, pre-computed | **Built and validated** (see §4.1) |
 | Ephemeris | JPL Horizons, pre-computed datasets (static hosting) | **Built** — 10 sites × 2 928 samples (2026-11-01 → 2026-12-31, 30-min steps) in `public/data/ephemeris/`, loaded and interpolated by `src/core/ephemeris.js`; dev-only Vite proxy `/nasa/horizons` in `vite.config.js` |
 | Compute | Single Web Worker for horizon/scoring | **Built** — `src/workers/compute.worker.js` + task dispatcher |
@@ -85,7 +85,7 @@ Interfaces are implemented in `src/` and specified in `docs/architecture.md`: `s
 - **Accessible by design.** Bilingual EN/ES, 2D fallback without WebGL, static/install-free, usable by educators and the public — not only by mission-planning specialists.
 - **Traceable output.** The JSON brief carries the inputs and the scenarios used, and links back to QuickMap/Moon Trek for verification.
 
-### 3.4 Real development status (as of `origin/develop` @ `5db7603`, 14 Nov 2026)
+### 3.4 Real development status (as of `main` @ `af859ef`, 14 Nov 2026)
 
 **Built (verified today):**
 
@@ -93,7 +93,7 @@ Interfaces are implemented in `src/` and specified in `docs/architecture.md`: `s
 - Vue 3 + Vite + Three.js project scaffold; production build succeeds (`npm run build`, `dist/` produced; ≈ 123 kB JS + 1.7 kB CSS + copied terrain data).
 - Application shell: mission-control layout (header, viewport, timeline, footer) with 11 feature panels and **English and Spanish** message catalogues (`src/i18n/`).
 - Domain core, services, Web Worker, Three.js renderer and no-WebGL 2D fallback implemented in `src/` (terrain, horizon/ray tracing, ephemeris interpolation, power, comms, autopilot, export).
-- Automated test suite: 98 tests in 7 files, all passing (`npm test`); production build green.
+- Automated test suite: 104 app tests in 7 files plus 8 MCP tests, all passing (`npm test`); production build and CI green on `main`.
 - Global styles/design tokens (`src/styles/main.css`).
 - **Real NASA LOLA south-pole terrain**, shipped as two polar-stereographic regions (see §4.1) with a reproducible builder script (`scripts/nasa/build-terrain.py`), and validated by the team test bench (`docs/test-report.md`: PASS, 2 regions, 0 failures).
 
@@ -101,7 +101,7 @@ Interfaces are implemented in `src/` and specified in `docs/architecture.md`: `s
 
 **Implemented in source and covered by tests:** all 15 features of the architecture contract (site selection, custom coordinates, comparator, dates/times, Sun/Earth horizon and ray tracing, time-to-set, power and comms, Moon Trek layers, real LOLA topography, autopilot scoring, Web Worker, no-WebGL fallback, orbital variation, EN/ES UI, JSON brief export).
 
-**Pending validation:** end-to-end demonstration on the deployed URL (not deployed yet), accuracy against live JPL Horizons reference values, and usability testing — see §3.5.
+**Pending validation:** end-to-end demonstration on the deployed Vercel URL (not deployed yet), accuracy against live JPL Horizons reference values, and usability testing — see §3.5.
 
 **Not validated yet:** accuracy of computed horizons or illumination against live JPL Horizons references; end-to-end behaviour on the deployed URL; usability for mission planners or educators; accessibility of the full UI. (A minimal validation plan exists in `docs/impact-scalability.md` §5.)
 
@@ -113,7 +113,7 @@ Interfaces are implemented in `src/` and specified in `docs/architecture.md`: `s
 - **Data volume.** The build is ≈ 14–15 MB, dominated by ≈ 13.4 MB of committed NASA data (terrain ≈ 10.5 MB, ephemerides ≈ 2.8 MB); first load on a slow connection is a real UX risk and a planned optimization (lazy-loading/tiling).
 - **Ephemeris scope.** Coverage and sampling interval of pre-computed datasets will bound the dates the tool can answer for; the UI must show the validated range rather than extrapolate silently.
 - **Physics simplifications.** No atmospheric refraction (correct for the Moon, and stated by the challenge brief); whether Earth libration is fully represented must be documented for the final ephemeris datasets.
-- **Automated tests:** 98 tests in 7 files cover the core geometry, terrain, ephemeris, power, comms, autopilot and service adapters; the UI is not covered by automated end-to-end tests and accuracy against live Horizons is not yet asserted.
+- **Automated tests:** 104 app tests in 7 files plus 8 MCP tests cover the core geometry, terrain, ephemeris, power, comms, autopilot and service adapters; the UI is not covered by automated end-to-end tests and accuracy against live Horizons is not yet asserted.
 - **No commercial validation.** No customer interviews, pricing evidence or market-size figures are claimed anywhere in this submission.
 
 ---
@@ -209,7 +209,7 @@ No commercial market data, customer data or third-party imagery is used in this 
 - Engineering contract and feature map: `docs/architecture.md`
 - Static deployment constraints: `docs/deployment.md`
 - Terrain provenance and metadata: `public/data/terrain/index.json`, `south-pole-875s-20m.json`, `south-pole-80s-80m.json`, `scripts/nasa/build-terrain.py`
-- Current code/build/test status: `origin/develop` @ `5db7603`; QA summary in `docs/test-report.md` (baseline checks at `263d724` plus the post-baseline delta)
+- Current code/build/test status: `main` @ `af859ef` — implementation merged, 104 app tests + 8 MCP tests green, CI green; Vercel deployment and Project Demo link pending; QA summary in `docs/test-report.md`
 - Impact and scalability framing: `docs/impact-scalability.md`
 - Judges: the official Málaga 2026 event material; mapping in the related document in `docs/`
 - Official links: [NASA Space Apps Challenge 2026](https://www.spaceappschallenge.org/2026/), [Challenges 2026](https://www.spaceappschallenge.org/2026/challenges/), [Málaga Local Event](https://www.spaceappschallenge.org/2026/local-events/malaga/), [PDS Geosciences LRO LOLA](https://pds-geosciences.wustl.edu/missions/lro/lola.htm), [JPL Horizons](https://ssd.jpl.nasa.gov/horizons/), [NASA Moon Trek](https://trek.nasa.gov/moon/)

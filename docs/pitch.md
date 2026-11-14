@@ -10,7 +10,7 @@
 
 **Honesty labels used on every slide:** 🟩 **BUILT** (implemented in source, automated tests pass — and visibly working if the deployed demo is available) · 🟨 **NOT YET VALIDATED** (no accuracy-vs-Horizons/end-to-end evidence yet) · 🟦 **DATA** (real NASA data shipped).
 
-> **Reality check before you present (Lead + coder).** The status below reflects `origin/develop` @ `5db7603` (14 Nov 2026): the mission-control application is implemented in source (11 panels, core engine, services, worker, Three.js + no-WebGL fallback), with 98 passing tests, a green build, the full datasets, the pipeline and CI. **BUILT** = the application and its module tests. **Not yet validated** = end-to-end demo on the deployed URL, accuracy against live JPL Horizons references, usability. Use Demo Path A (§D) if the deployed build works end to end; do not present unvalidated behaviour as proven.
+> **Reality check before you present (Lead + coder).** The status below reflects `main` @ `af859ef` (14 Nov 2026): the mission-control application is merged on `main` (11 panels, core engine, services, worker, Three.js + no-WebGL fallback, real NASA datasets, pipeline and CI), with 104 app tests passing in 7 files plus 8 MCP tests and a green build. **BUILT** = merged on `main` and covered by its module tests. **Not yet validated** = end-to-end demo on the deployed URL (Vercel deployment pending), accuracy against live JPL Horizons references, usability. Use Demo Path A (§D) if the deployed build works end to end; do not present unvalidated behaviour as proven.
 
 ---
 
@@ -75,18 +75,18 @@ Deck total: **7 slides** (limit is 7 *including* cover). Target export: public G
   - **If the deployed build works end to end:** record the real flow (site → date → horizon/power/comms → comparison → export); caption with the validated values and the honest limits. If the deployment is not ready in time, fall back to the source + unit-test evidence and label it as built-but-not-deployed.
   - Always: what the viewer is looking at and whether it is built or planned.
 - **Visual:** annotated screenshot; 2–3 callouts max.
-- **Notes (30 s):** "This is what runs today. Two scenarios side by side — same site, two dates; look how the sunlight window and the Earth window differ. One click gives the brief. The app is implemented and its 98 automated tests pass; what we have not yet validated is accuracy against live JPL Horizons and the deployed end-to-end demo."
+- **Notes (30 s):** "This is what runs today. Two scenarios side by side — same site, two dates; look how the sunlight window and the Earth window differ. One click gives the brief. The app is merged on `main` and its 104 automated app tests plus 8 MCP tests pass; what we have not yet validated is accuracy against live JPL Horizons and the deployed end-to-end demo."
 - **Label:** 🟩 BUILT (as stated on the slide)
 
 ### Slide 6 — What has been verified, what works, limitations
 
 - **On-slide text:**
   - **Verified today:** production build succeeds; terrain binaries parse and match metadata; cross-region agreement r = 0.9993; documentation/architecture contract complete.
-  - **Works:** static app shell, EN/ES locale handling, real LOLA terrain shipped (~11 MB), reproducible terrain builder.
-  - **Limitations (say them):** application implemented in source with 98 passing tests, but the end-to-end demo on the deployed URL and the accuracy comparison against live Horizons are still pending; ~14–15 MB first load (≈13.4 MB of committed NASA data, Three.js chunk ≈743 kB); 74 m/px default resolution; dates bounded by the shipped ephemeris range (2026-11-01 → 2026-12-31).
+  - **Works:** the full application merged on `main` (11 panels, EN/ES, Three.js + 2D fallback), real LOLA terrain shipped (~11 MB), horizon/ray-tracing engine, ephemeris-driven Sun/Earth visibility, power/comms, autopilot ranking and JSON brief export; CI green (104 app tests + 8 MCP tests).
+  - **Limitations (say them):** application implemented and merged on `main` with 104 passing app tests plus 8 MCP tests, but the Vercel deployment/end-to-end demo and the accuracy comparison against live Horizons are still pending; ~14–15 MB first load (≈13.4 MB of committed NASA data, Three.js chunk ≈743 kB); 74 m/px default resolution; dates bounded by the shipped ephemeris range (2026-11-01 → 2026-12-31).
   - **Not claimed:** flight-certified analysis; market size; customer traction.
 - **Visual:** two-column "Verified / Not yet" table with checkmarks and honest grey items.
-- **Notes (15 s):** "We are explicit about this: the application is implemented and its 98 automated tests pass; the real NASA datasets are shipped. What is not done yet is end-to-end validation on the deployed site and an accuracy comparison against live Horizons. Those are the next steps."
+- **Notes (15 s):** "We are explicit about this: the application is merged on `main` and its 104 automated app tests plus 8 MCP tests pass; the real NASA datasets are shipped. What is not done yet is end-to-end validation on the deployed site and an accuracy comparison against live Horizons. Those are the next steps."
 - **Label:** 🟩 BUILT / transparent gaps
 
 ### Slide 7 — Expected impact, next step, essential references
@@ -144,15 +144,15 @@ Several questions below are the ones the participant guide suggests rehearsing (
 
 | Likely question | Answer (evidence-based) |
 | --- | --- |
-| Where does the NASA resource intervene? | LOLA terrain is the horizon input to every Sun/Earth visibility decision; shipped and validated (grids, ranges, cross-region r = 0.9993). Horizons provides Sun/Earth positions; Moon Trek layers/deep links. All planned in `docs/architecture.md`. |
-| What works today, what is pending? | Built: static shell, EN/ES, real LOLA terrain pipeline, build. Pending: horizon engine, ephemeris datasets, power/comms, comparison, scoring, export, 3D/2D views. |
+| Where does the NASA resource intervene? | LOLA terrain is the horizon input to every Sun/Earth visibility decision; shipped and validated (grids, ranges, cross-region r = 0.9993). Horizons provides Sun/Earth positions; Moon Trek layers/deep links. All implemented and consumed by the app (`src/core/`, `src/services/`). |
+| What works today, what is pending? | Built and merged on `main`: 11-panel UI, EN/ES, real LOLA terrain + Horizons ephemerides + Moon Trek layers consumed by the app, horizon/ray-tracing engine, power/comms, comparison, autopilot scoring, JSON export, 3D and 2D views, CI green (104 app tests + 8 MCP tests). Pending: Vercel deployment, end-to-end demo validation, accuracy vs live Horizons, usability testing. |
 | What evidence supports the conclusions? | Terrain validation PASS (2 regions, 0 failures); cross-region agreement r = 0.9993, mean absolute difference 28.8 m; build succeeds. Accuracy vs. Horizons is the next validation — not yet claimed. |
 | What is the main limitation? | Prototype status and terrain resolution (74 m/px default), plus static hosting: ephemerides must be pre-computed. We disclose rather than hide it. |
 | Which decision adds the most value? | Comparing scenarios, not single-site inspection; and exporting a reproducible brief. That is the gap the challenge brief names in existing tools. |
 | Why not just use Moon Trek/QuickMap/Horizons? | They are authoritative but built for detailed analysis; the brief says they are hard for non-specialists to use for rapid comparison. We consume their data and link back to them. |
 | How is this creative? | A "mission-profile autopilot" that ranks sites against power/relay/sunlight-days needs, plus a bilingual, no-WebGL, static UX for planning *and* education. |
 | Is it scientifically valid? | Physics is standard (spherical Moon, no atmosphere → no refraction; terrain + lunar curvature for the horizon); tolerances and coverage must be documented; validation against Horizons is the next step. |
-| What would you do with more time? | Finish the comparison MVP, validate against Horizons, run a timed usability test, ship lazy-loaded terrain tiles. |
+| What would you do with more time? | Deploy on Vercel, validate against live Horizons, run a timed usability test, ship lazy-loaded terrain tiles. |
 | Are you using AI? | Per the guide, declare tools and how they were used; the submission's AI declaration (§ later in the Project page) is the authoritative answer. **TODO: align this answer with the final declaration.** |
 
 ### Asset checklist (before linking the deck/video)
