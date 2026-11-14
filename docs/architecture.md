@@ -259,6 +259,52 @@ power 0.25, sun 0.20, comms 0.20, safety 0.15, thermal 0.10, logistics 0.05,
 science 0.05. Every component is 0..100; `components.terrain` is a
 backward-compatible alias of `components.safety`.
 
+### Hard feasibility gate (zone autopilot)
+
+A zone is only eligible as a real landing candidate when the mission is
+physically feasible there. The gate is evaluated in
+`computeLandingMetrics` → `evaluateZoneFeasibility` and exposed as
+`entry.feasibility` (and the simple `entry.feasible` flag):
+
+| Violation code | Trigger |
+| --- | --- |
+| `feasibility.powerDeficit` | `powerMarginW < 0` (average solar power below load + average heater) |
+| `feasibility.batteryInsufficient` | a mission battery capacity is specified and `requiredBatteryWh > batteryCapacityWh` |
+| `feasibility.thermalCold` | `heatedMinTempC < minOperatingTemperatureC` even with the heater at `heaterMaxW` |
+| `feasibility.thermalHot` | `maxTempC > maxOperatingTemperatureC` |
+| `feasibility.dataInsufficient` | `dataNeedMb` is specified and the estimated budget does not cover it |
+| `feasibility.undetermined` | no terrain/ephemeris data to verify the mission (conservatively treated as not feasible) |
+
+Consequences:
+
+- the reported score is capped at **55** (`rawScore` keeps the uncapped value,
+  `scoreCapApplied` flags the cap);
+- the grade is at most **conditional** (or `poor` below 45);
+- violation reasons are prepended to `reasons` with severity `bad`;
+- ranking is **feasible-first-then-score** (`meta.rankingRule`): all feasible
+  zones rank before infeasible/undetermined ones, each group by score;
+- meta exposes `feasibleZones`, `infeasibleZones`, `undeterminedZones`,
+  `hasFeasibleZones`, `recommendedZoneId` (first feasible zone) and
+  `feasibility.message` (`'ok'`, or `'no-feasible-zone'` when nothing is
+  feasible). If no zone is feasible the best zone is still ranked #1 but is
+  shown as conditional, never as a good site.
+
+Metric naming (unambiguous; legacy aliases remain but must not be rendered
+twice): `illumination.totalEclipseHours` (sum of all dark periods) vs
+`illumination.longestEclipseHours` (single longest darkness);
+`illumination.sunElevationMeanWindowDeg` vs `sunElevationMeanSunlitDeg`;
+`thermal.heaterPowerSizedW` (eclipse rating) vs `heaterAveragePowerW` (window
+average); `comms.earthVisibleFraction` (effective, relay included) vs
+`directEarthVisibleFraction`, `maxLosGapHours` (effective gaps) vs
+`directMaxLosGapHours`; `comms.dataBudgetRatio` (budget/need, may exceed 1)
+instead of a percentage, with `dataBudgetCoverage` clamped to 0..1;
+`safety.ellipse.requiredAreaKm2`/`availableAreaKm2` plus explicit
+`requiredAreaM2`/`availableAreaM2`; panel area in m²; roughness/relief/distances
+in m. `metrics.missionInputs` echoes the exact mission values used for the run
+(`powerNeedW`, `batteryCapacityWh`, `heaterMaxW`, `heaterWPerK`, operating
+temperatures, `missionDays`, `startTime`, `dataNeedMb`, `mastM`,
+`relayInOrbit`), and every mission edit also changes `meta.inputSignature`.
+
 Documented formulas/approximations:
 
 - Thermal: `T = [ (1 − A)·S·sin(el) / (ε·σ) ]^(1/4)` for sunlit terrain
