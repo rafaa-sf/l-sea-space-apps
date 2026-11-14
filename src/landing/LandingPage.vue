@@ -487,6 +487,13 @@ function openDocsIndex() {
   font-size: 13px;
 }
 
+.landing__section-link a,
+.landing__footer-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
 .landing__section-link a {
   color: var(--color-accent-strong);
   text-decoration: none;
