@@ -4,12 +4,17 @@ Repository for **L-SEA Space Apps**, the team's project for the **NASA
 International Space Apps Challenge · Málaga 2026** (14–15 November 2026, 42
 Málaga Fundación Telefónica).
 
-> **Status:** hackathon weekend. Team rules and event resources are documented;
-> the technology stack and application structure are being defined.
+> **Status:** hackathon weekend. The lunar site selection application is under
+> active development; the documentation, NASA datasets and shared resources are
+> ready.
 
 ## Overview
 
-L-SEA Space Apps is developed by a two-machine team:
+L-SEA Space Apps is a lunar south-pole site selection and mission briefing tool.
+It uses real NASA data to compare candidate landing sites: terrain from LOLA,
+Sun/Earth visibility from JPL Horizons, and Moon Trek layers.
+
+The project is developed by a two-machine team:
 
 | Machine | Role | Responsibility |
 | --- | --- | --- |
@@ -33,6 +38,18 @@ The repository is public: <https://github.com/rafaa-sf/l-sea-space-apps>
 
 Full rules: [docs/guide.md](docs/guide.md).
 
+## Application
+
+| Item | Detail |
+| --- | --- |
+| Stack | Vue 3 + Vite + Three.js (plain JavaScript) |
+| Deployment | Static build on GoDaddy hosting |
+| UI languages | English and Spanish |
+| NASA data | JPL Horizons, LOLA DEM (PDS Geosciences), Moon Trek |
+| Fallback | Canvas 2D renderer for machines without WebGL |
+
+Architecture and module contracts: [docs/architecture.md](docs/architecture.md).
+
 ## Documentation
 
 | Document | Contents |
@@ -40,26 +57,40 @@ Full rules: [docs/guide.md](docs/guide.md).
 | [docs/project.md](docs/project.md) | Project scope, event facts, team roles and current status |
 | [docs/guide.md](docs/guide.md) | English summary of the official participant guide and event rules |
 | [docs/resources.md](docs/resources.md) | Shared Drive folder, official links and NASA data resources |
+| [docs/architecture.md](docs/architecture.md) | Technical architecture, data flow and module contracts |
+| [docs/api-integrations.md](docs/api-integrations.md) | NASA endpoints, exact queries, CORS status and attribution |
+| [docs/data-sources.md](docs/data-sources.md) | Datasets, provenance, licensing and pre-compute plan |
+| [docs/ai-usage.md](docs/ai-usage.md) | AI tools declaration for the NASA submission |
 | [docs/conventions.md](docs/conventions.md) | Language, commit message, branch naming and code conventions |
 | [docs/git-workflow.md](docs/git-workflow.md) | Git and GitHub workflow for the two machines |
 | [docs/security.md](docs/security.md) | Secrets handling, environment variables and repository safety |
+| [docs/deployment.md](docs/deployment.md) | GoDaddy static deployment plan |
+| [docs/miro-mcp.md](docs/miro-mcp.md) | Miro MCP server for agent–board collaboration |
 | [docs/decisions.md](docs/decisions.md) | Decision log for the repository |
 
 ## Repository layout
 
 ```text
 .
-├── .env.example      # Environment variable template (no real values)
-├── .gitignore        # Ignored files: secrets, dependencies, build artifacts
-├── README.md         # This file
-└── docs/             # Project documentation
+├── .env.example          # Environment variable template (no real values)
+├── .gitignore            # Ignored files: secrets, dependencies, build artifacts
+├── index.html            # Vite entry point
+├── package.json          # App dependencies and scripts
+├── vite.config.js        # Vite configuration
+├── src/                  # Vue application, Three.js scene and domain logic
+├── public/data/          # Pre-computed NASA datasets (ephemeris, terrain, POIs, layers)
+├── scripts/nasa/         # Data acquisition and processing scripts
+├── mcp/miro/             # Miro MCP server (separate package)
+├── docs/                 # Project documentation
+└── .github/workflows/    # CI: tests and production build
 ```
 
 ## Conventions (short version)
 
 - All code, comments, commit messages and documentation are written in **English**.
 - Never commit secrets or real environment values.
-- `main` is the stable branch; all changes go through feature branches.
+- `main` is the stable branch; `develop` is the integration branch for the
+  hackathon build; all work happens on short-lived feature branches.
 - At least one NASA resource from the challenge must be used and explained.
 
 See [docs/conventions.md](docs/conventions.md) and

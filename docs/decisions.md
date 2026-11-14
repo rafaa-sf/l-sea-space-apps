@@ -17,6 +17,11 @@ Record of decisions made about this repository, in chronological order.
 | D-011 | 2026-11-14 | Two machines with distinct roles: primary (development) and commercial (business side) | Team structure agreed at project start |
 | D-012 | 2026-11-14 | The organization's Drive folder is the shared source for the participant guide and event resources; files are linked from `docs/resources.md` and not copied into the repository | The repository is public, the files are binary/large, and NASA brand-restricted material should not be redistributed |
 | D-013 | 2026-11-14 | `docs/guide.md` is an English working summary of the official Spanish participant guide | Team documentation is written in English, while the original guide remains the authoritative rules source |
+| D-014 | 2026-11-14 | `main` remains the stable/submission branch; `develop` is the integration branch during the hackathon | Allows parallel work from several agents and the two machines without destabilizing `main` |
+| D-015 | 2026-11-14 | The application ships as a static build and uses pre-computed NASA datasets instead of live API calls | JPL Horizons sends no CORS headers and GoDaddy hosts static files; pre-computed data keeps the demo offline-safe |
+| D-016 | 2026-11-14 | Terrain uses real LOLA polar DEM products in polar stereographic projection (74 m and 594 m grids) | The real PDS products are not regular lat/lon grids; metric projection keeps ray tracing and curvature correct |
+| D-017 | 2026-11-14 | A Miro MCP server (`mcp/miro/`) exposes the Miro REST API v2 to AI agents | The team uses Miro as a collaboration platform; the MCP lets agents read and edit the same boards |
+| D-018 | 2026-11-14 | All NASA-derived data, endpoints and their verification are documented in `docs/api-integrations.md` and `docs/data-sources.md` | Traceability is required for the submission and the jury checks the real use of NASA resources |
 
 ## How to add a decision
 

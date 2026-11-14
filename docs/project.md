@@ -41,16 +41,32 @@ Coordination rules for working from two machines are described in
 
 ## Current status
 
-**Hackathon weekend (14–15 November 2026).** Repository, documentation and the
-shared resources index are ready. Application code and the chosen challenge are
-to be defined during the event.
+**Hackathon weekend (14–15 November 2026).** The repository, documentation,
+shared resources index and real NASA datasets (JPL Horizons ephemerides, LOLA
+DEM terrain, Moon Trek layers, POIs) are ready. The Vue 3 + Three.js application
+is implemented and being hardened; the Miro MCP server is available for
+agent–board collaboration.
 
 Pending:
 
-- Challenge selection.
-- Technology stack and application architecture.
-- Project structure inside the repository.
-- Branch protection and review requirements.
+- Final application polish and end-to-end demo validation.
+- GoDaddy deployment of the static build.
+- Project page submission (Submit for Judging).
+- Demo materials (at most 7 slides or a 30-second video).
+
+## Technology
+
+| Item | Detail |
+| --- | --- |
+| UI | Vue 3 + Vite (plain JavaScript) |
+| 3D viewport | Three.js, with a Canvas 2D fallback for machines without WebGL |
+| Domain logic | Framework-agnostic ES modules (`src/core/`, `src/services/`) |
+| Background compute | Web Worker (single CPU thread) |
+| i18n | English and Spanish (`vue-i18n`) |
+| Deployment | Static build on GoDaddy hosting |
+| AI collaboration | Miro MCP server (`mcp/miro/`) |
+
+See [architecture.md](architecture.md) for the module contracts.
 
 ## Repository ownership
 

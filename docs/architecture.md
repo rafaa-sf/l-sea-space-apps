@@ -76,6 +76,42 @@ times. The Moon reference radius is `1737400` m.
 }
 ```
 
+Pre-computed ephemeris files live in `public/data/ephemeris/<site-id>.json`. Each
+file wraps a `samples` array of the objects above with its site and range:
+
+```js
+{
+  siteId: 'shackleton-rim',
+  site: { lat: -89.78, lon: 204.27 },
+  moonRadiusM: 1737400,
+  source: 'NASA/JPL Horizons API (DE441), topocentric apparent az/el',
+  range: { start: '2026-11-01T00:00:00Z', end: '2026-12-31T23:30:00Z' },
+  stepMinutes: 30,
+  sampleCount: 2928,
+  samples: [ /* 2 928 EphemerisSample objects, no gaps */ ],
+}
+```
+
+Azimuth is degrees east of selenographic (true) north (`0..360`), elevation is
+degrees above the local horizontal (airless). The exact contract and the
+generation script are documented in `public/data/ephemeris/README.md`; the API
+details are in [api-integrations.md](api-integrations.md).
+
+### Pre-computed datasets
+
+| Path | Contents | Producer |
+| --- | --- | --- |
+| `public/data/pois.json` | Array of `Site` objects for the 10 curated south-pole POIs (`source: 'poi'`, plus `provenance`, `sourceUrl`, DEM-sampled `elevationM`) | `scripts/nasa/build-pois.mjs` |
+| `public/data/ephemeris/` | Per-site Sun/Earth az/el files + `index.json` + schema `README.md` | `scripts/nasa/fetch-horizons.mjs` |
+| `public/data/terrain/` | LOLA polar-stereographic int16 grids + `index.json` (see above) | `scripts/nasa/build-terrain.py` |
+| `public/data/layers.json` | 21 live-verified NASA Moon Trek WMTS layers (`type: 'wmts'`, tile URL template, zoom range, projection, attribution, verification record) | `scripts/nasa/build-layers.mjs` |
+| `public/data/ai-usage.md` | Same declaration as [ai-usage.md](ai-usage.md), served to the deployed app (the UI links to `/data/ai-usage.md`) | copied from docs |
+
+The static build copies `public/data/` to `dist/data/`, so the app fetches
+`/data/...` at runtime; the dev server proxy for live Horizons queries exists
+only for development. Data provenance, licensing and known limitations are in
+[data-sources.md](data-sources.md).
+
 ### Terrain grid (LOLA DEM, polar stereographic)
 
 The real LOLA polar DEMs are stored in **polar stereographic projection**, not as
