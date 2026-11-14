@@ -140,7 +140,8 @@ serves the pre-computed NASA datasets and the AI-use declaration at
 ## AI usage
 
 The project was built with AI agent teams under human direction. The complete
-declaration, including the tools used and the human responsibilities, is in
+declaration, including the tools used, the human responsibilities, the
+follow-up hardening rounds and the agent-opened issues/pull requests, is in
 [`docs/ai-usage.md`](docs/ai-usage.md) and is served by the application at
 `/data/ai-usage.md`.
 

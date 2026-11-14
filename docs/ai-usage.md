@@ -57,6 +57,21 @@ and coordinated with the advisory lock protocol described in `docs/contributing.
 | **comercial** | Commercialisation | Project-page content (name, summary, detailed description, NASA-data narrative), business case, 7-slide pitch and 30-second video script, judges-criteria mapping, social-media copy |
 | **testbench** | Test bench | Test plan and executed QA report, data-integrity validation, deployment-checklist dry run and the Monte Carlo logic bench (shipped under `qa/logic/`) |
 
+### 2.3 Follow-up hardening rounds (14 November 2026)
+
+After the first submission draft, the same AI agent teams ran additional
+verification and hardening rounds under the same human direction:
+
+| Round | What the agents did |
+| --- | --- |
+| UX compliance audit | Audited the interface against the Málaga 2026 support guide, wrote `docs/ux-compliance.md`, then implemented `CR-01`…`CR-06` (contrast tokens, 24/44 px targets, ≥12 px type with 16 px body text, one primary action per surface, a three-step guide plus first-run hint, plain-language errors with a next action) and fixed the viewport-toolbar clipping at 280 px (PRs #9 and #10). |
+| Playback and time control | Reproduced issue #11 (pause failing after time jumps) with a 20 000-sequence Monte Carlo simulator, made the playback clock own a single interval, added fake-timer regression tests and aligned the 3D line of sight and the Sun/Earth arrows (PR #12). |
+| Whole-page QA sweep | Ran the full device/resolution matrix in EN and ES, a whole-page audit of every tab and tool drawer (43/43), accessibility and link audits, a 10 000-case Monte Carlo run over the scientific core, data-consistency checks, and recalibrated the source-validation script and stale documentation numbers (PRs #13 and #14). |
+| Interface cleanup | Removed the redundant north compass from the 3D viewport without changing layout or behaviour (PR #15). |
+
+Every change went through pull-request review and the CI test suite; the agents
+opened the issues/pull requests and reported the results to the human team.
+
 ## 3. What AI generated
 
 | Area | AI contribution |
@@ -69,6 +84,7 @@ and coordinated with the advisory lock protocol described in `docs/contributing.
 | Documentation | `README.md`, every file under `docs/` (including this declaration and the submission documents), `public/data/ephemeris/README.md`, `public/data/ai-usage.md` |
 | Submission package | Project page content and readiness checklist, demo deck outline, 30-second video script, business case, judging-criteria mapping and impact analysis, now consolidated in [submission.md](submission.md), [demo.md](demo.md), [commercial.md](commercial.md), [scalability.md](scalability.md) and [qa.md](qa.md) |
 | QA test bench | Monte Carlo logic bench (`qa/logic/`: 20 000 randomised site/date/mission scenarios over the real scientific core, 13 invariants) and device/resolution UI matrix (`qa/ui/`: 51 viewports × English/Spanish + no-WebGL probes, filterable report), shipped under `qa/`; see [`docs/qa.md`](qa.md) and [`qa/README.md`](../qa/README.md). |
+| Hardening and QA | Playback-clock and Sun/Earth direction fixes, UX compliance remediation, whole-page/device/accessibility audits, 10 000–20 000-case Monte Carlo runs, data and documentation recalibration, compass removal |
 | Coordination tooling | Tag-based machine synchronisation (`claim/*`, `sync/*` and `lock/*` tags) and the repository pre-push lock hook |
 | Version control | Branch creation, Conventional-Commit messages, pull requests and tag publication performed by the agents |
 
@@ -103,12 +119,20 @@ and coordinated with the advisory lock protocol described in `docs/contributing.
   verified with live tile requests and CORS checks before being written to
   `public/data/layers.json` (see `docs/data.md`).
 - The application builds successfully (`npm run build`) and its unit/contract
-  suites pass (Vitest; see the QA test-bench report).
+  suites pass (Vitest: **157 tests** in 11 files at the time of writing, plus
+  8 MCP checks in CI).
 - Responsive layout and no-WebGL fallback checks are documented in
   [`docs/qa.md`](qa.md); the QA test bench ships under `qa/` and records the
-  repository git SHA. `qa/REPORT.md` documents the executed runs (20 000
-  randomised logic scenarios and the device/resolution UI matrix) and its
-  findings; run the commands in `qa/README.md` to regenerate them.
+  repository git SHA. The full matrix covers all 51 viewports × EN/ES plus
+  no-WebGL probes; the last full run on the merged state passed 103/104 checks,
+  and the single 280 px Spanish overflow it found was fixed and re-verified on
+  the affected boxes. The whole-page audit of every tab and drawer passed 43/43.
+- The playback state machine was verified with a **20 000-sequence** Monte Carlo
+  simulator over the real store under fake timers (zero failures after the fix),
+  and the scientific core with a **10 000-case** randomised run (zero invariant
+  failures; 48 horizon-monotonicity warnings inside the documented tolerance).
+- Design-token contrast was re-checked after the UX changes: all text pairs
+  ≥ 4.5:1 and control borders ≥ 3:1 (primary button label 5.80:1).
 - Exact test counts are maintained in the test-bench reports rather than duplicated
   here; they are generated by the same AI agents and can be reproduced from the
   scripts.
@@ -152,6 +176,12 @@ branches and pushes), reported each release, and the tags `sync/*`, `claim/*` an
 `lock/*` plus the repository history document which machine published what and
 when. The
 authoritative record of the work is the repository history and pull requests.
+Agent-opened work items: issue #4 (terrain `NaN`, fixed and closed), issue #11
+(playback pause, fixed and closed), and pull requests #9 (UX audit), #10 (UX
+compliance), #12 (playback clock and Sun/Earth line of sight), #13
+(data/documentation calibration), #14 (UX evidence refresh) and #15 (compass
+removal). PRs #10, #12 and #13 were merged into `develop`; #14 and #15 were open
+at the time of writing.
 
 *Event rules reference: AI is allowed at NASA Space Apps; the team must declare the
 tools and how they were incorporated (see `docs/challenge.md`).*
