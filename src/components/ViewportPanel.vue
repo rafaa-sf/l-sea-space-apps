@@ -8,6 +8,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { actions, selectedSite, state } from './composables/useAppState.js'
 import { getCompute } from './composables/useCompute.js'
+import { DEM_REGIONS } from './composables/useData.js'
 import { detectWebgl } from '../render/webgl.js'
 import { siteDisplayName, sourceLabelKey } from './composables/labels.js'
 import { formatNumber } from './composables/format.js'
@@ -63,6 +64,7 @@ const terrainExtent = computed(() => {
   return [terrain.minX, terrain.minY, terrain.maxX, terrain.maxY].map((value) => Number(value).toFixed(1)).join(',')
 })
 const markersAnchored = computed(() => (state.analysis.ready && state.selectedSiteId ? 'true' : 'false'))
+const demRegionId = computed(() => state.data.terrainRegionId ?? DEM_REGIONS[0].id)
 const ephemerisBadge = computed(() => t(sourceLabelKey(state.data.ephemerisSource, 'ephemeris')))
 
 const legendGradient = hypsometricCssGradient()
@@ -231,6 +233,7 @@ function setupWatchers() {
         pushTerrain()
         pushSites()
         pushEnvironment()
+        pushLayers()
       },
     ),
     watch(
@@ -264,6 +267,10 @@ function setupWatchers() {
       () => createRenderer(),
     ),
   )
+}
+
+function setTerrainRegion(event) {
+  actions.setTerrainRegion(event.target.value)
 }
 
 function setViewMode(value) {
@@ -314,6 +321,8 @@ onBeforeUnmount(() => {
         data-testid="viewport-canvas"
         :data-terrain-layout="terrainLayout"
         :data-terrain-extent="terrainExtent"
+        :data-terrain-region="demRegionId"
+        data-hillshade-mode="fixed"
         @keydown="onCanvasKeydown"
       />
       <p class="sr-only">{{ t('viewport.keyboardHint') }}</p>
@@ -327,6 +336,12 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="viewport__controls">
+        <label class="dem-select">
+          <span class="sr-only">{{ t('dem.title') }}</span>
+          <select class="input dem-select__control" :value="demRegionId" data-testid="dem-region-select" :aria-label="t('dem.title')" @change="setTerrainRegion">
+            <option v-for="region in DEM_REGIONS" :key="region.id" :value="region.id">{{ t(region.labelKey) }}</option>
+          </select>
+        </label>
         <div class="segmented" role="group" :aria-label="t('viewport.modeLabel')">
           <button
             v-for="option in modeOptions"

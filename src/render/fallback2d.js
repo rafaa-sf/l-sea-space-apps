@@ -44,7 +44,8 @@ export function createFallback2D(canvas, options = {}) {
   let earthVisible = true
   let rayInfo = null
   let zoom = 1
-  let size = 1
+  let widthPx = 1
+  let heightPx = 1
   let dpr = 1
   let mapRect = { x: 0, y: 0, w: 1, h: 1 }
   let scale = 1
@@ -104,17 +105,16 @@ export function createFallback2D(canvas, options = {}) {
 
   function updateMapRect() {
     if (!planar) return
-    const maxExtent = Math.max(planar.widthM, planar.heightM)
-    scale = (size / maxExtent) * zoom
+    scale = Math.min(widthPx / planar.widthM, heightPx / planar.heightM) * zoom
     const w = planar.widthM * scale
     const h = planar.heightM * scale
-    mapRect = { x: (size - w) / 2, y: (size - h) / 2, w, h }
+    mapRect = { x: (widthPx - w) / 2, y: (heightPx - h) / 2, w, h }
   }
 
   function notifyView(force = false) {
-    if (!planar || size <= 1) return
-    const visibleMeters = size / scale
-    const next = { visibleMeters, widthPx: size, heightPx: size, azimuthDeg: 0 }
+    if (!planar || widthPx <= 1) return
+    const visibleMeters = widthPx / scale
+    const next = { visibleMeters, widthPx, heightPx, azimuthDeg: 0 }
     if (!force && Number.isFinite(lastViewInfo.visibleMeters)) {
       if (Math.abs(next.visibleMeters - lastViewInfo.visibleMeters) < next.visibleMeters * 0.01) return
     }
@@ -151,51 +151,53 @@ export function createFallback2D(canvas, options = {}) {
 
   function buildRaster() {
     if (!planar) return
-    const rasterSize = RASTER_SIZE
+    const rasterW = Math.max(64, Math.min(960, Math.round(widthPx)))
+    const rasterH = Math.max(64, Math.min(960, Math.round(rasterW * (heightPx / Math.max(1, widthPx)))))
     const offscreen = document.createElement('canvas')
-    offscreen.width = rasterSize
-    offscreen.height = rasterSize
+    offscreen.width = rasterW
+    offscreen.height = rasterH
     const offContext = offscreen.getContext('2d')
-    const image = offContext.createImageData(rasterSize, rasterSize)
-    const factor = rasterSize / size
-    const rasterRect = { x: mapRect.x * factor, y: mapRect.y * factor, w: mapRect.w * factor, h: mapRect.h * factor }
-    const elevations = new Float32Array(rasterSize * rasterSize)
-    const valid = new Uint8Array(rasterSize * rasterSize)
-
-    for (let py = 0; py < rasterSize; py += 1) {
-      const yMeters = planar.bounds.maxY - (py - rasterRect.y) / (scale * factor)
-      for (let px = 0; px < rasterSize; px += 1) {
+    const image = offContext.createImageData(rasterW, rasterH)
+    const factorX = rasterW / Math.max(1, widthPx)
+    const factorY = rasterH / Math.max(1, heightPx)
+    const rasterRect = { x: mapRect.x * factorX, y: mapRect.y * factorY, w: mapRect.w * factorX, h: mapRect.h * factorY }
+    const elevations = new Float32Array(rasterW * rasterH)
+    const valid = new Uint8Array(rasterW * rasterH)
+    for (let py = 0; py < rasterH; py += 1) {
+      const yMeters = planar.bounds.maxY - (py - rasterRect.y) / (scale * factorY)
+      for (let px = 0; px < rasterW; px += 1) {
         if (px < rasterRect.x - 1 || px > rasterRect.x + rasterRect.w + 1 || py < rasterRect.y - 1 || py > rasterRect.y + rasterRect.h + 1) continue
-        const xMeters = planar.bounds.minX + (px - rasterRect.x) / (scale * factor)
-        const index = py * rasterSize + px
+        const xMeters = planar.bounds.minX + (px - rasterRect.x) / (scale * factorX)
+        const index = py * rasterW + px
         elevations[index] = samplePlanar(xMeters, yMeters)
         valid[index] = 1
       }
     }
-
-    const smoothed = smoothGrid(elevations, rasterSize, rasterSize, 2)
+    const smoothed = smoothGrid(elevations, rasterW, rasterH, 2)
     const stats = options.terrainStats?.(terrain) ?? { minM: 0, maxM: 1 }
-    const cellMeters = 1 / (scale * factor)
-    const gradientX = new Float32Array(rasterSize * rasterSize)
-    const gradientZ = new Float32Array(rasterSize * rasterSize)
-    for (let py = 1; py < rasterSize - 1; py += 1) {
-      for (let px = 1; px < rasterSize - 1; px += 1) {
-        const index = py * rasterSize + px
+    const cellX = 1 / (scale * factorX)
+    const cellY = 1 / (scale * factorY)
+    const gradientX = new Float32Array(rasterW * rasterH)
+    const gradientZ = new Float32Array(rasterW * rasterH)
+    for (let py = 1; py < rasterH - 1; py += 1) {
+      for (let px = 1; px < rasterW - 1; px += 1) {
+        const index = py * rasterW + px
         if (!valid[index]) continue
-        gradientX[index] = (smoothed[index + 1] - smoothed[index - 1]) / (2 * cellMeters)
-        gradientZ[index] = (smoothed[index + rasterSize] - smoothed[index - rasterSize]) / (2 * cellMeters)
+        gradientX[index] = (smoothed[index + 1] - smoothed[index - 1]) / (2 * cellX)
+        gradientZ[index] = (smoothed[index + rasterW] - smoothed[index - rasterW]) / (2 * cellY)
       }
     }
-    raster = { offscreen, offContext, image, elevations: smoothed, gradientX, gradientZ, valid, stats, size: rasterSize }
+    raster = { offscreen, offContext, image, elevations: smoothed, gradientX, gradientZ, valid, stats, width: rasterW, height: rasterH }
     computeShading()
   }
 
   function computeShading() {
     if (!raster) return
-    const { size: rasterSize, image, valid, gradientX, gradientZ, stats } = raster
-    const sun = sunDirectionVector(sunDirection?.az ?? 0, sunDirection?.el ?? 0)
+    const { width: rasterW, height: rasterH, image, valid, gradientX, gradientZ, stats } = raster
+    // Fixed cartographic light: stable when the selected POI/date changes.
+    const sun = sunDirectionVector(315, 45)
     const color = image.data
-    for (let index = 0; index < rasterSize * rasterSize; index += 1) {
+    for (let index = 0; index < rasterW * rasterH; index += 1) {
       const offset = index * 4
       if (!valid[index]) {
         color[offset + 3] = 0
@@ -207,7 +209,7 @@ export function createFallback2D(canvas, options = {}) {
       const nz = -gradientZ[index]
       const length = Math.hypot(nx, ny, nz) || 1
       const normal = { x: nx / length, y: ny / length, z: nz / length }
-      const shade = hillshadeShade(normal, sun, sunVisible, { ambient: 0.3, diffuse: 1.35, flatShade: 0.4 })
+      const shade = hillshadeShade(normal, sun, true, { ambient: 0.3, diffuse: 1.35, flatShade: 0.4 })
       color[offset] = Math.min(255, r * 255 * shade)
       color[offset + 1] = Math.min(255, g * 255 * shade)
       color[offset + 2] = Math.min(255, b * 255 * shade)
@@ -217,10 +219,10 @@ export function createFallback2D(canvas, options = {}) {
   }
 
   function tryLabel(text, x, y, color, font) {
-    if (!text || x < 6 || y < 10 || x > size - 6 || y > size - 10) return false
+    if (!text || x < 6 || y < 10 || x > widthPx - 6 || y > heightPx - 10) return false
     context.font = font
     const textWidth = context.measureText(text).width
-    if (x + textWidth > size - 6) return false
+    if (x + textWidth > widthPx - 6) return false
     const box = { left: x - 1, top: y - 7, right: x + textWidth + 1, bottom: y + 7 }
     for (const placed of placedLabels) {
       if (box.left < placed.right + 3 && box.right > placed.left - 3 && box.top < placed.bottom + 2 && box.bottom > placed.top - 2) return false
@@ -248,16 +250,16 @@ export function createFallback2D(canvas, options = {}) {
   }
 
   function drawBackground() {
-    const gradient = context.createLinearGradient(0, 0, 0, size)
+    const gradient = context.createLinearGradient(0, 0, 0, heightPx)
     gradient.addColorStop(0, '#0a0d12')
     gradient.addColorStop(1, '#06080b')
     context.fillStyle = gradient
-    context.fillRect(0, 0, size, size)
+    context.fillRect(0, 0, widthPx, heightPx)
   }
 
   function drawMarkers() {
     if (!planar) return
-    const selectedPoint = selectedSite ? toScreen(selectedSite.lat, selectedSite.lon) : { x: size / 2, y: size / 2 }
+    const selectedPoint = selectedSite ? toScreen(selectedSite.lat, selectedSite.lon) : { x: widthPx / 2, y: heightPx / 2 }
     const priority = (site) => (site.id === selection.selectedId ? 0 : (selection.compareIds ?? []).includes(site.id) ? 1 : 2)
     const ordered = [...sites].sort((a, b) => {
       const rank = priority(a) - priority(b)
@@ -407,9 +409,10 @@ export function createFallback2D(canvas, options = {}) {
     dpr = Math.min(window.devicePixelRatio || 1, 2)
     const cssWidth = canvas.clientWidth || 1
     const cssHeight = canvas.clientHeight || 1
-    size = Math.max(1, Math.min(cssWidth, cssHeight))
-    canvas.width = Math.round(size * dpr)
-    canvas.height = Math.round(size * dpr)
+    widthPx = Math.max(1, cssWidth)
+    heightPx = Math.max(1, cssHeight)
+    canvas.width = Math.round(widthPx * dpr)
+    canvas.height = Math.round(heightPx * dpr)
     updateMapRect()
     notifyView(true)
   }
@@ -453,7 +456,7 @@ export function createFallback2D(canvas, options = {}) {
   function setSunDirection(sun, visible = true) {
     sunDirection = sun ? { az: Number(sun.az) || 0, el: Number(sun.el) || 0 } : null
     sunVisible = Boolean(visible)
-    computeShading()
+    // Terrain shading is fixed; only the Sun/Earth overlays update.
     requestDraw()
   }
 

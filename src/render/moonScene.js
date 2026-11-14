@@ -213,9 +213,14 @@ export async function createMoonScene(canvas, options = {}) {
     if (!projection) return
     // Exact-fit perspective: the larger horizontal extent maps to the viewport
     // height at the target plane, so the 3D scale matches the 2D map scale.
-    const distance = projection.mapSize / (2 * Math.tan((camera.fov * Math.PI) / 360))
+    const tanHalf = Math.tan((camera.fov * Math.PI) / 360)
+    const aspect = Math.max(0.2, camera.aspect || 1)
+    const mapWidth = projection.widthM * projection.unitsPerMeter
+    const mapHeight = projection.heightM * projection.unitsPerMeter
+    // Fit the full rectangular map inside the dynamic canvas (letterboxed).
+    const distance = Math.max(mapHeight / 2 / tanHalf, mapWidth / 2 / (tanHalf * aspect))
     // Near-top-down (small southward offset keeps north up on screen).
-    homeCamera = { x: 0, y: distance, z: distance * 0.06 }
+    homeCamera = { x: 0, y: distance, z: distance * 0.04 }
     camera.position.set(homeCamera.x, homeCamera.y, homeCamera.z)
     controls.target.set(0, 0, 0)
     controls.update()
@@ -224,13 +229,16 @@ export async function createMoonScene(canvas, options = {}) {
 
   function computeViewInfo() {
     if (!projection) return null
-    const size = Math.max(1, Math.min(canvas.clientWidth || 1, canvas.clientHeight || 1))
+    const widthPx = Math.max(1, canvas.clientWidth || 1)
+    const heightPx = Math.max(1, canvas.clientHeight || 1)
+    const aspect = widthPx / heightPx
     const distance = camera.position.distanceTo(controls.target)
     const visibleMeters =
-      (2 * distance * Math.tan((camera.fov * Math.PI) / 360)) / Math.max(1e-9, projection.unitsPerMeter)
+      (2 * distance * Math.tan((camera.fov * Math.PI) / 360) * aspect) /
+      Math.max(1e-9, projection.unitsPerMeter)
     const azimuthDeg =
       (Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z) * 180) / Math.PI
-    return { visibleMeters, widthPx: size, heightPx: size, azimuthDeg }
+    return { visibleMeters, widthPx, heightPx, azimuthDeg }
   }
 
   function notifyViewChange(force = false) {
@@ -246,12 +254,12 @@ export async function createMoonScene(canvas, options = {}) {
   // Always render a square canvas with a 1:1 camera aspect, so the polar cap is
   // never stretched by the container aspect ratio.
   function cameraFrame() {
-    const cssWidth = canvas.clientWidth || 1
-    const cssHeight = canvas.clientHeight || 1
-    const size = Math.max(1, Math.min(cssWidth, cssHeight))
-    renderer.setSize(size, size, false)
-    camera.aspect = 1
+    const cssWidth = Math.max(1, canvas.clientWidth || 1)
+    const cssHeight = Math.max(1, canvas.clientHeight || 1)
+    renderer.setSize(cssWidth, cssHeight, false)
+    camera.aspect = cssWidth / cssHeight
     camera.updateProjectionMatrix()
+    if (projection) frameCamera()
     notifyViewChange(true)
   }
 
@@ -499,16 +507,27 @@ export async function createMoonScene(canvas, options = {}) {
     return new THREE.LineLoop(geometry, material)
   }
 
-  /** Recompute vertex colours from the smoothed normals and the current Sun. */
+  const shadedColorCache = new Map()
+
+  /**
+   * Stable cartographic hillshade: fixed light (azimuth 315, elevation 45) so
+   * switching POIs or dates never relights the terrain. Colours are cached per
+   * DEM region; the Sun/Earth arrows and ray tracing remain date/site driven.
+   */
   function applyHillshade() {
     if (!terrainGeometry || !terrainNormals || !terrainTints) return
     const colorAttribute = terrainGeometry.getAttribute('color')
     if (!colorAttribute) return
     const colors = colorAttribute.array
-    const sun = sunDirection
-      ? sunDirectionVector(sunDirection.az, sunDirection.el)
-      : sunDirectionVector(0, 90)
-    const visible = Boolean(sunDirection) && sunVisible
+    const cacheKey = lastTerrain?.regionId ?? lastTerrain?.id ?? 'terrain'
+    const cached = shadedColorCache.get(cacheKey)
+    if (cached && cached.length === colors.length) {
+      colors.set(cached)
+      colorAttribute.needsUpdate = true
+      return
+    }
+    const sun = sunDirectionVector(315, 45)
+    const visible = true
     const vertexCount = colorAttribute.count
     for (let index = 0; index < vertexCount; index += 1) {
       const offset = index * 3
@@ -517,9 +536,7 @@ export async function createMoonScene(canvas, options = {}) {
         y: terrainNormals[offset + 1],
         z: terrainNormals[offset + 2],
       }
-      const shade = sunDirection
-        ? hillshadeShade(normal, sun, visible, { ambient: 0.3, diffuse: 1.35, flatShade: 0.4 })
-        : 0.9
+      const shade = hillshadeShade(normal, sun, visible, { ambient: 0.3, diffuse: 1.35, flatShade: 0.4 })
       colors[offset] = sRGBToLinear(Math.min(1, terrainTints[offset] * shade))
       colors[offset + 1] = sRGBToLinear(Math.min(1, terrainTints[offset + 1] * shade))
       colors[offset + 2] = sRGBToLinear(Math.min(1, terrainTints[offset + 2] * shade))
@@ -632,7 +649,7 @@ export async function createMoonScene(canvas, options = {}) {
   function setSunDirection(sun, visible = true) {
     sunDirection = sun ? { az: Number(sun.az) || 0, el: Number(sun.el) || 0 } : null
     sunVisible = Boolean(visible)
-    applyHillshade()
+    // Terrain shading is fixed; only the Sun/Earth overlays update.
     updateHelpers()
   }
 
