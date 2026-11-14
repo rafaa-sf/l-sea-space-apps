@@ -34,6 +34,7 @@ import {
   isStorageAvailable,
 } from './storage.js'
 import { buildHorizonsQuery, parseHorizonsTable, parseHorizonsJson, mergeLiveBodies, toHorizonsDate } from './horizons.js'
+import { createComputeClient } from './computeClient.js'
 
 const LAYER = {
   id: 'lola-color-hillshade-5m',
@@ -257,6 +258,35 @@ describe('storage service', () => {
     expect(state.selectedSiteId).toBe('a')
     clearState()
     expect(loadState().sites).toEqual([])
+  })
+})
+
+describe('compute client', () => {
+  it('falls back to inline execution when no Worker is available', async () => {
+    const client = createComputeClient({ workerFactory: () => null })
+    expect(client.mode()).toBe('inline')
+    expect(client.isWorkerSupported()).toBe(false)
+    expect(client.status()).toBe('inline')
+    const result = await client.request('ping')
+    expect(result.pong).toBe(true)
+    expect(client.lastError()).toBeNull()
+    client.terminate()
+    expect(client.status()).toBe('terminated')
+  })
+
+  it('rejects a request when the abort signal fires', async () => {
+    const client = createComputeClient({ workerFactory: () => null })
+    const controller = new AbortController()
+    const promise = client.request('ping', {}, { signal: controller.signal })
+    controller.abort()
+    await expect(promise).rejects.toThrow()
+    client.terminate()
+  })
+
+  it('rejects requests after termination', async () => {
+    const client = createComputeClient({ workerFactory: () => null })
+    client.terminate()
+    await expect(client.request('ping')).rejects.toThrow(/terminated/i)
   })
 })
 
