@@ -247,6 +247,34 @@ await sleep(800)
 text = await bodyText()
 report.initialAutopilot = (text.match(/Status: [^\n]+/) || [])[0] ?? 'MISSING'
 
+// Playback transport: Now pauses the clock; play advances it; pause stops it.
+const timeInput = () => evaluate(`document.querySelector('input[type="time"]')?.value ?? null`)
+const transportLabel = () => evaluate(`document.querySelector('.transport-button')?.getAttribute('aria-label') ?? null`)
+const clickTransport = () => evaluate(`(() => { document.querySelector('.transport-button')?.click(); return true; })()`)
+const clickNow = () => evaluate(`(() => { const b=[...document.querySelectorAll('button')].find(x=>(x.textContent||'').trim()==='Now'); if(!b) return false; b.click(); return true; })()`)
+report.nowClicked = await clickNow()
+await sleep(1600)
+const nowTimeA = await timeInput()
+await sleep(1400)
+const nowTimeB = await timeInput()
+report.nowPaused = nowTimeA === nowTimeB
+report.nowLabel = await transportLabel()
+await clickTransport()
+await sleep(1400)
+const playTimeA = await timeInput()
+await sleep(1400)
+const playTimeB = await timeInput()
+report.playAdvances = playTimeA !== playTimeB
+report.playLabel = await transportLabel()
+await clickTransport()
+await sleep(1200)
+const pauseTimeA = await timeInput()
+await sleep(1800)
+const pauseTimeB = await timeInput()
+report.pauseStops = pauseTimeA === pauseTimeB
+report.pauseLabel = await transportLabel()
+
+
 report.canvas = await waitForCanvas()
 report.terrain = await terrainAttributes()
 report.hillshadeMode = await canvasAttribute('data-hillshade-mode')
@@ -435,6 +463,9 @@ const failed =
   !scaleParity ||
   !(report.railLeftAfterDrag > report.railLeftBefore + 20) ||
   Math.abs((report.railLeftAfterDrag ?? 0) - (report.railLeftAfterReload ?? -999)) > 2 ||
+  !report.nowClicked || !report.nowPaused || report.nowLabel !== 'Play' ||
+  !report.playAdvances || report.playLabel !== 'Pause' ||
+  !report.pauseStops || report.pauseLabel !== 'Play' ||
   report.layerCoverage === 'MISSING' ||
   !/Zoom\s+[5-9],/.test(report.layerZoom ?? '') ||
   report.consoleErrors.length > 0
