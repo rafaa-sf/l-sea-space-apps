@@ -11,6 +11,7 @@ import HorizonPanel from './panels/HorizonPanel.vue'
 import CountdownPanel from './panels/CountdownPanel.vue'
 import PowerCommsPanel from './panels/PowerCommsPanel.vue'
 import AutopilotPanel from './panels/AutopilotPanel.vue'
+import CyclesPanel from './panels/CyclesPanel.vue'
 import { selectedSite } from './composables/useAppState.js'
 import { siteDisplayName } from './composables/labels.js'
 
@@ -23,6 +24,7 @@ const tabs = [
   { id: 'lighting', labelKey: 'tabs.lighting', testId: 'analysis-tab-lighting' },
   { id: 'power', labelKey: 'tabs.power', testId: 'analysis-tab-power' },
   { id: 'autopilot', labelKey: 'tabs.autopilot', testId: 'analysis-tab-autopilot' },
+  { id: 'cycles', labelKey: 'tabs.cycles', testId: 'analysis-tab-cycles' },
 ]
 </script>
 
@@ -46,6 +48,9 @@ const tabs = [
       </div>
       <div v-show="activeTab === 'autopilot'" role="tabpanel" :aria-label="t('tabs.autopilot')">
         <AutopilotPanel />
+      </div>
+      <div v-show="activeTab === 'cycles'" role="tabpanel" :aria-label="t('tabs.cycles')">
+        <CyclesPanel />
       </div>
     </div>
   </section>

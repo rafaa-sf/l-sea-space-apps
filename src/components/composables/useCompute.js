@@ -19,7 +19,8 @@ function buildEngine() {
     loadCore('power'),
     loadCore('comms'),
     loadCore('autopilot'),
-  ]).then(([terrainMod, engineMod, ephemerisMod, powerMod, commsMod, autopilotMod]) => {
+    loadCore('cycles'),
+  ]).then(([terrainMod, engineMod, ephemerisMod, powerMod, commsMod, autopilotMod, cyclesMod]) => {
     const detected = detectedModules()
     const capability = {
       terrain: Boolean(terrainMod),
@@ -28,6 +29,7 @@ function buildEngine() {
       power: Boolean(powerMod),
       comms: Boolean(commsMod),
       autopilot: Boolean(autopilotMod),
+      cycles: Boolean(cyclesMod),
     }
     const modules = {
       core: detected.core,
@@ -53,6 +55,10 @@ function buildEngine() {
       dataBudget: withFallback(commsMod, 'dataBudget'),
       rankSites: withFallback(autopilotMod, 'rankSites'),
       scoreSite: withFallback(autopilotMod, 'scoreSite'),
+      missionCycles: (...args) =>
+        cyclesMod && typeof cyclesMod.computeMissionCycles === 'function'
+          ? cyclesMod.computeMissionCycles(...args)
+          : null,
       // Local helpers that are always safe to call.
       terrainStats: localCore.terrainStats,
       createFallbackTerrain: localCore.createFallbackTerrain,

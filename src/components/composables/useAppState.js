@@ -40,7 +40,9 @@ export const DEFAULT_MISSION = Object.freeze({
   mastM: 10,
   bitrateMbps: 2,
   panelAreaM2: 2.4,
-  batteryCapacityWh: null,
+  batteryCapacityWh: 40000,
+  powerSource: 'solar',
+  rtgPowerW: null,
   batteryRoundTripEfficiency: 0.9,
   batteryDepthOfDischarge: 0.8,
   heaterMaxW: 400,
@@ -1049,6 +1051,44 @@ export async function runExport() {
   state.export.status = 'busy'
   state.export.error = null
   try {
+    let cycles = null
+    try {
+      const compute = await ensureCompute()
+      const site = selectedSite.value
+      if (compute && typeof compute.missionCycles === 'function' && site && state.terrain && state.ephemeris) {
+        const startTime = state.mission.startTime ?? state.time
+        const raw = compute.missionCycles({
+          terrain: state.terrain,
+          site,
+          ephemeris: state.ephemeris,
+          mission: { ...state.mission, startTime: new Date(startTime).toISOString() },
+        })
+        if (raw) {
+          cycles = {
+            window: raw.window ?? null,
+            weekCount: Array.isArray(raw.weeks) ? raw.weeks.length : null,
+            sunlight: {
+              sunHours: raw.sunlight?.sunHours ?? null,
+              eclipseHours: raw.sunlight?.eclipseHours ?? null,
+              eclipseCount: raw.sunlight?.eclipseCount ?? null,
+            },
+            direct: {
+              linkHours: raw.direct?.linkHours ?? null,
+              gapHours: raw.direct?.gapHours ?? null,
+              gapCount: raw.direct?.gapCount ?? null,
+            },
+            relay: {
+              enabled: Boolean(raw.relay?.enabled),
+              benefitHours: raw.relay?.benefitHours ?? 0,
+              gapHours: raw.relay?.gapHours ?? null,
+            },
+            inputSignature: raw.meta?.inputSignature ?? null,
+          }
+        }
+      }
+    } catch (cyclesError) {
+      cycles = null
+    }
     const result = await exportBrief({
       sites: state.sites,
       selectedSite: selectedSite.value,
@@ -1057,6 +1097,7 @@ export async function runExport() {
       scores: state.scores,
       landingZones: state.landingZones,
       landingZonesMeta: state.landingZonesMeta,
+      cycles,
       locale: i18n.global.locale.value,
     })
     state.export.status = 'done'

@@ -459,7 +459,7 @@ export function briefLinks(site) {
 }
 
 /** Build the mission brief object (used when services/export.js is missing). */
-export function buildLocalBrief({ sites = [], selectedSite = null, mission = {}, analysis = {}, scores = [], landingZones = [], landingZonesMeta = null, locale = 'en' } = {}) {
+export function buildLocalBrief({ sites = [], selectedSite = null, mission = {}, analysis = {}, scores = [], landingZones = [], landingZonesMeta = null, cycles = null, locale = 'en' } = {}) {
   return {
     schema: 'lsea.mission-brief/1',
     generatedAt: new Date().toISOString(),
@@ -477,6 +477,7 @@ export function buildLocalBrief({ sites = [], selectedSite = null, mission = {},
     rankedSites: scores,
     rankedLandingZones: Array.isArray(landingZones) ? landingZones : [],
     landingZonesMeta,
+    cycles,
     links: briefLinks(selectedSite),
     dataSources: [
       { name: 'JPL Horizons', role: 'Topocentric Sun and Earth azimuth/elevation', url: DATA_SOURCES.horizons.url },
@@ -502,12 +503,12 @@ export function downloadJson(data, filename) {
 }
 
 /** Build and download the brief, preferring the coder's export service. */
-export async function exportBrief({ sites, selectedSite, mission, analysis, scores, landingZones = [], landingZonesMeta = null, locale }) {
+export async function exportBrief({ sites, selectedSite, mission, analysis, scores, landingZones = [], landingZonesMeta = null, cycles = null, locale }) {
   const service = await loadService('export')
   if (service) {
     try {
       if (typeof service.buildBrief === 'function') {
-        const brief = await service.buildBrief({ sites, mission, computation: { analysis, selectedSite, scores, landingZones, landingZonesMeta } })
+        const brief = await service.buildBrief({ sites, mission, computation: { analysis, selectedSite, scores, landingZones, landingZonesMeta, cycles } })
         if (brief) {
           if (typeof service.downloadBrief === 'function') service.downloadBrief(brief)
           else if (typeof service.downloadJson === 'function') service.downloadJson(brief)
@@ -516,7 +517,7 @@ export async function exportBrief({ sites, selectedSite, mission, analysis, scor
         }
       }
       if (typeof service.downloadBrief === 'function') {
-        const brief = buildLocalBrief({ sites, selectedSite, mission, analysis, scores, landingZones, landingZonesMeta, locale })
+        const brief = buildLocalBrief({ sites, selectedSite, mission, analysis, scores, landingZones, landingZonesMeta, cycles, locale })
         service.downloadBrief(brief)
         return { brief, source: 'service' }
       }
@@ -524,7 +525,7 @@ export async function exportBrief({ sites, selectedSite, mission, analysis, scor
       console.warn('[lsea] services/export failed, using local brief builder', error)
     }
   }
-  const brief = buildLocalBrief({ sites, selectedSite, mission, analysis, scores, landingZones, landingZonesMeta, locale })
+  const brief = buildLocalBrief({ sites, selectedSite, mission, analysis, scores, landingZones, landingZonesMeta, cycles, locale })
   downloadJson(brief, `lsea-brief-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`)
   return { brief, source: 'local' }
 }
