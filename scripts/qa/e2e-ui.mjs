@@ -431,8 +431,11 @@ report.railLeftAfterKeyboard = await railWidth('layout-left-rail')
 // first WMTS layer like a user would, then poll until the renderer reports the
 // per-layer zoom and tile count.
 const origin = await evaluate('location.origin')
+const basePath = await evaluate('location.pathname')
 if (origin) {
-  await send('Page.navigate', { url: `${origin}/?lang=en#/tool` })
+  // Preserve a deployment base path (GitHub Pages serves the app under
+  // /l-sea-space-apps/); hash routing keeps the tool route valid.
+  await send('Page.navigate', { url: `${origin}${basePath}?lang=en#/tool` })
   await sleep(9000)
   await click('Layers')
   await sleep(1500)

@@ -75,7 +75,7 @@ if (!assetMatch) {
     // Vercel/CDN: immutable long cache. GitHub Pages: 600 s on static assets.
     const immutable = /immutable/i.test(cache) && maxAge >= 100000
     const acceptable = immutable || maxAge >= 600
-    if (!immutable) failures += 1
+    if (!acceptable) failures += 1
     console.log(
       `${acceptable ? 'PASS' : 'FAIL'}  ${'hashed asset cache'.padEnd(24)} ` +
         `${response.status} ${cache || '(no cache-control)'}`,

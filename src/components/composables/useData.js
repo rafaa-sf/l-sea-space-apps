@@ -16,8 +16,10 @@ import {
   normalizePlanarTerrain,
 } from './localCore.js'
 import { loadService } from './moduleBridge.js'
+import { dataRootUrl } from '../../services/dataUrl.js'
 
-const DATA_ROOT = '/data'
+// Base-aware so sub-path deployments (GitHub Pages) load the datasets too.
+const DATA_ROOT = dataRootUrl().replace(/\/$/, '')
 
 export const DATA_SOURCES = {
   horizons: {
@@ -39,7 +41,7 @@ export const DATA_SOURCES = {
 }
 
 export const APP_LINKS = {
-  aiUsage: '/data/ai-usage.md',
+  aiUsage: `${DATA_ROOT}/ai-usage.md`,
   moonTrek: 'https://trek.nasa.gov/moon/',
   quickMap: 'https://quickmap.lroc.asu.edu/',
   lola: 'https://pds-geosciences.wustl.edu/missions/lro/lola.htm',
