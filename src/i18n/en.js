@@ -373,7 +373,7 @@ export default {
   },
   autopilot: {
     title: 'Autopilot',
-    hint: 'Score and rank sites for the mission profile. Uses the background worker when available.',
+    hint: 'Ranks flat landing zones detected from the LOLA DEM (slope gate and minimum area) for the mission profile. Sun and Earth use the nearest curated ephemeris, reported per zone. Uses the background worker when available.',
     run: 'Run ranking',
     running: 'Ranking…',
     missionDays: 'Mission days',
@@ -389,7 +389,9 @@ export default {
       main: 'Main thread',
 
     },
-    zoneLabel: 'Zone {rank}: {lat} {lon}',
+    zoneLabel: 'Landing zone {rank}: {lat} {lon}',
+    zoneSiteName: 'Landing zone {rank}',
+    zoneSelected: 'Selected landing zone',
     zoneArea: 'Area',
     zoneSlope: 'Slope mean/max',
     zoneElevation: 'Elevation',
@@ -409,7 +411,7 @@ export default {
     metricComms: 'Comms',
     empty: 'No ranking yet — run the autopilot.',
     fallbackNote: 'Worker unavailable, computed on the main thread',
-    workerNote: 'Scores combine sunlight, power, communications and terrain slope (0–100).',
+    workerNote: 'Scores combine sunlight, power, communications and the zone slope (0–100); flat zones come from the DEM, not named POIs.',
     status: {
       idle: 'Idle',
       running: 'Running',

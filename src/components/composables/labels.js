@@ -10,6 +10,9 @@ import { formatLat, formatLon } from './format.js'
 /** Resolve a site display name through i18n when the dataset provides a key. */
 export function siteDisplayName(t, te, site) {
   if (!site) return ''
+  if (site.zoneRank && typeof te === 'function' && te('autopilot.zoneSiteName')) {
+    return t('autopilot.zoneSiteName', { rank: site.zoneRank })
+  }
   if (site.nameKey && typeof te === 'function' && te(site.nameKey)) return t(site.nameKey)
   if (site.name) return site.name
   if (site.source === 'custom' || site.source === 'pointer') {

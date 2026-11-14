@@ -373,7 +373,7 @@ export default {
   },
   autopilot: {
     title: 'Piloto automático',
-    hint: 'Puntúa y ordena los sitios para el perfil de misión. Usa el worker en segundo plano cuando está disponible.',
+    hint: 'Ordena zonas planas de aterrizaje detectadas del DEM LOLA (límite de pendiente y área mínima) para el perfil de misión. El Sol y la Tierra usan la efeméride del sitio curado más cercano, indicada en cada zona. Usa el worker en segundo plano cuando está disponible.',
     run: 'Ejecutar ranking',
     running: 'Calculando ranking…',
     missionDays: 'Días de misión',
@@ -389,7 +389,9 @@ export default {
       main: 'Hilo principal',
 
     },
-    zoneLabel: 'Zona {rank}: {lat} {lon}',
+    zoneLabel: 'Zona de aterrizaje {rank}: {lat} {lon}',
+    zoneSiteName: 'Zona de aterrizaje {rank}',
+    zoneSelected: 'Zona de aterrizaje seleccionada',
     zoneArea: 'Área',
     zoneSlope: 'Pendiente media/máx',
     zoneElevation: 'Elevación',
@@ -409,7 +411,7 @@ export default {
     metricComms: 'Comunicaciones',
     empty: 'Todavía no hay ranking — ejecuta el piloto automático.',
     fallbackNote: 'Worker no disponible, calculado en el hilo principal',
-    workerNote: 'Las puntuaciones combinan luz solar, potencia, comunicaciones y pendiente del terreno (0–100).',
+    workerNote: 'Las puntuaciones combinan luz solar, potencia, comunicaciones y la pendiente de la zona (0–100); las zonas planas provienen del DEM, no de POIs con nombre.',
     status: {
       idle: 'Inactivo',
       running: 'Ejecutando',

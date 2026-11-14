@@ -165,7 +165,15 @@ const ranking = computed(() => state.scores)
           :key="entry.zone.id"
           class="rank-item"
           :class="{ 'is-selected': entry.zone.id === selectedZoneId }"
+          data-testid="landing-zone-row"
+          :data-zone-rank="entry.rank"
+          :data-zone-id="entry.zone.id"
         >
+          <span
+            v-if="entry.zone.id === selectedZoneId"
+            class="sr-only"
+            data-testid="landing-zone-selected"
+          >{{ t('autopilot.zoneSelected') }}</span>
           <button type="button" class="rank-item__head" @click="actions.selectLandingZone(entry)">
             <span class="rank-item__rank">#{{ entry.rank }}</span>
             <span class="rank-item__name">{{ t('autopilot.zoneLabel', { rank: entry.rank, lat: formatLat(entry.zone.lat), lon: formatLon(entry.zone.lon) }) }}</span>
@@ -185,7 +193,7 @@ const ranking = computed(() => state.scores)
             <li
               v-for="(warning, index) in zoneWarnings(entry)"
               :key="`${entry.zone.id}-warn-${index}`"
-              class="reason reason--warn"
+              class="reason reason--approx"
             >
               {{ warning.code === 'no-nearest-site' ? t('autopilot.warningNoNearestSite') : t('autopilot.warningNearestEphemeris', { site: warning.params?.ephemerisSiteId ?? '', distance: formatDistance(warning.params?.distanceM ?? 0) }) }}
             </li>

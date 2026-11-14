@@ -862,8 +862,11 @@ export async function selectLandingZone(entry) {
   const zone = entry?.zone ?? entry
   if (!zone || !Number.isFinite(Number(zone.lat)) || !Number.isFinite(Number(zone.lon))) return
   const site = await zoneToSite(zone, { mastM: state.mission.mastM })
+  const displayRank = entry?.rank ?? zone.rank ?? null
   site.id = `zone-${zone.id}`
-  site.name = zone.name ?? `Landing zone ${zone.id}`
+  site.name = displayRank ? `Landing zone ${displayRank}` : zone.name ?? `Landing zone ${zone.id}`
+  site.zoneRank = displayRank
+  site.zoneLabel = entry?.zoneLabel ?? (displayRank ? `Zone ${displayRank}` : null)
   site.ephemerisSiteId = entry?.ephemerisSiteId ?? entry?.nearestSiteId ?? null
   state.landingZoneSite = markRaw(site)
   state.landingZoneEntry = entry
