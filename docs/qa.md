@@ -225,17 +225,44 @@ in the repository history (commit `263d724`).
 - **Data scope.** Everything is bounded by the shipped data: ephemerides cover
   2026-11-01 to 2026-12-31 and terrain covers 80S-90S (with 87.5S-90S at higher
   resolution).
-- **Deployment freshness.** The live site must be redeployed from the final commit
-  before submission and re-verified: at the time of this report the deployed bundle was
-  older than the current `main` build. Compare the asset hashes in the served
-  `index.html` with a local `npm run build`, then run `scripts/deploy/verify-live.mjs`
-  and `scripts/qa/e2e-ui.mjs` again.
-- **End-to-end script selector.** `scripts/qa/e2e-ui.mjs` targets the comparator button
-  by its old glyph label; the current interface no longer uses that glyph, so the
-  selector must be updated to the current accessible name before the next run. This is
-  a test-tooling maintenance item, not an application defect.
+- **Deployment freshness.** The live site is deployed from `main`; after any further
+  change, compare the asset hash in the served `index.html` with a local
+  `npm run build`, then re-run `scripts/deploy/verify-live.mjs` and
+  `scripts/qa/e2e-ui.mjs` against the production URL.
+- **End-to-end script selectors.** `scripts/qa/e2e-ui.mjs` follows the current interface:
+  the Compare text button and the tabbed analysis rail (Position/Autopilot). The
+  selectors are maintained with the UI and re-checked against production.
 
-## 10. Reproduction
+## 10. Reproducible test bench (`qa/`)
+
+In addition to the commands above, the repository ships a reproducible QA bench
+under [`qa/`](../qa/README.md):
+
+| Document | Contents |
+| --- | --- |
+| [`qa/README.md`](../qa/README.md) | How to run the bench, its commands, tags and outputs |
+| [`qa/SPEC.md`](../qa/SPEC.md) | Specification: scenario model, invariants, tolerances and the device matrix |
+| [`qa/devices.json`](../qa/devices.json) | The 51 device/resolution profiles used by the UI matrix |
+
+The bench has two independent runners that share one contract and one tag taxonomy:
+
+- **Monte Carlo logic bench** (`qa/logic/`): randomised site/date/mission
+  scenarios over the real scientific core with 13 invariants. Run
+  `node qa/logic/logic-mc.mjs --trials 20000 --profile full` for the full set,
+  limit it with `--trials`/`--case` for a quick pass, or run
+  `node qa/logic/probe-bench.mjs` for a throughput probe. Node only, no extra
+  dependencies.
+- **Device/resolution UI matrix** (`qa/ui/`): the 51 viewport profiles in English
+  and Spanish plus explicit no-WebGL probes, driven by headless Chrome through the
+  DevTools Protocol (`node qa/ui/ui-matrix.mjs`, subsets via `--devices`/`--tag`).
+  Results can be filtered and aggregated with `qa/ui/filter-results.mjs` and
+  `qa/ui/run-all.mjs`.
+
+Generated artefacts land in `qa/**/results/` and are gitignored. The bench is run
+on demand and is deliberately not part of CI; the executed runs and their findings
+are summarised in [`qa/REPORT.md`](../qa/REPORT.md).
+
+## 11. Reproduction
 
 ```bash
 # Install, test and build (the CI commands)

@@ -26,6 +26,7 @@ Record of decisions made about this repository, in chronological order.
 
 | D-020 | 2026-11-14 | Documentation consolidated from 26 files into a focused set of 13: `challenge`, `architecture`, `data`, `submission`, `demo`, `ai-usage`, `deployment`, `contributing`, `security`, `decisions`, `commercial`, `qa`, `miro` | The repository was reviewed as cluttered with repeated content; a single canonical document per topic reads as a professional project and removes duplicated event, test and pitch material. `submission.md` holds the Project page content and `demo.md` is the only demo document |
 | D-021 | 2026-11-14 | The Project Demo is a single public link to at most 7 slides or a 30-second video, produced from `demo/L-SEA-Project-Demo.pptx` and described in `docs/demo.md` | One demo document avoids drift between the slide plan, video script and submission page |
+| D-022 | 2026-11-14 | Adopt the `qa/` Monte Carlo logic bench and device/resolution UI matrix as the project test bench | Adds reproducible evidence beyond the unit suite (randomised scientific-core scenarios and a 51-viewport browser matrix); run on demand rather than in CI because the full matrix takes minutes. Documented in `docs/qa.md` and `qa/README.md` |
 
 ## How to add a decision
 

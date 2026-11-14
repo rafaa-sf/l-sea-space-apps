@@ -84,6 +84,7 @@ docs/          Project documentation
 | [`docs/demo.md`](docs/demo.md) | Project Demo deck and video script |
 | [`docs/commercial.md`](docs/commercial.md) | Business case, impact and judging-criteria mapping |
 | [`docs/qa.md`](docs/qa.md) | Test strategy and executed QA evidence |
+| [`qa/README.md`](qa/README.md) | Reproducible QA test bench: Monte Carlo logic bench and device/resolution UI matrix |
 | [`docs/deployment.md`](docs/deployment.md) | Vercel deployment, verification and rollback |
 | [`docs/contributing.md`](docs/contributing.md) | Conventions and the two-machine collaboration protocol |
 | [`docs/security.md`](docs/security.md) | Secrets policy and repository safety |
