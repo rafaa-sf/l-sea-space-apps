@@ -21,4 +21,8 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
   },
+  test: {
+    // The Miro MCP package uses node:test, not Vitest.
+    exclude: ['**/node_modules/**', '**/dist/**', 'mcp/**'],
+  },
 })
