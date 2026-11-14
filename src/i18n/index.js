@@ -1,3 +1,4 @@
+import { watch } from 'vue'
 import { createI18n } from 'vue-i18n'
 import en from './en'
 import es from './es'
@@ -35,9 +36,21 @@ export function persistLocale(locale) {
   }
 }
 
-export default createI18n({
+const i18n = createI18n({
   legacy: false,
   locale: initialLocale(),
   fallbackLocale: 'en',
   messages: { en, es },
 })
+
+// Keep the document language in sync with the selected locale so screen
+// readers, spell checkers and search engines get the right language.
+function syncDocumentLanguage(locale) {
+  if (typeof document === 'undefined' || !locale) return
+  document.documentElement.lang = locale
+}
+
+syncDocumentLanguage(i18n.global.locale.value)
+watch(i18n.global.locale, (locale) => syncDocumentLanguage(locale))
+
+export default i18n

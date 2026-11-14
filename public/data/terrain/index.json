@@ -23,10 +23,10 @@
       "height": 2048,
       "pixelSizeM": 74.0625,
       "boundsM": {
-        "minX": -75840.0,
-        "maxX": 75840.0,
-        "minY": -75840.0,
-        "maxY": 75840.0
+        "minX": -75840,
+        "maxX": 75840,
+        "minY": -75840,
+        "maxY": 75840
       },
       "elevationRangeM": [
         -4378,
@@ -42,15 +42,111 @@
       "height": 1024,
       "pixelSizeM": 593.75,
       "boundsM": {
-        "minX": -304000.0,
-        "maxX": 304000.0,
-        "minY": -304000.0,
-        "maxY": 304000.0
+        "minX": -304000,
+        "maxX": 304000,
+        "minY": -304000,
+        "maxY": 304000
       },
       "elevationRangeM": [
         -7274,
         7001
       ]
+    },
+    {
+      "id": "south-pole-100km-1024px",
+      "role": "custom",
+      "meta": "south-pole-100km-1024px.json",
+      "bin": "south-pole-100km-1024px.bin",
+      "width": 1024,
+      "height": 1024,
+      "pixelSizeM": 97.6562,
+      "boundsM": {
+        "minX": -50000,
+        "maxX": 50000,
+        "minY": -50000,
+        "maxY": 50000,
+        "lower": "-50000 -50000",
+        "upper": "50000 50000"
+      },
+      "elevationRangeM": [
+        -4246,
+        1958
+      ],
+      "pixelSizeXM": 97.6562,
+      "pixelSizeYM": 97.6562,
+      "squarePixels": true
+    },
+    {
+      "id": "south-pole-200km-1024px",
+      "role": "custom",
+      "meta": "south-pole-200km-1024px.json",
+      "bin": "south-pole-200km-1024px.bin",
+      "width": 1024,
+      "height": 1024,
+      "pixelSizeM": 195.3125,
+      "boundsM": {
+        "minX": -100000,
+        "maxX": 100000,
+        "minY": -100000,
+        "maxY": 100000,
+        "lower": "-100000 -100000",
+        "upper": "100000 100000"
+      },
+      "elevationRangeM": [
+        -4632,
+        4928
+      ],
+      "pixelSizeXM": 195.3125,
+      "pixelSizeYM": 195.3125,
+      "squarePixels": true
+    },
+    {
+      "id": "south-pole-300km-1024px",
+      "role": "custom",
+      "meta": "south-pole-300km-1024px.json",
+      "bin": "south-pole-300km-1024px.bin",
+      "width": 1024,
+      "height": 1024,
+      "pixelSizeM": 292.9688,
+      "boundsM": {
+        "minX": -150000,
+        "maxX": 150000,
+        "minY": -150000,
+        "maxY": 150000,
+        "lower": "-150000 -150000",
+        "upper": "150000 150000"
+      },
+      "elevationRangeM": [
+        -5496,
+        7024
+      ],
+      "pixelSizeXM": 292.9688,
+      "pixelSizeYM": 292.9688,
+      "squarePixels": true
+    },
+    {
+      "id": "south-pole-400km-1024px",
+      "role": "custom",
+      "meta": "south-pole-400km-1024px.json",
+      "bin": "south-pole-400km-1024px.bin",
+      "width": 1024,
+      "height": 1024,
+      "pixelSizeM": 390.625,
+      "boundsM": {
+        "minX": -200000,
+        "maxX": 200000,
+        "minY": -200000,
+        "maxY": 200000,
+        "lower": "-200000 -200000",
+        "upper": "200000 200000"
+      },
+      "elevationRangeM": [
+        -5494,
+        7020
+      ],
+      "pixelSizeXM": 390.625,
+      "pixelSizeYM": 390.625,
+      "squarePixels": true
     }
   ],
   "attribution": "NASA/GSFC/LOLA (PDS Geosciences Node)"

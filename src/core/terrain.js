@@ -866,7 +866,7 @@ export function terrainExtentM(terrain, site) {
  *
  * @param {Terrain|null} terrain
  * @param {{lat: number, lon: number}} site
- * @param {{radiusM?: number, stepMeters?: number}} [options]
+ * @param {{radiusM?: number, stepMeters?: number, flatSlopeDeg?: number}} [options]
  * @returns {{
  *   radiusM: number,
  *   sampledRadiusM: number,
@@ -879,6 +879,8 @@ export function terrainExtentM(terrain, site) {
  *   elevationStdM: number,
  *   meanSlopeDeg: number,
  *   maxSlopeDeg: number,
+ *   slopeStdDeg: number,
+ *   flatFraction: number,
  * } | null} Statistics, or `null` without terrain.
  */
 export function areaStatistics(terrain, site, options = {}) {
@@ -916,6 +918,14 @@ export function areaStatistics(terrain, site, options = {}) {
   const meanSlope = slopes.length ? slopes.reduce((sum, value) => sum + value, 0) / slopes.length : 0
   let maxSlope = 0
   for (const value of slopes) if (value > maxSlope) maxSlope = value
+  const slopeVariance = slopes.length
+    ? slopes.reduce((sum, value) => sum + (value - meanSlope) * (value - meanSlope), 0) / slopes.length
+    : 0
+  const slopeStd = Math.sqrt(slopeVariance)
+  const flatGate = Number(options.flatSlopeDeg)
+  const flatFraction = Number.isFinite(flatGate) && slopes.length
+    ? slopes.filter((value) => value <= flatGate).length / slopes.length
+    : 1
 
   return {
     radiusM: requestedRadius,
@@ -929,6 +939,8 @@ export function areaStatistics(terrain, site, options = {}) {
     elevationStdM: Math.sqrt(variance),
     meanSlopeDeg: meanSlope,
     maxSlopeDeg: maxSlope,
+    slopeStdDeg: slopeStd,
+    flatFraction,
   }
 }
 

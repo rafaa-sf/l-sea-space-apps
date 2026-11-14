@@ -48,6 +48,27 @@ const serviceModules = computed(() => state.data.detected.services ?? [])
 const workerModules = computed(() => state.data.detected.workers ?? [])
 
 const workerAvailable = computed(() => hasWorker() || state.worker.available)
+
+const landingZoneMeta = computed(() => state.landingZonesMeta ?? {})
+const landingZoneSignature = computed(() =>
+  String(landingZoneMeta.value.inputSignature ?? landingZoneMeta.value.signature ?? ''),
+)
+const landingZoneComputedAt = computed(() => {
+  const raw = landingZoneMeta.value.computedAt ?? landingZoneMeta.value.finishedAt ?? state.landingZonesStatus.ranAt
+  if (!raw) return t('common.notAvailable')
+  const date = new Date(raw)
+  return Number.isNaN(date.getTime()) ? String(raw) : formatUtc(date.toISOString())
+})
+
+const autopilotMode = computed(() => {
+  if (state.landingZonesStatus.unavailable) return t('worker.autopilotPoi')
+  if (state.landingZonesStatus.status === 'done') {
+    return t('worker.autopilotZones', {
+      source: state.landingZonesStatus.source === 'worker' ? t('autopilot.source.worker') : t('autopilot.source.main'),
+    })
+  }
+  return t('worker.autopilotZonesIdle')
+})
 </script>
 
 <template>
@@ -60,6 +81,9 @@ const workerAvailable = computed(() => hasWorker() || state.worker.available)
     />
     <StatRow label-key="worker.status" :value="workerStatus" :tone="workerTone" :mono="false" />
     <StatRow label-key="worker.source" :value="state.worker.source === 'worker' ? t('autopilot.source.worker') : t('autopilot.source.main')" :mono="false" />
+    <StatRow label-key="worker.autopilotMode" :value="autopilotMode" :mono="false" />
+    <StatRow label-key="worker.zoneSignature" :value="landingZoneSignature ? landingZoneSignature.slice(0, 12) : t('common.notAvailable')" />
+    <StatRow label-key="worker.zoneComputedAt" :value="landingZoneComputedAt" :mono="false" />
     <StatRow label-key="worker.lastRun" :value="lastRun" :mono="false" />
     <StatRow label-key="worker.duration" :value="duration" :mono="false" />
     <p v-if="workerSummary === 'error'" class="panel-note panel-note--warn" :title="state.worker.error || ''">{{ t('worker.errorHint') }}</p>

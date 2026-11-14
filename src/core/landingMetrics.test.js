@@ -1,0 +1,388 @@
+/**
+ * Unit tests for the full landing-zone mission metrics: thermal model, power in
+ * Watts/Wh, illumination/eclipse windows, comms gaps, safety/ellipse/hazard,
+ * scoring weights, mission defaults and the recomputation input signature.
+ *
+ * Synthetic analytic fixtures only (no dependency on `public/data`).
+ */
+
+import { describe, expect, it } from 'vitest'
+import { DEG, MOON_RADIUS_M } from './geometry.js'
+import { createProjectedTerrain } from './terrain.js'
+import { normalizeEphemerisDataset } from './ephemeris.js'
+import { normalizeMission } from './autopilot.js'
+import {
+  LANDING_MODEL_VERSION,
+  LANDING_SCORE_WEIGHTS,
+  STEFAN_BOLTZMANN,
+  computeCommsMetrics,
+  computeIlluminationMetrics,
+  computeInputSignature,
+  computeLandingMetrics,
+  computePowerMetrics,
+  computeSafetyMetrics,
+  computeThermalMetrics,
+  gapStatistics,
+  normalizeLandingWeights,
+  surfaceEquilibriumTemperatureC,
+  windowsToGaps,
+} from './landingMetrics.js'
+
+/** Build a flat (or analytic) planar DEM at the south pole. */
+function makePlane({ width = 64, height = 64, bounds = 3200, elevationFn = () => 0 } = {}) {
+  const pixelSizeM = (2 * bounds) / width
+  const data = new Float32Array(width * height)
+  for (let row = 0; row < height; row += 1) {
+    for (let col = 0; col < width; col += 1) {
+      data[row * width + col] = elevationFn(-bounds + (col + 0.5) * pixelSizeM, bounds - (row + 0.5) * pixelSizeM)
+    }
+  }
+  return createProjectedTerrain(
+    {
+      id: 'metrics-test',
+      referenceRadiusM: MOON_RADIUS_M,
+      width,
+      height,
+      pixelSizeM,
+      minX: -bounds,
+      maxX: bounds,
+      minY: -bounds,
+      maxY: bounds,
+      dtype: 'float32',
+      synthetic: true,
+    },
+    data,
+  )
+}
+
+const START = Date.parse('2026-11-01T00:00:00Z')
+
+/**
+ * Synthetic 24-hour ephemeris with caller-controlled Sun/Earth positions.
+ *
+ * @param {{sun?: (index: number) => {az: number, el: number}, earth?: (index: number) => {az: number, el: number}, hours?: number}} [options]
+ */
+function makeEphemeris({ sun, earth, hours = 24 } = {}) {
+  const samples = []
+  for (let index = 0; index <= (hours * 60) / 30; index += 1) {
+    samples.push({
+      time: new Date(START + index * 30 * 60 * 1000).toISOString(),
+      sun: sun ? sun(index) : { az: 270, el: 1.5 },
+      earth: earth ? earth(index) : { az: 90, el: 2 },
+    })
+  }
+  return normalizeEphemerisDataset({ siteId: 'metrics-ephemeris', samples })
+}
+
+const SITE = { lat: -90, lon: 0, elevationM: 0 }
+const ZONE = {
+  id: 'zone-01',
+  name: 'Landing zone 01',
+  lat: -90,
+  lon: 0,
+  xMeters: 0,
+  yMeters: 0,
+  areaKm2: 2,
+  meanSlopeDeg: 0,
+  maxSlopeDeg: 0,
+  elevationM: 0,
+  reliefM: 0,
+  cellCount: 200,
+  suitability: 2,
+}
+const MISSION = { missionDays: 1, powerNeedW: 120, sunDaysNeeded: 0.5, startTime: new Date(START).toISOString() }
+
+describe('thermal model', () => {
+  it('computes the radiative equilibrium temperature', () => {
+    const vertical = surfaceEquilibriumTemperatureC({
+      albedo: 0.12,
+      emissivity: 0.95,
+      solarConstantWm2: 1361,
+      solarElevationDeg: 90,
+    })
+    // (0.88·1361 / (0.95·σ))^0.25 − 273.15 ≈ 113–120 °C.
+    expect(vertical).toBeGreaterThan(105)
+    expect(vertical).toBeLessThan(125)
+    expect(STEFAN_BOLTZMANN).toBeCloseTo(5.670374419e-8, 12)
+  })
+
+  it('returns null when the Sun is below the horizon', () => {
+    expect(
+      surfaceEquilibriumTemperatureC({ albedo: 0.12, emissivity: 0.95, solarConstantWm2: 1361, solarElevationDeg: -1 }),
+    ).toBeNull()
+  })
+
+  it('flags a permanently shadowed zone and sizes the heater', () => {
+    const illumination = {
+      sunlitFraction: 0,
+      sunlitHours: 0,
+      eclipseHours: 10,
+      windowHours: 24,
+      eclipseCount: 1,
+      sunElevationMeanDeg: -2,
+      sunElevationMeanSunlitDeg: null,
+    }
+    const thermal = computeThermalMetrics({ illumination, mission: normalizeMission(MISSION) })
+    expect(thermal.isPsr).toBe(true)
+    expect(thermal.minTempC).toBe(-200)
+    expect(thermal.dayTempC).toBeNull()
+    expect(thermal.heaterPowerW).toBeGreaterThan(300)
+    expect(thermal.heaterWh).toBeGreaterThan(0)
+  })
+})
+
+describe('illumination windows and eclipses', () => {
+  it('finds the eclipse gap and sun elevation statistics', () => {
+    // Sun visible for the first 12 h (el +2°), then below the horizon (−2°).
+    const ephemeris = makeEphemeris({
+      sun: (index) => ({ az: 270, el: index < 24 ? 2 : -2 }),
+    })
+    const terrain = makePlane()
+    const mission = normalizeMission(MISSION)
+    const window = { startMs: START, endMs: START + 24 * 3600 * 1000, days: 1, clamped: false }
+    const illumination = computeIlluminationMetrics({ terrain, site: SITE, ephemeris, mission, window, profile: null })
+    expect(illumination.sunlitFraction).toBeCloseTo(0.5, 1)
+    expect(illumination.longestEclipseHours).toBeGreaterThan(11)
+    expect(illumination.longestEclipseHours).toBeLessThan(13)
+    expect(illumination.sunElevationMaxDeg).toBeCloseTo(2, 6)
+    expect(illumination.sunElevationMinDeg).toBeCloseTo(-2, 6)
+    expect(illumination.continuousSunDays).toBeGreaterThan(0.4)
+    expect(illumination.eclipseHours).toBeGreaterThan(11)
+  })
+
+  it('computes gaps between visibility windows', () => {
+    const windows = [
+      { from: new Date(START).toISOString(), to: new Date(START + 3600 * 1000).toISOString() },
+      { from: new Date(START + 7200 * 1000).toISOString(), to: new Date(START + 10800 * 1000).toISOString() },
+    ]
+    const gaps = windowsToGaps(windows, START, START + 14400 * 1000)
+    expect(gaps.length).toBe(2)
+    expect(gaps[0].durationSeconds).toBe(3600)
+    expect(gaps[1].durationSeconds).toBeCloseTo(3600, 0)
+    const stats = gapStatistics(gaps)
+    expect(stats.longestGapHours).toBeCloseTo(1, 0)
+    expect(stats.gapCount).toBe(2)
+  })
+})
+
+describe('power and battery sizing', () => {
+  it('computes average/max/min Watts and the eclipse battery requirement', () => {
+    const ephemeris = makeEphemeris({ sun: (index) => ({ az: 270, el: index < 24 ? 2 : -2 }) })
+    const terrain = makePlane()
+    const mission = normalizeMission(MISSION)
+    const window = { startMs: START, endMs: START + 24 * 3600 * 1000, days: 1, clamped: false }
+    const illumination = computeIlluminationMetrics({ terrain, site: SITE, ephemeris, mission, window, profile: null })
+    const thermal = computeThermalMetrics({ illumination, mission })
+    const power = computePowerMetrics({ terrain, site: SITE, ephemeris, mission, window, profile: null, illumination, thermal })
+    expect(power.averageW).toBeGreaterThan(100)
+    expect(power.maxW).toBeGreaterThan(power.averageW)
+    expect(power.minW).toBe(0)
+    expect(power.eclipseHours).toBeGreaterThan(11)
+    expect(power.requiredBatteryWh).toBeGreaterThan(0)
+    // Closed-form: (powerNeedW + heaterPowerW)·eclipseHours / (η·DoD).
+    const expected = ((120 + thermal.heaterPowerW) * power.eclipseHours) / (0.9 * 0.8)
+    expect(power.requiredBatteryWh).toBeCloseTo(expected, 0)
+    expect(power.meetsPowerNeed).toBe(true)
+  })
+})
+
+describe('comms gaps and data budget', () => {
+  it('measures the longest Earth line-of-sight gap', () => {
+    const ephemeris = makeEphemeris({ earth: (index) => ({ az: 90, el: index < 24 ? 2 : -2 }) })
+    const terrain = makePlane()
+    const mission = normalizeMission(MISSION)
+    const window = { startMs: START, endMs: START + 24 * 3600 * 1000, days: 1, clamped: false }
+    const comms = computeCommsMetrics({ terrain, site: SITE, ephemeris, mission, window, profile: null })
+    expect(comms.directEarthVisibleFraction).toBeCloseTo(0.5, 1)
+    expect(comms.maxLosGapHours).toBeGreaterThan(11)
+    expect(comms.maxLosGapHours).toBeLessThan(13)
+    expect(comms.dataBudgetMb).toBeGreaterThan(0)
+    expect(comms.meetsDataNeed).toBeNull()
+    expect(comms.relayInOrbit).toBe(false)
+  })
+})
+
+describe('safety metrics', () => {
+  it('computes slope statistics, ellipse fit and crater hazard', () => {
+    const terrain = makePlane()
+    const mission = normalizeMission(MISSION)
+    const safety = computeSafetyMetrics({
+      terrain,
+      zone: ZONE,
+      mission,
+      craters: [{ lat: -90, lon: 1, diameterM: 300, depthM: 50 }],
+      cratersAvailable: true,
+      slopeGateDeg: 8,
+    })
+    expect(safety.ellipse.fitRatio).toBe(1)
+    expect(safety.ellipse.requiredRadiusM).toBe(500)
+    expect(safety.ellipse.marginM).toBeGreaterThan(0)
+    expect(safety.hazard.nearestCraterDistanceM).toBeLessThan(100000)
+    expect(safety.hazard.craterHazard).toBeGreaterThanOrEqual(0)
+    expect(safety.flatFraction).toBeGreaterThan(0.9)
+    expect(Number.isFinite(safety.stdSlopeDeg)).toBe(true)
+  })
+})
+
+describe('component weights and mission defaults', () => {
+  it('normalizes weights to sum to one', () => {
+    const weights = normalizeLandingWeights({ power: 2, sun: 1 })
+    const sum = Object.values(weights).reduce((total, value) => total + value, 0)
+    expect(sum).toBeCloseTo(1, 10)
+    // Overridden keys are kept relative to the remaining default weights.
+    const rawTotal = 2 + 1 + (LANDING_SCORE_WEIGHTS.comms + LANDING_SCORE_WEIGHTS.safety + LANDING_SCORE_WEIGHTS.thermal + LANDING_SCORE_WEIGHTS.logistics + LANDING_SCORE_WEIGHTS.science)
+    expect(weights.power).toBeCloseTo(2 / rawTotal, 6)
+    expect(Object.keys(weights).sort()).toEqual(Object.keys(LANDING_SCORE_WEIGHTS).sort())
+  })
+
+  it('extends the mission defaults backward-compatibly', () => {
+    const legacy = normalizeMission({ missionDays: 14, powerNeedW: 120 })
+    expect(legacy.batteryCapacityWh).toBeNull()
+    expect(legacy.dataNeedMb).toBeNull()
+    expect(legacy.batteryRoundTripEfficiency).toBe(0.9)
+    expect(legacy.batteryDepthOfDischarge).toBe(0.8)
+    expect(legacy.heaterMaxW).toBeGreaterThan(0)
+    expect(legacy.minOperatingTemperatureC).toBe(-40)
+    expect(legacy.maxOperatingTemperatureC).toBe(50)
+    expect(legacy.landingEllipseRadiusM).toBe(500)
+    expect(legacy.thermal.psrTemperatureC).toBe(-200)
+    expect(legacy.missionDays).toBe(14)
+  })
+
+  it('honours explicit battery and thermal mission inputs', () => {
+    const mission = normalizeMission({
+      missionDays: 3,
+      batteryCapacityWh: 5000,
+      heaterMaxW: 250,
+      minOperatingTemperatureC: -30,
+      thermal: { nightTemperatureC: -160, psrTemperatureC: -190 },
+      weights: { power: 1, sun: 0 },
+    })
+    expect(mission.batteryCapacityWh).toBe(5000)
+    expect(mission.heaterMaxW).toBe(250)
+    expect(mission.minOperatingTemperatureC).toBe(-30)
+    expect(mission.thermal.minOperatingC).toBe(-30)
+    expect(mission.thermal.nightTemperatureC).toBe(-160)
+    expect(mission.weights).toEqual({ power: 1, sun: 0 })
+  })
+})
+
+describe('computeLandingMetrics integration', () => {
+  const terrain = makePlane()
+  const ephemeris = makeEphemeris()
+
+  it('returns every grouped mission metric with the documented units', () => {
+    const result = computeLandingMetrics({
+      terrain,
+      zone: ZONE,
+      zones: [ZONE],
+      ephemeris,
+      site: SITE,
+      mission: MISSION,
+      nearestSite: { site: { id: 'anchor', lat: -89.9, lon: 0 }, distanceM: 11000 },
+      craters: [],
+      cratersAvailable: false,
+      options: { maxSlopeDeg: 8 },
+    })
+    expect(result.score).toBeGreaterThanOrEqual(0)
+    expect(result.score).toBeLessThanOrEqual(100)
+    expect(result.grade).toBeTruthy()
+    expect(result.modelVersion).toBe(LANDING_MODEL_VERSION)
+    expect(result.inputSignature).toMatch(/^[0-9a-f]{8}$/)
+    expect(result.weights.power).toBeCloseTo(LANDING_SCORE_WEIGHTS.power, 2)
+
+    // Illumination
+    expect(result.metrics.illumination.sunlitFraction).toBeCloseTo(1, 1)
+    expect(result.metrics.illumination.continuousSunDays).toBeGreaterThan(0.5)
+    expect(Number.isFinite(result.metrics.illumination.sunElevationMeanDeg)).toBe(true)
+    // Power
+    expect(result.metrics.power.averageW).toBeGreaterThan(0)
+    expect(result.metrics.power.maxW).toBeGreaterThanOrEqual(result.metrics.power.averageW)
+    expect(result.metrics.power.minW).toBeGreaterThanOrEqual(0)
+    expect(result.metrics.power.powerNeedW).toBe(120)
+    expect(Number.isFinite(result.metrics.power.requiredBatteryWh)).toBe(true)
+    expect(result.metrics.power.meetsPowerNeed).toBe(true)
+    // Thermal
+    expect(result.metrics.thermal.minTempC).toBeLessThan(result.metrics.thermal.maxTempC)
+    expect(result.metrics.thermal.isPsr).toBe(false)
+    expect(result.metrics.thermal.heaterPowerW).toBeGreaterThan(0)
+    // Comms
+    expect(result.metrics.comms.earthVisibleFraction).toBeGreaterThan(0.9)
+    expect(result.metrics.comms.maxLosGapHours).toBeGreaterThanOrEqual(0)
+    expect(result.metrics.comms.dataBudgetMb).toBeGreaterThan(0)
+    // Safety / logistics / science
+    expect(result.metrics.safety.ellipse.fitRatio).toBe(1)
+    expect(Number.isFinite(result.metrics.safety.hazard.craterHazard)).toBe(true)
+    expect(result.metrics.logistics.nearestCuratedSiteId).toBe('anchor')
+    expect(result.metrics.logistics.nearestCuratedSiteDistanceM).toBeCloseTo(11000, 0)
+    expect(result.metrics.science).toBeTypeOf('object')
+    // Legacy flat fields remain for backward compatibility.
+    expect(result.metrics.averageW).toBe(result.metrics.power.averageW)
+    expect(result.metrics.meanSlopeDeg).toBe(result.metrics.safety.meanSlopeDeg)
+    expect(result.metrics.zoneAreaKm2).toBe(2)
+    expect(result.components.terrain).toBe(result.components.safety)
+    // Reasons cover the mission variables.
+    const codes = result.reasons.map((reason) => reason.code)
+    expect(codes).toContain('illumination.sunlit')
+    expect(codes).toContain('power.margin')
+    expect(codes).toContain('thermal.operating')
+    expect(codes).toContain('comms.directGood')
+    expect(codes).toContain('safety.slope')
+  })
+
+  it('marks a permanently shadowed zone and reports its battery/thermal load', () => {
+    const shadowed = makeEphemeris({ sun: () => ({ az: 270, el: -3 }) })
+    const result = computeLandingMetrics({
+      terrain,
+      zone: ZONE,
+      zones: [ZONE],
+      ephemeris: shadowed,
+      site: SITE,
+      mission: MISSION,
+    })
+    expect(result.metrics.illumination.sunlitFraction).toBe(0)
+    expect(result.metrics.thermal.isPsr).toBe(true)
+    expect(result.metrics.power.averageW).toBe(0)
+    expect(result.metrics.power.minW).toBe(0)
+    expect(result.metrics.power.requiredBatteryWh).toBeGreaterThan(0)
+    expect(result.warnings.map((warning) => warning.code)).toContain('zone.is-psr')
+    expect(result.components.power).toBeLessThan(result.components.safety)
+  })
+
+  it('degrades gracefully without an ephemeris', () => {
+    const result = computeLandingMetrics({ terrain, zone: ZONE, zones: [ZONE], ephemeris: null, mission: MISSION })
+    expect(result.metrics.power.averageW).toBe(0)
+    expect(result.metrics.comms.earthVisibleFraction).toBe(0)
+    expect(result.warnings.map((warning) => warning.code)).toContain('data.ephemerisMissing')
+    expect(result.confidence).toBeLessThan(1)
+  })
+
+  it('keeps a deterministic input signature and changes it with the inputs', () => {
+    const base = computeInputSignature({ terrain, mission: normalizeMission(MISSION), ephemeris, options: { maxZones: 8 } })
+    const same = computeInputSignature({ terrain, mission: normalizeMission(MISSION), ephemeris, options: { maxZones: 8 } })
+    expect(same).toBe(base)
+    expect(base).toMatch(/^[0-9a-f]{8}$/)
+
+    const otherMission = computeInputSignature({
+      terrain,
+      mission: normalizeMission({ ...MISSION, powerNeedW: 250 }),
+      ephemeris,
+      options: { maxZones: 8 },
+    })
+    expect(otherMission).not.toBe(base)
+    const otherTime = computeInputSignature({
+      terrain,
+      mission: normalizeMission({ ...MISSION, startTime: '2026-11-02T00:00:00Z' }),
+      ephemeris,
+      options: { maxZones: 8 },
+    })
+    expect(otherTime).not.toBe(base)
+    const otherTerrain = computeInputSignature({
+      terrain: { ...terrain, id: 'other-region' },
+      mission: normalizeMission(MISSION),
+      ephemeris,
+      options: { maxZones: 8 },
+    })
+    expect(otherTerrain).not.toBe(base)
+  })
+})

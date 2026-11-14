@@ -11,6 +11,7 @@ import { computed, markRaw, reactive, watch } from 'vue'
 import i18n from '../../i18n/index.js'
 import { getCompute } from './useCompute.js'
 import { lonLatToPlanarMeters } from '../../render/geo.js'
+import { getLandingZonesApi, zoneToSite } from './landingZones.js'
 import { hasWorker, runInWorker } from './moduleBridge.js'
 import {
   createCustomSite,
@@ -38,6 +39,18 @@ export const DEFAULT_MISSION = Object.freeze({
   mastM: 10,
   bitrateMbps: 2,
   panelAreaM2: 2.4,
+  batteryCapacityWh: null,
+  batteryRoundTripEfficiency: 0.9,
+  batteryDepthOfDischarge: 0.8,
+  heaterMaxW: 400,
+  heaterWPerK: 2,
+  minOperatingTemperatureC: -40,
+  maxOperatingTemperatureC: 50,
+  landingEllipseRadiusM: 500,
+  craterHazardMinDiameterM: 500,
+  craterHazardReachM: 5000,
+  scienceReachM: 5000,
+  dataNeedMb: 1200,
 })
 
 /** View mode requested through `?mode=2d|3d|auto` (handy for demos/tests). */
@@ -152,6 +165,11 @@ export const state = reactive({
   },
   scores: [],
   autopilot: { status: 'idle', source: null, error: null, ranAt: null, durationMs: null },
+  landingZones: [],
+  landingZonesMeta: null,
+  landingZonesStatus: { status: 'idle', source: null, error: null, ranAt: null, durationMs: null, unavailable: false },
+  landingZoneEntry: null,
+  landingZoneSite: null,
   worker: { available: hasWorker(), status: hasWorker() ? 'idle' : 'unavailable', source: null, error: null, lastRunAt: null },
   system: { webgl: null, viewMode: initialViewMode(), renderer: null, note: null },
   export: { status: 'idle', error: null, lastAt: null, source: null },
@@ -160,7 +178,10 @@ export const state = reactive({
   errors: [],
 })
 
-export const selectedSite = computed(() => state.sites.find((site) => site.id === state.selectedSiteId) ?? null)
+export const selectedSite = computed(() => {
+  if (state.landingZoneSite && state.selectedSiteId === state.landingZoneSite.id) return state.landingZoneSite
+  return state.sites.find((site) => site.id === state.selectedSiteId) ?? null
+})
 
 export const compareSites = computed(() =>
   state.compareSiteIds.map((id) => state.sites.find((site) => site.id === id)).filter(Boolean),
@@ -311,8 +332,11 @@ async function doBoot() {
 
 /** Select a site by id and load its ephemeris dataset. */
 export async function selectSite(id) {
+  if (state.landingZoneSite && state.landingZoneSite.id === id) return
   const site = state.sites.find((entry) => entry.id === id)
   if (!site) return
+  state.landingZoneSite = null
+  state.landingZoneEntry = null
   state.selectedSiteId = site.id
   writeStorage(STORAGE_SITE, site.id)
   const token = (ephemerisToken += 1)
@@ -467,6 +491,9 @@ export function clearCompare() {
 export function setTime(value) {
   const ms = toTimestamp(value)
   if (!Number.isFinite(ms)) return
+  // A manual time change always stops playback: otherwise a running timer keeps
+  // advancing the clock while the transport button already shows "play".
+  if (state.playback.playing) stopPlayback()
   state.time = new Date(ms).toISOString()
 }
 
@@ -520,6 +547,11 @@ export function setRenderer(kind) {
 
 export function startPlayback() {
   if (state.playback.playing) return
+  // Defensive: never leave a previous interval running alongside a new one.
+  if (playbackTimer) {
+    clearInterval(playbackTimer)
+    playbackTimer = null
+  }
   state.playback.playing = true
   playbackTimer = setInterval(() => {
     const current = toTimestamp(state.time)
@@ -707,6 +739,171 @@ function normalizeRankEntry(entry, index) {
   }
 }
 
+let landingZonesTimer = null
+
+/** Recompute landing zones after a settle delay (time/mission changes). */
+function scheduleLandingZonesRefresh(delay = 1800) {
+  if (landingZonesTimer) clearTimeout(landingZonesTimer)
+  landingZonesTimer = setTimeout(() => {
+    landingZonesTimer = null
+    if (state.terrain && !state.landingZonesStatus.unavailable) {
+      runLandingZones().catch((error) => reportError('landing-zones', error))
+    }
+  }, delay)
+}
+
+/** Feature-detect coder's landing-zone support; updates the status flag. */
+export async function detectLandingZoneSupport() {
+  const api = await getLandingZonesApi()
+  if (!api.available) {
+    state.landingZonesStatus = { ...state.landingZonesStatus, status: 'unavailable', unavailable: true, error: null }
+  }
+  return api
+}
+
+/** Rank flat landing zones for the mission profile (worker, then local core). */
+export async function runLandingZones() {
+  if (state.landingZonesStatus.status === 'running') return state.landingZones
+  const api = await detectLandingZoneSupport()
+  if (!api.available) {
+    state.landingZonesStatus = {
+      status: 'unavailable',
+      source: null,
+      error: null,
+      ranAt: new Date().toISOString(),
+      durationMs: null,
+      unavailable: true,
+    }
+    return state.landingZones
+  }
+  if (!state.terrain) return state.landingZones
+  state.landingZonesStatus = { ...state.landingZonesStatus, status: 'running', error: null }
+  const started = Date.now()
+  const autopilotMission = { ...state.mission, startTime: new Date(state.time).toISOString() }
+  const terrain = state.terrain
+    ? {
+        id: state.terrain.regionId ?? state.terrain.id ?? 'terrain',
+        name: state.terrain.name ?? null,
+        width: state.terrain.width,
+        height: state.terrain.height,
+        pixelSizeM: state.terrain.pixelSizeM,
+        minX: state.terrain.minX,
+        maxX: state.terrain.maxX,
+        minY: state.terrain.minY,
+        maxY: state.terrain.maxY,
+        referenceRadiusM: state.terrain.datum ?? state.terrain.referenceRadiusM ?? 1737400,
+        dtype: state.terrain.data instanceof Float32Array ? 'float32' : 'int16',
+        attribution: state.terrain.attribution ?? null,
+        synthetic: state.data.terrainSource === 'synthetic',
+        data: state.terrain.data,
+      }
+    : null
+  const payload = {
+    terrain,
+    sites: state.sites.map((site) => ({ ...site })),
+    mission: autopilotMission,
+    maxZones: 8,
+    ephemeris: state.ephemeris
+      ? {
+          siteId: state.ephemeris.siteId,
+          source: state.ephemeris.source,
+          start: state.ephemeris.start,
+          end: state.ephemeris.end,
+          samples: state.ephemeris.samples.map((sample) => ({
+            time: sample.time,
+            sun: { ...sample.sun },
+            earth: { ...sample.earth },
+          })),
+        }
+      : undefined,
+  }
+  let zones = null
+  let source = null
+  let error = null
+  if (state.worker.available) {
+    const worker = await runInWorker('landingZones', payload, 30000)
+    if (worker.ok && Array.isArray(worker.payload?.zones)) {
+      zones = worker.payload.zones
+      state.landingZonesMeta = worker.payload.meta ?? null
+      source = 'worker'
+    } else {
+      error = worker.error ?? 'worker-empty'
+    }
+  }
+  if (!zones && typeof api.rankLandingZones === 'function') {
+    try {
+      const result = api.rankLandingZones({
+        terrain: state.terrain,
+        ephemeris: state.ephemeris,
+        sites: state.sites,
+        mission: autopilotMission,
+        options: { maxZones: 8 },
+      })
+      zones = Array.isArray(result) ? result : result?.zones ?? null
+      state.landingZonesMeta = Array.isArray(result) ? null : result?.meta ?? null
+      source = 'main'
+    } catch (rankError) {
+      error = rankError instanceof Error ? rankError.message : String(rankError)
+    }
+  }
+  if (!zones) {
+    state.landingZonesStatus = {
+      status: 'error',
+      source: null,
+      error: error ?? 'landing-zones-unavailable',
+      ranAt: new Date().toISOString(),
+      durationMs: Date.now() - started,
+      unavailable: false,
+    }
+    return state.landingZones
+  }
+  state.landingZones = zones.filter((entry) => entry && entry.zone)
+  state.landingZonesStatus = {
+    status: 'done',
+    source,
+    error: source === 'worker' ? null : error,
+    ranAt: new Date().toISOString(),
+    durationMs: Date.now() - started,
+    unavailable: false,
+  }
+  return state.landingZones
+}
+
+/** Select a ranked landing zone as a transient analysis site. */
+export async function selectLandingZone(entry) {
+  const zone = entry?.zone ?? entry
+  if (!zone || !Number.isFinite(Number(zone.lat)) || !Number.isFinite(Number(zone.lon))) return
+  const site = await zoneToSite(zone, { mastM: state.mission.mastM })
+  const displayRank = entry?.rank ?? zone.rank ?? null
+  site.id = `zone-${zone.id}`
+  site.name = displayRank ? `Landing zone ${displayRank}` : zone.name ?? `Landing zone ${zone.id}`
+  site.zoneRank = displayRank
+  site.zoneLabel = entry?.zoneLabel ?? (displayRank ? `Zone ${displayRank}` : null)
+  site.ephemerisSiteId = entry?.ephemerisSiteId ?? entry?.nearestSiteId ?? null
+  state.landingZoneSite = markRaw(site)
+  state.landingZoneEntry = entry
+  state.selectedSiteId = site.id
+  const token = (ephemerisToken += 1)
+  state.loading.ephemeris = true
+  try {
+    const sourceSite = site.ephemerisSiteId ? { ...site, id: site.ephemerisSiteId } : site
+    const result = await loadEphemeris(sourceSite)
+    if (token !== ephemerisToken) return
+    state.ephemeris = result.dataset ? markRaw(result.dataset) : null
+    state.data.ephemerisSource = result.source
+    state.data.ephemerisOrigin = result.origin ?? null
+    state.data.ephemerisUrl = result.url ?? null
+  } catch (selectionError) {
+    reportError('landing-zone-ephemeris', selectionError)
+  } finally {
+    if (token === ephemerisToken) {
+      state.loading.ephemeris = false
+      scheduleInstant(0)
+      scheduleMission(0)
+    }
+  }
+}
+
 /** Run the autopilot ranking, preferring the background worker. */
 export async function runAutopilot() {
   if (state.autopilot.status === 'running') return state.scores
@@ -862,6 +1059,8 @@ export async function runExport() {
       mission: state.mission,
       analysis: analysisSnapshot(),
       scores: state.scores,
+      landingZones: state.landingZones,
+      landingZonesMeta: state.landingZonesMeta,
       locale: i18n.global.locale.value,
     })
     state.export.status = 'done'
@@ -889,6 +1088,10 @@ function persistMissionSoon() {
 watch(() => state.time, () => {
   scheduleInstant(0)
   scheduleMission(400)
+  if (state.landingZonesStatus.status === 'done') {
+    state.landingZonesStatus = { ...state.landingZonesStatus, status: 'stale' }
+    scheduleLandingZonesRefresh(2200)
+  }
 })
 
 watch(
@@ -896,6 +1099,13 @@ watch(
   () => {
     scheduleInstant(0)
     scheduleMission(200)
+    if (state.landingZones.length || state.landingZonesStatus.status === 'done') {
+      state.landingZones = []
+      state.landingZoneEntry = null
+      state.landingZoneSite = null
+      state.landingZonesStatus = { ...state.landingZonesStatus, status: 'stale' }
+      scheduleLandingZonesRefresh(600)
+    }
   },
 )
 
@@ -903,6 +1113,10 @@ watch(
   () => state.mission,
   () => {
     if (state.autopilot.status === 'done') state.autopilot.status = 'stale'
+    if (state.landingZonesStatus.status === 'done') {
+      state.landingZonesStatus = { ...state.landingZonesStatus, status: 'stale' }
+      scheduleLandingZonesRefresh(2200)
+    }
     persistMissionSoon()
     scheduleMission(400)
   },
@@ -949,6 +1163,9 @@ export const actions = {
   stopPlayback,
   togglePlayback,
   runAutopilot,
+  runLandingZones,
+  selectLandingZone,
+  detectLandingZoneSupport,
   runExport,
   analysisSnapshot,
 }

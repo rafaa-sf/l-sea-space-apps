@@ -29,6 +29,7 @@ import {
 import { solarPowerEstimate } from '../core/power.js'
 import { commWindows, dataBudget } from '../core/comms.js'
 import { normalizeMission, rankSites, scoreSite } from '../core/autopilot.js'
+import { rankLandingZones } from '../core/zoneAutopilot.js'
 import { loadSites } from '../services/sites.js'
 import { loadEphemeris, loadEphemerisMap } from '../services/horizons.js'
 import { loadTerrain, loadTerrainForSite, loadTerrainRegions } from '../services/lola.js'
@@ -37,6 +38,7 @@ import { loadTerrain, loadTerrainForSite, loadTerrainRegions } from '../services
 export const TASK_TYPES = Object.freeze([
   'ping',
   'autopilot',
+  'landingZones',
   'scoreSite',
   'horizonProfile',
   'craters',
@@ -207,6 +209,28 @@ export async function runTask(type, payload = {}) {
           generation: 'background-worker',
         },
       }
+    }
+
+    case 'landingZones': {
+      // Flat landing zones from the DEM region the user is currently viewing
+      // (not all regions): the payload terrain is preferred and a single region
+      // is loaded as a fallback.
+      let sites = Array.isArray(payload.sites) ? payload.sites : []
+      if (sites.length === 0) sites = await loadSites()
+      const terrain =
+        ensureTerrain(payload.terrain) ??
+        (await loadTerrain(payload.region ?? 'default'))
+      const ephemeris = await resolveEphemerides(payload, sites)
+      const options = { ...(payload.options ?? {}) }
+      if (payload.maxZones != null) options.maxZones = payload.maxZones
+      const result = rankLandingZones({
+        terrain,
+        ephemeris,
+        sites,
+        mission: payload.mission ?? {},
+        options,
+      })
+      return result
     }
 
     case 'scoreSite': {

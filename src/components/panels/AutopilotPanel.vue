@@ -3,19 +3,351 @@
  * Autopilot panel: mission-profile inputs and the ranked site results returned
  * by the background worker (or the main-thread fallback).
  */
-import { computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import PanelCard from '../ui/PanelCard.vue'
 import { actions, state } from '../composables/useAppState.js'
 import { reasonText, siteDisplayName } from '../composables/labels.js'
-import { formatDuration, formatNumber } from '../composables/format.js'
+import { formatAngle, formatDistance, formatDuration, formatLat, formatLon, formatMeters, formatNumber, formatUtc } from '../composables/format.js'
 
 const { t, te } = useI18n()
 
-const running = computed(() => state.autopilot.status === 'running')
+const landingAvailable = computed(() => !state.landingZonesStatus.unavailable)
+const zones = computed(() => state.landingZones ?? [])
+const activeStatus = computed(() => (landingAvailable.value ? state.landingZonesStatus : state.autopilot))
+const running = computed(() => activeStatus.value.status === 'running')
+const selectedZoneId = computed(() => state.landingZoneEntry?.zone?.id ?? null)
+
+async function runRanking() {
+  if (running.value) return
+  if (landingAvailable.value) await actions.runLandingZones()
+  else await actions.runAutopilot()
+}
+
+function maybeRunLandingZones() {
+  if (!landingAvailable.value) return
+  if (!state.terrain) return
+  if (!['idle', 'stale'].includes(state.landingZonesStatus.status)) return
+  actions.runLandingZones().catch(() => {})
+}
+
+onMounted(async () => {
+  await actions.detectLandingZoneSupport()
+  maybeRunLandingZones()
+})
+
+// The panel can mount before the DEM/worker are ready; run once terrain lands.
+watch(() => state.terrain, () => maybeRunLandingZones())
+watch(() => state.landingZonesStatus.status, (status) => {
+  if (status === 'stale') maybeRunLandingZones()
+})
+
+const expandedZoneId = ref(null)
+function toggleZone(id) {
+  expandedZoneId.value = expandedZoneId.value === id ? null : id
+}
+
+const zonesMeta = computed(() => state.landingZonesMeta ?? {})
+const zoneSignature = computed(() =>
+  String(zonesMeta.value.inputSignature ?? zonesMeta.value.signature ?? state.landingZonesStatus.inputSignature ?? ''),
+)
+const computeMs = computed(() => {
+  const meta = state.landingZonesMeta ?? {}
+  const ms = Number(meta.computeMs ?? meta.rankingMs ?? Number.NaN)
+  return Number.isFinite(ms) ? Math.round(ms) : null
+})
+
+const computedAt = computed(() => {
+  const raw = zonesMeta.value.computedAt ?? zonesMeta.value.finishedAt ?? state.landingZonesStatus.ranAt
+  if (!raw) return t('common.notAvailable')
+  const date = new Date(raw)
+  return Number.isNaN(date.getTime()) ? String(raw) : formatUtc(date.toISOString())
+})
+
+const MISSION_FIELD_SPECS = [
+  { key: 'missionDays', min: 1, max: 60, step: 1 },
+  { key: 'powerNeedW', min: 10, max: 2000, step: 10 },
+  { key: 'sunDaysNeeded', min: 0, max: 60, step: 1 },
+  { key: 'dataNeedMb', min: 0, max: 100000, step: 10 },
+  { key: 'perimeterM', min: 10, max: 5000, step: 10 },
+  { key: 'mastM', min: 1, max: 100, step: 1 },
+  { key: 'panelAreaM2', min: 0.2, max: 20, step: 0.1 },
+  { key: 'bitrateMbps', min: 0.1, max: 1000, step: 0.1 },
+  { key: 'batteryCapacityWh', min: 0, max: 50000, step: 100 },
+  { key: 'heaterMaxW', min: 0, max: 2000, step: 10 },
+  { key: 'heaterWPerK', min: 0, max: 50, step: 0.5 },
+  { key: 'minOperatingTemperatureC', min: -200, max: 50, step: 5 },
+  { key: 'maxOperatingTemperatureC', min: -50, max: 200, step: 5 },
+]
+const extraMissionFields = computed(() =>
+  MISSION_FIELD_SPECS.filter(
+    (spec) => Object.prototype.hasOwnProperty.call(state.mission, spec.key) && !['powerNeedW', 'sunDaysNeeded', 'perimeterM', 'mastM'].includes(spec.key),
+  ),
+)
+
+const GROUP_KEYS = ['safety', 'illumination', 'power', 'thermal', 'comms', 'logistics', 'science']
+const GROUP_LABELS = {
+  safety: 'autopilot.groups.safety',
+  illumination: 'autopilot.groups.illumination',
+  power: 'autopilot.groups.power',
+  thermal: 'autopilot.groups.thermal',
+  comms: 'autopilot.groups.comms',
+  logistics: 'autopilot.groups.logistics',
+  science: 'autopilot.groups.science',
+  general: 'autopilot.groups.general',
+}
+const METRIC_LABELS = {
+  meanSlopeDeg: 'meanSlopeDeg',
+  maxSlopeDeg: 'maxSlopeDeg',
+  stdSlopeDeg: 'stdSlopeDeg',
+  reliefM: 'reliefM',
+  roughnessM: 'roughnessM',
+  flatFraction: 'flatFraction',
+  slopeGateDeg: 'slopeGateDeg',
+  'ellipse.fitRatio': 'ellipseFit',
+  'ellipse.marginM': 'ellipseMarginM',
+  'ellipse.requiredRadiusM': 'ellipseRadiusM',
+  'hazard.nearestCraterDistanceM': 'nearestCraterDistanceM',
+  'hazard.craterHazard': 'craterHazard',
+  sunlitFraction: 'sunlitFraction',
+  sunlitHours: 'sunlitHours',
+  continuousSunDays: 'continuousSunDays',
+  longestEclipseHours: 'longestEclipseH',
+  sunElevationMinDeg: 'minSunElevationDeg',
+  sunElevationMaxDeg: 'maxSunElevationDeg',
+  sunElevationMeanDeg: 'meanSunElevationDeg',
+  sunsetCount: 'sunsetCount',
+  sunriseCount: 'sunriseCount',
+  eclipseCount: 'eclipseCount',
+  averageW: 'averageW',
+  maxW: 'maxW',
+  minW: 'minW',
+  peakW: 'peakW',
+  eclipseAverageW: 'eclipseAverageW',
+  eclipseHours: 'eclipseHours',
+  requiredBatteryWh: 'requiredBatteryWh',
+  eclipseDeficitWh: 'eclipseDeficitWh',
+  heaterWh: 'heaterWh',
+  heaterPowerW: 'heaterPowerW',
+  powerNeedW: 'powerNeedW',
+  powerMarginW: 'powerMarginW',
+  powerMarginFraction: 'powerMarginFraction',
+  batteryCapacityWh: 'batteryCapacityWh',
+  batteryCoverage: 'batteryCoverage',
+  meetsPowerNeed: 'meetsPowerNeed',
+  dailyWh: 'dailyWh',
+  dayTempC: 'dayTempC',
+  nightTempC: 'nightTempC',
+  psrTempC: 'psrTempC',
+  minTempC: 'minTempC',
+  maxTempC: 'maxTempC',
+  thermalCyclingDeltaTC: 'thermalCyclingDeltaTC',
+  isPsr: 'isPsr',
+  minOperatingC: 'minOperatingC',
+  maxOperatingC: 'maxOperatingC',
+  withinOperatingRange: 'withinOperatingRange',
+  earthVisibleFraction: 'earthVisibleFraction',
+  directEarthVisibleFraction: 'directEarthVisibleFraction',
+  maxLosGapHours: 'maxLosGapHours',
+  relayCoverage: 'relayCoverage',
+  relayBenefitHours: 'relayBenefitHours',
+  relayBenefitFraction: 'relayBenefitFraction',
+  dataBudgetMb: 'dataBudgetMb',
+  dataBudgetFraction: 'dataBudgetFraction',
+  meetsDataNeed: 'meetsDataNeed',
+  mastBenefitDeg: 'mastBenefitDeg',
+  nearestCuratedSiteDistanceM: 'nearestCuratedSiteDistanceM',
+  nearestFlatPadDistanceM: 'nearestFlatPadDistanceM',
+  traverseDistanceM: 'traverseDistanceM',
+  traverseDifficulty: 'traverseDifficulty',
+  equivalentPerimeterM: 'perimeterM',
+  nearestCraterDistanceM: 'nearestCraterDistanceM',
+  nearestCraterDiameterM: 'nearestCraterDiameterM',
+  cratersWithinReach: 'cratersWithinReach',
+  craterProximityScore: 'craterProximityScore',
+  psrProximityScore: 'psrProximityScore',
+  scienceDistanceM: 'scienceDistanceM',
+  batteryWh: 'batteryWh',
+  zoneAreaKm2: 'zoneArea',
+  zoneMeanSlopeDeg: 'meanSlopeDeg',
+  zoneMaxSlopeDeg: 'maxSlopeDeg',
+  zoneReliefM: 'reliefM',
+  meanSlopeDeg: 'meanSlopeDeg',
+  maxSlopeDeg: 'maxSlopeDeg',
+  slopeStdDeg: 'slopeStdDeg',
+  roughnessM: 'roughnessM',
+  hazardDistanceM: 'hazardDistanceM',
+  usableFraction: 'usablePct',
+  averageW: 'avgPowerW',
+  avgW: 'avgPowerW',
+  minW: 'minPowerW',
+  maxW: 'maxPowerW',
+  batteryWh: 'batteryWh',
+  requiredBatteryWh: 'batteryWh',
+  heaterWh: 'heaterWh',
+  heaterW: 'heaterW',
+  marginW: 'marginW',
+  powerMarginW: 'marginW',
+  deficitWh: 'deficitWh',
+  sunlitFraction: 'sunlitPct',
+  sunlitPct: 'sunlitPct',
+  continuousSunDays: 'continuousSunDays',
+  longestEclipseH: 'longestEclipseH',
+  minSunElevationDeg: 'minSunElevationDeg',
+  meanSunElevationDeg: 'meanSunElevationDeg',
+  dayTempC: 'dayTempC',
+  nightTempC: 'nightTempC',
+  psrTempC: 'psrTempC',
+  cyclingDeltaTC: 'cyclingDeltaT',
+  earthVisibilityFraction: 'earthVisibilityPct',
+  earthVisibilityPct: 'earthVisibilityPct',
+  maxGapMin: 'maxGapMin',
+  dataBudgetPct: 'dataBudgetPct',
+  dataNeedMb: 'dataNeedMb',
+  relayBenefit: 'relayBenefit',
+  mastBenefit: 'mastBenefit',
+  nearestSiteDistanceM: 'nearestSiteDistanceM',
+  scienceProximityM: 'scienceProximityM',
+  traverseDifficulty: 'traverseDifficulty',
+  meanElevationM: 'meanElevationM',
+  requiredAreaKm2: 'ellipseRequiredAreaKm2',
+  availableAreaKm2: 'ellipseAvailableAreaKm2',
+  requiredRadiusM: 'ellipseRadiusM',
+  equivalentRadiusM: 'ellipseEquivalentRadiusM',
+  nearestCraterDepthM: 'nearestCraterDepthM',
+  reachM: 'hazardReachM',
+  sunElevationMeanSunlitDeg: 'meanSunElevationDeg',
+  totalEnergyWh: 'totalEnergyWh',
+  sunlitEnergyWh: 'sunlitEnergyWh',
+  averageHeaterPowerW: 'heaterPowerW',
+  windowHours: 'windowHours',
+  availableHours: 'availableHours',
+  relayDataRateMbps: 'relayDataRateMbps',
+  windowCount: 'windowCount',
+  nearestFlatPadAreaKm2: 'nearestFlatPadAreaKm2',
+  panelAreaM2: 'panelAreaM2',
+  panelEfficiency: 'panelEfficiency',
+  systemDerate: 'systemDerate',
+  sunlitDays: 'continuousSunDays',
+  longestSunWindowDays: 'continuousSunDays',
+  requiredBatteryWh: 'requiredBatteryWh',
+  powerMarginW: 'powerMarginW',
+  dataNeedMb: 'dataNeedMb',
+  meanElevationM: 'meanElevationM',
+  'ellipse.requiredAreaKm2': 'ellipseRequiredAreaKm2',
+  'ellipse.availableAreaKm2': 'ellipseAvailableAreaKm2',
+  'ellipse.requiredRadiusM': 'ellipseRadiusM',
+  'ellipse.equivalentRadiusM': 'ellipseEquivalentRadiusM',
+  'hazard.nearestCraterDiameterM': 'nearestCraterDiameterM',
+  'hazard.nearestCraterDepthM': 'nearestCraterDepthM',
+  'hazard.cratersWithinReach': 'cratersWithinReach',
+  'hazard.reachM': 'hazardReachM',
+  'model.panelAreaM2': 'panelAreaM2',
+  'model.panelEfficiency': 'panelEfficiency',
+  'model.systemDerate': 'systemDerate',
+  'model.albedo': 'albedo',
+  'model.emissivity': 'emissivity',
+  'model.solarConstantWm2': 'solarConstantWm2',
+
+}
+
+function humanize(key) {
+  return String(key ?? '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/_/g, ' ')
+    .replace(/^./, (char) => char.toUpperCase())
+}
+
+function groupLabel(key) {
+  const labelKey = GROUP_LABELS[key]
+  if (labelKey && te(labelKey)) return t(labelKey)
+  return humanize(key)
+}
+
+function metricLabel(key) {
+  const leaf = String(key).includes('.') ? String(key).split('.').pop() : String(key)
+  const short = METRIC_LABELS[key] ?? METRIC_LABELS[leaf]
+  if (short) {
+    const i18nKey = `autopilot.metrics.${short}`
+    if (te(i18nKey)) return t(i18nKey)
+  }
+  return humanize(leaf)
+}
+
+function inferUnit(key) {
+  const lower = String(key).toLowerCase()
+  if (/(fraction|pct|percent|ratio|coverage|difficulty|hazard|score)$/i.test(lower)) return '%'
+  if (lower.endsWith('wh')) return 'Wh'
+  if (lower.endsWith('w')) return 'W'
+  if (lower.endsWith('c') || lower.includes('temp')) return '°C'
+  if (lower.includes('days')) return 'days'
+  if (/hours?$/.test(lower) || /eclipseh$/.test(lower)) return 'h'
+  if (lower.endsWith('min') || lower.includes('minutes')) return 'min'
+  if (lower.endsWith('km')) return 'km'
+  if (lower.endsWith('mb')) return 'Mb'
+  if (lower.endsWith('mbps')) return 'Mbps'
+  if (lower.includes('count')) return ''
+  if (lower.endsWith('m')) return 'm'
+  if (lower.includes('deg')) return '°'
+  if (lower.includes('mb')) return 'Mb'
+  return ''
+}
+
+function formatMetric(key, value) {
+  if (typeof value === 'boolean') return value ? t('common.yes') : t('common.no')
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return String(value)
+  const lower = String(key).toLowerCase()
+  const isCountKey = /(count|sunsets?|sunrises?|eclipses|craterswithinreach|windowcount)$/i.test(lower)
+  const unit = isCountKey ? '' : inferUnit(key)
+  if (unit === '%') {
+    const ratio =
+      /(fraction|ratio|coverage|difficulty|hazard|proximityscore)$/i.test(lower) ||
+      (numeric >= 0 && numeric <= 1)
+    const percent = ratio ? numeric * 100 : numeric
+    return `${formatNumber(percent, 1)} %`
+  }
+  const isCount = /(count|sunsets?|sunrises?|eclipses|craterswithinreach|windowcount)$/i.test(lower)
+  const magnitude = isCount ? 0 : Math.abs(numeric) >= 100 ? 0 : Math.abs(numeric) >= 10 ? 1 : 2
+  const text = `${formatNumber(numeric, magnitude)}${unit ? ` ${unit}` : ''}`
+  return text.replace(/ \?°C/, ' °C')
+}
+
+function flattenNumbers(value, prefix = '', out = []) {
+  if (!value || typeof value !== 'object') return out
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof entry === 'number' && Number.isFinite(entry)) out.push({ key: prefix ? `${prefix}.${key}` : key, value: entry })
+    else if (entry && typeof entry === 'object' && !Array.isArray(entry)) flattenNumbers(entry, prefix ? `${prefix}.${key}` : key, out)
+  }
+  return out
+}
+
+function zoneGroups(entry) {
+  const metrics = entry?.metrics ?? {}
+  const groups = []
+  for (const key of GROUP_KEYS) {
+    const source = metrics[key] ?? entry?.[key]
+    if (source && typeof source === 'object') {
+      const items = flattenNumbers(source)
+      if (items.length) groups.push({ key, items })
+    }
+  }
+  if (!groups.length) {
+    const general = Object.entries(metrics)
+      .filter(([key, value]) => typeof value === 'number' && Number.isFinite(value))
+      .map(([key, value]) => ({ key, value }))
+    if (general.length) groups.push({ key: 'general', items: general })
+  }
+  return groups
+}
+
+function zoneWarnings(entry) {
+  const warnings = Array.isArray(entry?.warnings) ? entry.warnings : []
+  return warnings.filter((warning) => warning?.code === 'ephemeris-nearest-site' || warning?.code === 'no-nearest-site')
+}
 
 const statusLabel = computed(() => {
-  switch (state.autopilot.status) {
+  switch (activeStatus.value.status) {
     case 'running':
       return t('autopilot.status.running')
     case 'done':
@@ -30,14 +362,16 @@ const statusLabel = computed(() => {
 })
 
 const statusTone = computed(() => {
-  if (state.autopilot.status === 'error') return 'danger'
-  if (state.autopilot.status === 'running') return 'warn'
-  return state.autopilot.status === 'done' ? 'ok' : 'default'
+  if (activeStatus.value.status === 'error') return 'danger'
+  if (activeStatus.value.status === 'running') return 'warn'
+  if (activeStatus.value.status === 'done') return 'ok'
+  if (activeStatus.value.status === 'unavailable') return 'warn'
+  return 'default'
 })
 
 const sourceLabel = computed(() => {
-  if (state.autopilot.source === 'worker') return t('autopilot.source.worker')
-  if (state.autopilot.source === 'main') return t('autopilot.source.main')
+  if (activeStatus.value.source === 'worker') return t('autopilot.source.worker')
+  if (activeStatus.value.source === 'main') return t('autopilot.source.main')
   return t('common.notAvailable')
 })
 
@@ -69,7 +403,7 @@ const ranking = computed(() => state.scores)
 <template>
   <PanelCard title-key="autopilot.title" :badge="statusLabel" :tone="statusTone">
     <template #actions>
-      <button type="button" class="button button--secondary button--small" :disabled="running" @click="actions.runAutopilot()">
+      <button type="button" class="button button--secondary button--small" :disabled="running" @click="runRanking">
         {{ running ? t('autopilot.running') : t('autopilot.run') }}
       </button>
     </template>
@@ -112,7 +446,92 @@ const ranking = computed(() => state.scores)
       {{ t('autopilot.fallbackNote') }}: {{ state.autopilot.error }}
     </p>
 
-    <ol v-if="ranking.length" class="rank-list" :aria-label="t('autopilot.rankingLabel')">
+    <div v-if="landingAvailable && zones.length" class="zone-meta">
+      <p class="panel-hint zone-meta__text" :title="zoneSignature || undefined">
+        {{ t('autopilot.computedAt') }}: {{ computedAt }}<template v-if="computeMs !== null"> · {{ formatDuration(computeMs / 1000) }}</template>
+        · {{ t('autopilot.signature') }}: <code data-testid="landing-zone-signature">{{ zoneSignature ? zoneSignature.slice(0, 8) : t('common.notAvailable') }}</code>
+      </p>
+      <button type="button" class="button button--ghost button--small" :disabled="running" @click="actions.runLandingZones()">
+        {{ t('autopilot.recalculate') }}
+      </button>
+    </div>
+
+    <template v-if="landingAvailable">
+      <p v-if="state.landingZonesStatus.status === 'unavailable'" class="panel-note panel-note--warn">
+        {{ t('autopilot.zonesUnavailable') }}
+      </p>
+      <p v-else-if="running" class="panel-note">{{ t('autopilot.zonesRunning') }}</p>
+      <p v-else-if="state.landingZonesStatus.status === 'error'" class="panel-note panel-note--warn">
+        {{ t('autopilot.zonesError') }}: {{ state.landingZonesStatus.error }}
+      </p>
+      <p v-else-if="state.landingZonesStatus.status === 'stale'" class="panel-note panel-note--warn">
+        {{ t('autopilot.zonesStale') }}
+      </p>
+      <p v-else-if="!zones.length" class="empty">{{ t('autopilot.zonesEmpty') }}</p>
+      <ol v-else class="rank-list" :aria-label="t('autopilot.zonesLabel')">
+        <li
+          v-for="entry in zones"
+          :key="entry.zone.id"
+          class="rank-item"
+          :class="{ 'is-selected': entry.zone.id === selectedZoneId }"
+          data-testid="landing-zone-row"
+          :data-zone-rank="entry.rank"
+          :data-zone-id="entry.zone.id"
+        >
+          <span
+            v-if="entry.zone.id === selectedZoneId"
+            class="sr-only"
+            data-testid="landing-zone-selected"
+          >{{ t('autopilot.zoneSelected') }}</span>
+          <button type="button" class="rank-item__head" @click="actions.selectLandingZone(entry)">
+            <span class="rank-item__rank">#{{ entry.rank }}</span>
+            <span class="rank-item__name">{{ t('autopilot.zoneLabel', { rank: entry.rank, lat: formatLat(entry.zone.lat), lon: formatLon(entry.zone.lon) }) }}</span>
+            <span v-if="entry.grade" class="tag">{{ entry.grade }}</span>
+            <span class="rank-item__score">{{ formatNumber(entry.score, 1) }}</span>
+          </button>
+          <div class="rank-item__bar" aria-hidden="true">
+            <span class="rank-item__bar-fill" :style="{ width: `${Math.max(0, Math.min(100, entry.score))}%` }" />
+          </div>
+          <div class="rank-item__metrics">
+            <span>{{ t('autopilot.zoneArea') }} {{ formatNumber(entry.zone.areaKm2, 1) }} km²</span>
+            <span>{{ t('autopilot.zoneSlope') }} {{ formatAngle(entry.zone.meanSlopeDeg, 1) }} / {{ formatAngle(entry.zone.maxSlopeDeg, 1) }}</span>
+            <span>{{ t('autopilot.zoneElevation') }} {{ formatMeters(entry.zone.elevationM) }}</span>
+            <span>{{ t('autopilot.zoneRelief') }} {{ formatMeters(entry.zone.reliefM) }}</span>
+          </div>
+          <button
+            type="button"
+            class="rank-item__details"
+            data-testid="landing-zone-details"
+            :aria-expanded="expandedZoneId === entry.zone.id"
+            @click="toggleZone(entry.zone.id)"
+          >
+            {{ expandedZoneId === entry.zone.id ? t('autopilot.hideDetails') : t('autopilot.showDetails') }}
+          </button>
+          <div v-if="expandedZoneId === entry.zone.id" class="zone-detail">
+            <section v-for="group in zoneGroups(entry)" :key="group.key" class="zone-detail__group">
+              <h4 class="zone-detail__title">{{ groupLabel(group.key) }}</h4>
+              <dl class="zone-detail__grid">
+                <div v-for="item in group.items" :key="item.key" class="zone-detail__item">
+                  <dt>{{ metricLabel(item.key) }}</dt>
+                  <dd>{{ formatMetric(item.key, item.value) }}</dd>
+                </div>
+              </dl>
+            </section>
+            <p v-if="!zoneGroups(entry).length" class="panel-hint">{{ t('autopilot.noDetails') }}</p>
+          </div>
+          <ul v-if="zoneWarnings(entry).length" class="reason-list">
+            <li
+              v-for="(warning, index) in zoneWarnings(entry)"
+              :key="`${entry.zone.id}-warn-${index}`"
+              class="reason reason--approx"
+            >
+              {{ warning.code === 'no-nearest-site' ? t('autopilot.warningNoNearestSite') : t('autopilot.warningNearestEphemeris', { site: warning.params?.ephemerisSiteId ?? '', distance: formatDistance(warning.params?.distanceM ?? 0) }) }}
+            </li>
+          </ul>
+        </li>
+      </ol>
+    </template>
+    <ol v-if="!landingAvailable && ranking.length" class="rank-list" :aria-label="t('autopilot.rankingLabel')">
       <li v-for="entry in ranking" :key="entry.siteId" class="rank-item" :class="{ 'is-selected': entry.siteId === state.selectedSiteId }">
         <button type="button" class="rank-item__head" @click="selectSite(entry.siteId)">
           <span class="rank-item__rank">#{{ entry.rank }}</span>
@@ -142,7 +561,7 @@ const ranking = computed(() => state.scores)
         </ul>
       </li>
     </ol>
-    <p v-else class="empty">{{ t('autopilot.empty') }}</p>
+    <p v-else-if="!landingAvailable" class="empty">{{ t('autopilot.empty') }}</p>
     <p class="panel-note">{{ t('autopilot.workerNote') }}</p>
   </PanelCard>
 </template>

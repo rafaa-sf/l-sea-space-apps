@@ -24,13 +24,13 @@ This document is the shared contract for both machines:
 
 | # | Requirement (guide) | Minimum values / criteria | Status | Approval / implementation |
 | --- | --- | --- | --- | --- |
-| 01 | **Purpose at a glance** — the product explains itself when opened: what it is, for whom, what can be done | Clear title, one sentence, one prominent button (vs. only a logo and "Start") | ✅ Compliant | — |
-| 02 | **Main flow** — the path to the most important thing the product offers; every step leads to the next; no dead-ends | No screen without a way forward or back | ✅ Implemented | `CR-05` — three-step guide + first-run hint |
-| 03 | **Hierarchy and patterns** — the eye goes first to what matters; the same elements repeat on every screen; one primary button | One primary action per screen; consistent components | ✅ Implemented | `CR-04` — single primary action per surface |
-| 04 | **Readability** — readable by size and by words | Web body **16 px**, secondary **never below 12 px**; max 3 type families | ✅ Implemented | `CR-01` — minimum 12 px, body 16 px |
-| 05 | **Contrast and colour** — light difference text/background; never colour as the only signal | Text **4.5:1**; large text, icons and borders **3:1**; verified with WebAIM Contrast Checker or grayscale | ✅ Implemented | `CR-03` — all measured pairs pass |
-| 06 | **Tap/click targets** — the whole button responds, not only its text/icon | iOS 44×44 pt · Android 48×48 dp · Web **44×44 px (minimum 24)** · 8 px separation · no hover on mobile | ✅ Implemented | `CR-02` — 24 px minimum, 44 px on phones |
-| 07 | **System response** — what happens after each action, during waits, and on errors/empty screens | Every step responds and says how it is going; no technical error without what to do next | ✅ Implemented | `CR-06` — plain-language errors with next action |
+| 01 | **Purpose at a glance** — the product explains itself when opened: what it is, for whom, what can be done | Clear title, one sentence, one prominent button (vs. only a logo and "Start") | PASS Compliant | — |
+| 02 | **Main flow** — the path to the most important thing the product offers; every step leads to the next; no dead-ends | No screen without a way forward or back | PASS Implemented | `CR-05` — three-step guide + first-run hint |
+| 03 | **Hierarchy and patterns** — the eye goes first to what matters; the same elements repeat on every screen; one primary button | One primary action per screen; consistent components | PASS Implemented | `CR-04` — single primary action per surface |
+| 04 | **Readability** — readable by size and by words | Web body **16 px**, secondary **never below 12 px**; max 3 type families | PASS Implemented | `CR-01` — minimum 12 px, body 16 px |
+| 05 | **Contrast and colour** — light difference text/background; never colour as the only signal | Text **4.5:1**; large text, icons and borders **3:1**; verified with WebAIM Contrast Checker or grayscale | PASS Implemented | `CR-03` — all measured pairs pass |
+| 06 | **Tap/click targets** — the whole button responds, not only its text/icon | iOS 44×44 pt · Android 48×48 dp · Web **44×44 px (minimum 24)** · 8 px separation · no hover on mobile | PASS Implemented | `CR-02` — 24 px minimum, 44 px on phones |
+| 07 | **System response** — what happens after each action, during waits, and on errors/empty screens | Every step responds and says how it is going; no technical error without what to do next | PASS Implemented | `CR-06` — plain-language errors with next action |
 
 The product already meets the guide's **purpose, flow skeleton, component
 consistency, colour-not-as-only-signal, loading/empty states and accessibility
@@ -42,7 +42,7 @@ targets, contrast of one button style and technical error copy**.
 
 ## 2. Requirement-by-requirement audit
 
-### 01 · Purpose at a glance — ✅ compliant
+### 01 · Purpose at a glance — PASS compliant
 
 **Guide asks:** the product explains itself on open: what it is, for whom, what
 you can do with it. Good: clear title, one sentence, one prominent button. Bad:
@@ -62,7 +62,7 @@ landing is the documented entry point (`README.md` → *Entry points*).
 
 ---
 
-### 02 · Main flow — 🟡 partial
+### 02 · Main flow — PARTIAL partial
 
 **Guide asks:** the path to the most important thing the product offers. Every
 step leads to the next until the flow can be completed. Bad: a screen with no
@@ -83,7 +83,7 @@ one-line contextual hint on first entry to the console (`CR-05`).
 
 ---
 
-### 03 · Hierarchy and patterns — 🟡 partial
+### 03 · Hierarchy and patterns — PARTIAL partial
 
 **Guide asks:** order the screen so the eye goes first to what matters, and repeat
 the same elements; **one primary button**; bad: buttons without hierarchy or a
@@ -102,7 +102,7 @@ secondary (`CR-04`).
 
 ---
 
-### 04 · Readability — 🔴 gap
+### 04 · Readability — FAIL gap
 
 **Guide asks:** text readable by its size and by its words. Minimum values (the
 reference to meet): **web body 16 px**, secondary text **never below 12 px**,
@@ -122,7 +122,7 @@ keeping the two families (`CR-01`). Re-run the device matrix and landing checks.
 
 ---
 
-### 05 · Contrast and colour — 🔴 gap
+### 05 · Contrast and colour — FAIL gap
 
 **Guide asks:** enough light difference between text and background; never use
 colour as the only signal. Minimum values: text **4.5:1**, large text/icons/borders
@@ -132,16 +132,16 @@ colour as the only signal. Minimum values: text **4.5:1**, large text/icons/bord
 
 | Pair | Ratio | Verdict |
 | --- | ---: | --- |
-| Primary text `#e5e9f0` on background `#080a0e` | 16.27:1 | ✅ |
-| Primary text on surface `#0d1016` | 15.64:1 | ✅ |
-| Secondary `#9aa4b5` on surface | 7.57:1 | ✅ |
-| Faint `#697386` on surface | **3.99:1** | 🔴 below 4.5 (used for 9–11 px labels) |
-| Accent `#5b8def` on surface | 5.90:1 | ✅ |
-| OK `#4fa877` / warn `#c9973f` / danger `#d9645c` on surface | 6.53 / 7.24 / 5.38:1 | ✅ |
-| **Primary button label `#f4f7ff` on accent `#5b8def`** | **3.01:1** | 🔴 fails 4.5 for normal-size text |
-| UI border `#2a3342` on surface | 1.50:1 | 🔴 below 3:1 for component boundaries |
+| Primary text `#e5e9f0` on background `#080a0e` | 16.27:1 | PASS |
+| Primary text on surface `#0d1016` | 15.64:1 | PASS |
+| Secondary `#9aa4b5` on surface | 7.57:1 | PASS |
+| Faint `#697386` on surface | **3.99:1** | FAIL below 4.5 (used for 9–11 px labels) |
+| Accent `#5b8def` on surface | 5.90:1 | PASS |
+| OK `#4fa877` / warn `#c9973f` / danger `#d9645c` on surface | 6.53 / 7.24 / 5.38:1 | PASS |
+| **Primary button label `#f4f7ff` on accent `#5b8def`** | **3.01:1** | FAIL fails 4.5 for normal-size text |
+| UI border `#2a3342` on surface | 1.50:1 | FAIL below 3:1 for component boundaries |
 
-**Colour as the only signal:** ✅ does not happen for meaning — visibility states
+**Colour as the only signal:** PASS does not happen for meaning — visibility states
 are rendered with words ("Visible"/"Hidden"), chips carry labels, and chart
 series have legends. Verify once in grayscale.
 
@@ -153,7 +153,7 @@ series have legends. Verify once in grayscale.
 
 ---
 
-### 06 · Tap/click targets — 🔴 gap
+### 06 · Tap/click targets — FAIL gap
 
 **Guide asks:** the responding area is the whole button, not just the text/icon.
 Minimum values: iOS **44×44 pt**, Android **48×48 dp**, web **44×44 px (minimum
@@ -172,7 +172,7 @@ matrix; the `@ui/interactive-targets` check must reach a pass.
 
 ---
 
-### 07 · System response — 🟡 partial
+### 07 · System response — PARTIAL partial
 
 **Guide asks:** what happens after each action, during waits, and on errors and
 empty screens. Good: every step responds and says how it is going. Bad: technical
@@ -204,12 +204,12 @@ two machines (one machine holds the repository lock while implementing).
 
 | ID | Change | Why (guide) | Affected files | Risk / QA needed | Approval |
 | --- | --- | --- | --- | --- | --- |
-| `CR-01` | Type scale: 16 px body, ≥12 px secondary labels | 04 Readability | `src/styles/main.css`, components, landing | Layout reflow; re-run unit tests + device matrix + landing overflow checks | ✅ Implemented |
-| `CR-02` | Touch targets: 44×44 px (min 24) + 8 px separation | 06 Tap targets | `src/styles/main.css`, panel/shell components | Denser screens; re-run device matrix (`@ui/interactive-targets`) | ✅ Implemented |
-| `CR-03` | Contrast: primary button ≥4.5:1, faint text ≥4.5:1, borders ≥3:1 | 05 Contrast | `src/styles/main.css` (tokens) | Visual identity change; WebAIM + grayscale check | ✅ Implemented |
-| `CR-04` | One primary action per screen; demote the second primary | 03 Hierarchy | `HeaderBar.vue`, `CustomSitePanel.vue`, landing | None functional; manual review EN/ES | ✅ Implemented |
-| `CR-05` | First-run "how to use it" (3 steps) on landing + console hint | 02 Main flow | `LandingPage.vue`, i18n EN/ES, console shell | Copy must be accurate; EN/ES parity | ✅ Implemented |
-| `CR-06` | Plain-language errors with a next action | 07 System response | error paths in console panels, i18n EN/ES | Behaviour unchanged; copy review | ✅ Implemented |
+| `CR-01` | Type scale: 16 px body, ≥12 px secondary labels | 04 Readability | `src/styles/main.css`, components, landing | Layout reflow; re-run unit tests + device matrix + landing overflow checks | PASS Implemented |
+| `CR-02` | Touch targets: 44×44 px (min 24) + 8 px separation | 06 Tap targets | `src/styles/main.css`, panel/shell components | Denser screens; re-run device matrix (`@ui/interactive-targets`) | PASS Implemented |
+| `CR-03` | Contrast: primary button ≥4.5:1, faint text ≥4.5:1, borders ≥3:1 | 05 Contrast | `src/styles/main.css` (tokens) | Visual identity change; WebAIM + grayscale check | PASS Implemented |
+| `CR-04` | One primary action per screen; demote the second primary | 03 Hierarchy | `HeaderBar.vue`, `CustomSitePanel.vue`, landing | None functional; manual review EN/ES | PASS Implemented |
+| `CR-05` | First-run "how to use it" (3 steps) on landing + console hint | 02 Main flow | `LandingPage.vue`, i18n EN/ES, console shell | Copy must be accurate; EN/ES parity | PASS Implemented |
+| `CR-06` | Plain-language errors with a next action | 07 System response | error paths in console panels, i18n EN/ES | Behaviour unchanged; copy review | PASS Implemented |
 | `CR-07` | Book one review with the event UX stand | Support offer | none (process) | Scheduling only | Pending (external) |
 
 **Recommendation:** implement in the order `CR-03` → `CR-02` → `CR-01` (tokens

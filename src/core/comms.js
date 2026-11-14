@@ -195,7 +195,10 @@ export function dataBudget(commWindows, mission = {}) {
     estimatedMb += durationSeconds * rateMbps
   }
 
-  const dataNeedMb = Number.isFinite(Number(mission.dataNeedMb)) ? Number(mission.dataNeedMb) : null
+  const dataNeedMb =
+    mission.dataNeedMb != null && Number.isFinite(Number(mission.dataNeedMb))
+      ? Number(mission.dataNeedMb)
+      : null
   return {
     totalSeconds,
     totalHours: totalSeconds / 3600,

@@ -39,6 +39,19 @@ import {
   normalizeCommsModel,
 } from './comms.js'
 
+/** Default thermal/energy model (simple, documented surface energy balance). */
+export const DEFAULT_THERMAL_MODEL = Object.freeze({
+  albedo: 0.12,
+  emissivity: 0.95,
+  solarConstantWm2: 1361,
+  nightTemperatureC: -180,
+  psrTemperatureC: -200,
+  minOperatingC: -40,
+  maxOperatingC: 50,
+  heaterWPerK: 2,
+  heaterMaxW: 400,
+})
+
 /** Default mission profile (see docs/architecture.md). */
 export const DEFAULT_MISSION = Object.freeze({
   missionDays: 14,
@@ -53,6 +66,21 @@ export const DEFAULT_MISSION = Object.freeze({
   profileStepDeg: 1,
   power: DEFAULT_POWER_MODEL,
   comms: DEFAULT_COMMS_MODEL,
+  // Mission-feasibility fields added for the landing-zone autopilot (optional,
+  // backward compatible: older mission objects simply get these defaults).
+  batteryCapacityWh: null,
+  batteryRoundTripEfficiency: 0.9,
+  batteryDepthOfDischarge: 0.8,
+  heaterMaxW: DEFAULT_THERMAL_MODEL.heaterMaxW,
+  heaterWPerK: DEFAULT_THERMAL_MODEL.heaterWPerK,
+  minOperatingTemperatureC: DEFAULT_THERMAL_MODEL.minOperatingC,
+  maxOperatingTemperatureC: DEFAULT_THERMAL_MODEL.maxOperatingC,
+  landingEllipseRadiusM: 500,
+  craterHazardMinDiameterM: 500,
+  craterHazardReachM: 5000,
+  scienceReachM: 5000,
+  thermal: DEFAULT_THERMAL_MODEL,
+  weights: null,
 })
 
 /** Component weights, summing to 1. */
@@ -91,6 +119,45 @@ export function normalizeMission(mission = {}) {
   const commsOverrides = {}
   if (Number.isFinite(Number(merged.bitrateMbps))) commsOverrides.dataRateMbps = Number(merged.bitrateMbps)
   Object.assign(commsOverrides, (mission && typeof mission === 'object' ? mission.comms : null) ?? {})
+
+  // Thermal model: nested `mission.thermal` plus documented flat aliases.
+  const thermalOverrides = { ...DEFAULT_THERMAL_MODEL, ...(mission?.thermal ?? {}) }
+  for (const [flat, nested] of [
+    ['albedo', 'albedo'],
+    ['emissivity', 'emissivity'],
+    ['solarConstantWm2', 'solarConstantWm2'],
+    ['nightTemperatureC', 'nightTemperatureC'],
+    ['psrTemperatureC', 'psrTemperatureC'],
+  ]) {
+    if (Number.isFinite(Number(merged[flat]))) thermalOverrides[nested] = Number(merged[flat])
+  }
+  const minOperatingC = Number.isFinite(Number(merged.minOperatingTemperatureC))
+    ? Number(merged.minOperatingTemperatureC)
+    : Number(thermalOverrides.minOperatingC)
+  const maxOperatingC = Number.isFinite(Number(merged.maxOperatingTemperatureC))
+    ? Number(merged.maxOperatingTemperatureC)
+    : Number(thermalOverrides.maxOperatingC)
+  const heaterWPerK = Number.isFinite(Number(merged.heaterWPerK))
+    ? Number(merged.heaterWPerK)
+    : Number(thermalOverrides.heaterWPerK)
+  const heaterMaxW = Number.isFinite(Number(merged.heaterMaxW))
+    ? Number(merged.heaterMaxW)
+    : Number(thermalOverrides.heaterMaxW)
+  const thermal = {
+    albedo: clamp(Number(thermalOverrides.albedo) || 0, 0, 1),
+    emissivity: clamp(Number(thermalOverrides.emissivity) || 0.95, 0.01, 1),
+    solarConstantWm2: Math.max(0, Number(thermalOverrides.solarConstantWm2) || DEFAULT_THERMAL_MODEL.solarConstantWm2),
+    nightTemperatureC: clamp(Number(thermalOverrides.nightTemperatureC) || -180, -273, 200),
+    psrTemperatureC: clamp(Number(thermalOverrides.psrTemperatureC) || -200, -273, 200),
+    minOperatingC: clamp(Number.isFinite(minOperatingC) ? minOperatingC : -40, -273, 200),
+    maxOperatingC: clamp(Number.isFinite(maxOperatingC) ? maxOperatingC : 50, -273, 400),
+    heaterWPerK: Math.max(0, Number.isFinite(heaterWPerK) ? heaterWPerK : 2),
+    heaterMaxW: Math.max(0, Number.isFinite(heaterMaxW) ? heaterMaxW : 400),
+  }
+  const batteryCapacityWh =
+    merged.batteryCapacityWh != null && Number.isFinite(Number(merged.batteryCapacityWh))
+      ? Math.max(0, Number(merged.batteryCapacityWh))
+      : null
   return {
     missionDays: clamp(Number(merged.missionDays) || DEFAULT_MISSION.missionDays, 1 / 24, 365),
     powerNeedW: Math.max(0, Number(merged.powerNeedW) || 0),
@@ -99,11 +166,27 @@ export function normalizeMission(mission = {}) {
     perimeterM: Math.max(0, Number(merged.perimeterM) || 0),
     mastM: Math.max(0, Number(merged.mastM) || 0),
     startTime: merged.startTime ?? null,
-    dataNeedMb: Number.isFinite(Number(merged.dataNeedMb)) ? Number(merged.dataNeedMb) : null,
+    dataNeedMb:
+      merged.dataNeedMb != null && Number.isFinite(Number(merged.dataNeedMb))
+        ? Number(merged.dataNeedMb)
+        : null,
     stepSeconds: Math.max(10, Number(merged.stepSeconds) || DEFAULT_MISSION.stepSeconds),
     profileStepDeg: Math.max(0.25, Number(merged.profileStepDeg) || 1),
     power: normalizePowerModel(powerOverrides),
     comms: normalizeCommsModel(commsOverrides),
+    batteryCapacityWh,
+    batteryRoundTripEfficiency: clamp(Number(merged.batteryRoundTripEfficiency) || 0.9, 0.1, 1),
+    batteryDepthOfDischarge: clamp(Number(merged.batteryDepthOfDischarge) || 0.8, 0.05, 1),
+    heaterMaxW: thermal.heaterMaxW,
+    heaterWPerK: thermal.heaterWPerK,
+    minOperatingTemperatureC: thermal.minOperatingC,
+    maxOperatingTemperatureC: thermal.maxOperatingC,
+    landingEllipseRadiusM: Math.max(1, Number(merged.landingEllipseRadiusM) || 500),
+    craterHazardMinDiameterM: Math.max(0, Number(merged.craterHazardMinDiameterM) || 500),
+    craterHazardReachM: Math.max(0, Number(merged.craterHazardReachM) || 5000),
+    scienceReachM: Math.max(0, Number(merged.scienceReachM) || 5000),
+    thermal,
+    weights: merged.weights && typeof merged.weights === 'object' ? merged.weights : null,
   }
 }
 
