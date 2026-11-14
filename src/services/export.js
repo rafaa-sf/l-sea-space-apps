@@ -96,14 +96,25 @@ function normalizeBriefSite(site) {
  */
 function normalizeBriefScore(score) {
   if (!score) return null
+  // The UI flattens some metric fields for its own table; accept both shapes so
+  // the brief always carries the numbers reported on screen.
+  const flatMetrics = {
+    sunlitDays: score.sunlightDays ?? null,
+    averageW: score.averageW ?? null,
+    peakW: score.peakW ?? null,
+    commsHours: score.commsHours ?? null,
+    estimatedMb: score.estimatedMb ?? null,
+    meanSlopeDeg: score.slopeDeg ?? null,
+  }
   return {
     siteId: score.siteId ?? null,
+    siteName: score.siteName ?? score.site?.name ?? null,
     rank: score.rank ?? null,
     score: score.score ?? null,
     grade: score.grade ?? null,
     confidence: score.confidence ?? null,
     components: score.components ?? null,
-    metrics: score.metrics ?? null,
+    metrics: { ...flatMetrics, ...(score.metrics ?? {}) },
     reasons: Array.isArray(score.reasons) ? score.reasons : [],
     warnings: Array.isArray(score.warnings) ? score.warnings : [],
   }
@@ -133,6 +144,12 @@ export function buildBrief(input = {}) {
   const rankedSites = sites
     .map((site) => normalizeBriefScore(scoreById.get(site.id)))
     .filter(Boolean)
+    .sort((a, b) => {
+      if (a.rank != null && b.rank != null) return a.rank - b.rank
+      if (a.rank != null) return -1
+      if (b.rank != null) return 1
+      return (b.score ?? -1) - (a.score ?? -1)
+    })
   const selectedSite =
     normalizeBriefSite(input.computation?.selectedSite ?? input.selectedSite ?? null) ??
     sites[0] ??

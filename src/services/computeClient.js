@@ -62,6 +62,7 @@ export function createComputeClient(options = {}) {
   let worker = null
   let terminated = false
   let workerFailed = false
+  let lastError = null
   const inlineCancelled = new Set()
 
   /**
@@ -104,12 +105,17 @@ export function createComputeClient(options = {}) {
         error.code = data.payload?.code ?? 'TASK_ERROR'
         entry.reject(error)
       } else {
+        // A successful task proves the worker is healthy again: clear any
+        // transient initialisation error so status consumers can recover.
+        workerFailed = false
+        lastError = null
         entry.resolve(data.payload ?? null)
       }
     })
 
     const handleFailure = (message) => {
       workerFailed = true
+      lastError = message
       for (const [id, entry] of pending) {
         clearTimeout(entry.timer)
         entry.reject(new Error(message))
@@ -163,24 +169,36 @@ export function createComputeClient(options = {}) {
         reject(createAbortError())
         return
       }
+      const signal = requestOptions.signal
+      const cleanup = () => {
+        clearTimeout(timer)
+        signal?.removeEventListener?.('abort', onAbort)
+        inlineCancelled.delete(id)
+      }
+      const onAbort = () => {
+        inlineCancelled.add(id)
+        cleanup()
+        reject(createAbortError())
+      }
+      signal?.addEventListener?.('abort', onAbort, { once: true })
       const timer = setTimeout(() => {
         inlineCancelled.add(id)
+        cleanup()
         reject(new Error(`Inline task '${type}' timed out`))
       }, requestOptions.timeoutMs ?? requestTimeoutMs)
 
       runTask(type, payload)
         .then((result) => {
-          clearTimeout(timer)
-          if (inlineCancelled.has(id) || requestOptions.signal?.aborted) {
-            inlineCancelled.delete(id)
+          if (inlineCancelled.has(id) || signal?.aborted) {
+            cleanup()
             reject(createAbortError())
             return
           }
+          cleanup()
           resolve(result)
         })
         .catch((error) => {
-          clearTimeout(timer)
-          inlineCancelled.delete(id)
+          cleanup()
           reject(error instanceof Error ? error : new Error(String(error)))
         })
     })
@@ -318,6 +336,16 @@ export function createComputeClient(options = {}) {
     /** @returns {'worker'|'inline'} Execution mode in use. */
     mode() {
       return worker ? 'worker' : 'inline'
+    },
+
+    /**
+     * Last transient worker error (cleared automatically after a successful
+     * task or a worker restart), or `null`.
+     *
+     * @returns {string|null}
+     */
+    lastError() {
+      return lastError
     },
   }
 }
