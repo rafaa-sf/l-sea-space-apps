@@ -659,7 +659,11 @@ const SOLAR_CONSTANT_W_M2 = 1361
 export function solarPowerEstimate(site, terrain, ephemeris, mission = {}) {
   const missionDays = mission.missionDays ?? 14
   const needW = mission.powerNeedW ?? 120
-  const start = ephemeris ? Date.parse(ephemeris.start) : Date.now()
+  const start = mission.startTime
+    ? Date.parse(mission.startTime)
+    : ephemeris
+      ? Date.parse(ephemeris.start)
+      : Date.now()
   const samples = 96
   const step = (missionDays * 24 * 3600 * 1000) / samples
   let sumW = 0
@@ -697,7 +701,7 @@ export function solarPowerEstimate(site, terrain, ephemeris, mission = {}) {
 /** Merge visible-sample runs into Earth visibility windows. */
 export function commWindows(site, terrain, ephemeris, mission = {}, from, to) {
   if (!ephemeris) return []
-  const startMs = Date.parse(from ?? ephemeris.start)
+  const startMs = Date.parse(from ?? mission.startTime ?? ephemeris.start)
   const endMs = Date.parse(to ?? new Date(startMs + 7 * 24 * 3600 * 1000))
   const relay = Boolean(mission.relayInOrbit)
   const stepMs = 5 * 60 * 1000
@@ -737,7 +741,7 @@ export function rankSites({ sites = [], terrain, ephemeris, mission = {} } = {})
   const missionDays = mission.missionDays ?? 14
   const powerNeedW = mission.powerNeedW ?? 120
   const sunDaysNeeded = mission.sunDaysNeeded ?? 10
-  const from = ephemeris ? ephemeris.start : new Date().toISOString()
+  const from = mission.startTime ?? (ephemeris ? ephemeris.start : new Date().toISOString())
   const to = new Date(Date.parse(from) + missionDays * 24 * 3600 * 1000).toISOString()
 
   const scores = sites.map((site) => {

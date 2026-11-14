@@ -645,6 +645,8 @@ export async function runAutopilot() {
   const started = Date.now()
   try {
     const compute = await ensureCompute()
+    // Rank over the window the timeline/analysis panels display.
+    const autopilotMission = { ...state.mission, startTime: new Date(state.time).toISOString() }
     let scores = null
     let source = 'main'
     let workerError = null
@@ -673,7 +675,7 @@ export async function runAutopilot() {
         'autopilot',
         {
           sites: state.sites.map((site) => ({ ...site })),
-          mission: { ...state.mission },
+          mission: autopilotMission,
           region: terrainRegion.value ? { ...terrainRegion.value } : null,
           terrain,
           ephemeris: state.ephemeris
@@ -705,7 +707,7 @@ export async function runAutopilot() {
         sites: state.sites,
         terrain: state.terrain,
         ephemeris: state.ephemeris,
-        mission: state.mission,
+        mission: autopilotMission,
       })
       scores = (Array.isArray(localScores) ? localScores : []).map(normalizeRankEntry)
     }
