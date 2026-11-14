@@ -467,6 +467,9 @@ export function clearCompare() {
 export function setTime(value) {
   const ms = toTimestamp(value)
   if (!Number.isFinite(ms)) return
+  // A manual time change always stops playback: otherwise a running timer keeps
+  // advancing the clock while the transport button already shows "play".
+  if (state.playback.playing) stopPlayback()
   state.time = new Date(ms).toISOString()
 }
 
@@ -520,6 +523,11 @@ export function setRenderer(kind) {
 
 export function startPlayback() {
   if (state.playback.playing) return
+  // Defensive: never leave a previous interval running alongside a new one.
+  if (playbackTimer) {
+    clearInterval(playbackTimer)
+    playbackTimer = null
+  }
   state.playback.playing = true
   playbackTimer = setInterval(() => {
     const current = toTimestamp(state.time)
