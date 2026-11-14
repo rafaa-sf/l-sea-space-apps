@@ -15,7 +15,10 @@ import {
   createProjectedTerrain,
   createSyntheticTerrain,
   sampleElevation,
+  sampleElevationXY,
+  pointInsideBounds,
   slopeAt,
+  slopeAtXY,
   findCraters,
   areaStatistics,
   terrainKind,
@@ -279,5 +282,82 @@ describe('terrain statistics and synthetic fallback', () => {
     expect(a.data[0]).toBe(b.data[0])
     expect(a.data[100]).toBe(b.data[100])
     expect(Number.isFinite(sampleElevation(a, -89.5, 120))).toBe(true)
+  })
+})
+
+describe('DEM boundary consistency (issue #4)', () => {
+  // A point inside the outer half-pixel band that `pointInsideBounds()` accepts
+  // must have a finite sample: `isInsideTerrain()` must never be true for a
+  // point whose elevation/slope is NaN.
+  function edgePoints(grid) {
+    const p = grid.pixelSizeM
+    const midX = (grid.minX + grid.maxX) / 2
+    const midY = (grid.minY + grid.maxY) / 2
+    const f = 0.26 // fraction of a pixel inside the half-pixel tolerance band
+    return [
+      [midX, grid.maxY + f * p],
+      [midX, grid.maxY - f * p],
+      [midX, grid.minY - f * p],
+      [midX, grid.minY + f * p],
+      [grid.maxX + f * p, midY],
+      [grid.maxX - f * p, midY],
+      [grid.minX - f * p, midY],
+      [grid.minX + f * p, midY],
+      [grid.maxX + f * p, grid.maxY + f * p],
+    ]
+  }
+
+  function makeRampGrid() {
+    return makePlanarGrid({
+      width: 33,
+      height: 33,
+      boundsM: 3200,
+      elevationFn: (x, y) => 0.001 * x + 0.002 * y,
+    })
+  }
+
+  it('returns finite elevation and slope for every point reported inside', () => {
+    const grid = makeRampGrid()
+    for (const [x, y] of edgePoints(grid)) {
+      expect(pointInsideBounds(grid, x, y)).toBe(true)
+      expect(Number.isFinite(sampleElevationXY(grid, x, y))).toBe(true)
+      const slope = slopeAtXY(grid, x, y)
+      expect(Number.isFinite(slope.slopeDeg)).toBe(true)
+      expect(Number.isFinite(slope.aspectDeg)).toBe(true)
+    }
+  })
+
+  it('agrees exactly with pointInsideBounds across the boundary', () => {
+    const grid = makeRampGrid()
+    const p = grid.pixelSizeM
+    const midY = (grid.minY + grid.maxY) / 2
+    const factors = [-2, -1.01, -1, -0.51, -0.5, -0.49, -0.26, 0, 0.26, 0.49, 0.5, 0.51, 1, 1.01, 2]
+    for (const factor of factors) {
+      const x = grid.maxX + factor * p
+      const inside = pointInsideBounds(grid, x, midY)
+      const sampled = sampleElevationXY(grid, x, midY)
+      expect(inside).toBe(Number.isFinite(sampled))
+    }
+  })
+
+  it('edge-clamps the accepted half-pixel band to the nearest row', () => {
+    const grid = makeRampGrid()
+    const p = grid.pixelSizeM
+    expect(sampleElevationXY(grid, 0, grid.maxY + 0.26 * p)).toBeCloseTo(
+      sampleElevationXY(grid, 0, grid.maxY),
+      6,
+    )
+  })
+
+  it('keeps isInsideTerrain and sampleElevation consistent near the edge (reproducer shape)', () => {
+    const grid = makeRampGrid()
+    const p = grid.pixelSizeM
+    const x = 0
+    const y = grid.maxY + 0.26 * p
+    const { latDeg, lonDeg } = xyToLonLat(x, y)
+    expect(isInsideTerrain(grid, latDeg, lonDeg)).toBe(true)
+    expect(Number.isFinite(sampleElevation(grid, latDeg, lonDeg))).toBe(true)
+    const slope = slopeAt(grid, latDeg, lonDeg)
+    expect(Number.isFinite(slope.slopeDeg)).toBe(true)
   })
 })
