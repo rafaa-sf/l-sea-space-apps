@@ -1,5 +1,6 @@
 # Business case — L-SEA Space Apps (Lunar Landing Site Navigator)
 
+> **AI-generated content.** This document was produced by the AI agent team under human direction and reviewed by the team; the full declaration is in [ai-usage.md](ai-usage.md).
 
 > **Status snapshot (2026-11-14, main @ 35149e4).** Application and real NASA datasets are merged on main; npm test passes 104 tests in 7 files plus 8 MCP tests; CI is green. Deployment URL and Project Demo link are still pending (docs/submission.md TODOs).
 

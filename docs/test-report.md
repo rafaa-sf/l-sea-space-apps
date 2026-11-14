@@ -1,5 +1,6 @@
 # Test Report — L-SEA Space Apps · Gate S baseline + post-baseline delta
 
+> **AI-generated content.** This document was produced by the AI agent team under human direction and reviewed by the team; the full declaration is in [ai-usage.md](ai-usage.md).
 > **Baseline and delta.** This report is the **Gate S (skeleton) baseline**, executed at
 > commit `263d724` (2026-11-14 ~11:35–11:45 Europe/Madrid). After that baseline the primary
 > machine added real datasets (`public/data/pois.json`, `public/data/ephemeris/`,
