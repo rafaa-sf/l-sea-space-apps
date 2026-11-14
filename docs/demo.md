@@ -82,7 +82,7 @@ from the final build for the slides.
   live loading over venue Wi-Fi); click site, date, compare, open brief. Keep a second
   browser tab with the same state as backup and a screen recording of the flow as
   fallback.
-- **Path B, live deployment:** run the same flow on the public Vercel URL; if the
+- **Path B, live deployment:** run the same flow on the public GitHub Pages URL; if the
   venue network fails, switch to the local `dist/` preview or the screen recording.
 - **Both:** pre-open the repository, README and `docs/architecture.md` in tabs for Q&A
   evidence; test public links logged out.

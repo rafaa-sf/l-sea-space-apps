@@ -68,7 +68,7 @@ Slugs are lowercase and hyphenated (`feature/solar-data-charts`).
 
 - Remote `origin` points to `https://github.com/rafaa-sf/l-sea-space-apps.git`.
 - `main` is the default and stable branch; it is always releasable and every push to
-  it deploys the production site on Vercel.
+  it deploys the production site on GitHub Pages.
 - All work happens on short-lived branches created from an up-to-date `main`; once a
   branch is merged it is deleted.
 - Every change reaches `main` through a pull request in English that explains the

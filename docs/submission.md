@@ -76,7 +76,7 @@ exported as a JSON mission brief with links back to NASA tools.
 | 3D view | Three.js scene, with a Canvas 2D fallback when WebGL is unavailable |
 | Domain core | Plain JavaScript ES modules: terrain, horizon and ray tracing, ephemeris, power, communications, autopilot |
 | Compute | Single Web Worker for horizon and scoring work, keeping the UI responsive |
-| Build | Vite static build (`dist/`), deployed on Vercel |
+| Build | Vite static build (`dist/`), deployed on GitHub Pages |
 | Tests | Vitest: 104 application tests in 7 files plus 8 MCP tests |
 | Data | Pre-computed NASA datasets: LOLA terrain, JPL Horizons ephemerides, Moon Trek layer catalogue |
 

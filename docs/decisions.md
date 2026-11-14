@@ -33,3 +33,4 @@ Record of decisions made about this repository, in chronological order.
 
 Append a new row with the next sequential ID and the current date. Decisions
 that replace an earlier one reference the ID they supersede.
+| D-024 | 2026-11-14 | Production moved from Vercel to **GitHub Pages** | The Vercel free plan hit its daily deployment quota during event week and added a security checkpoint; GitHub Pages is free for public repositories, builds through `.github/workflows/pages.yml` with the `/l-sea-space-apps/` base path, and needs no runtime secrets. Vercel stays as a legacy mirror |
