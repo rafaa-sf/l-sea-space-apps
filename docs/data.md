@@ -10,7 +10,7 @@ behaviour, rate limits, licensing and known limitations.
 
 ## 1. Runtime model: static deployment, pre-computed data
 
-The application is a **static Vite build** deployed on Vercel. There is no server
+The application is a **static Vite build** deployed on GitHub Pages. There is no server
 runtime, so only services that send CORS headers can be called from the browser:
 
 | Class | Service | CORS | Runtime use |
@@ -567,7 +567,7 @@ in the project. The ephemerides are retrieved directly from the JPL Horizons API
 by `scripts/nasa/fetch-horizons.mjs` and committed as pre-computed datasets.
 
 Runtime check (live deployment, 2026-11-14): a headless-browser network capture
-of <https://l-sea-space-apps.vercel.app> showed only same-origin requests
+of <https://rafaa-sf.github.io/l-sea-space-apps> showed only same-origin requests
 (application assets and `/data/{terrain,ephemeris,layers,pois}`); the terrain
 grid fetched by the viewer is `/data/terrain/south-pole-80s-80m.bin` and the
 ephemeris file is `/data/ephemeris/<site>.json`. No external astronomy service

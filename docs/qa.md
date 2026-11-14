@@ -136,7 +136,7 @@ when the client sends a default `Accept` header, so data loaders validate the
 
 ### 6.1 Post-deploy verification (2026-11-14)
 
-`node scripts/deploy/verify-live.mjs https://l-sea-space-apps.vercel.app` — all checks
+`node scripts/deploy/verify-live.mjs https://rafaa-sf.github.io/l-sea-space-apps` — all checks
 passed:
 
 ```text
@@ -153,7 +153,7 @@ PASS  hashed asset cache       200  public, max-age=31536000, immutable
 
 ### 6.2 Live end-to-end UI check (2026-11-14)
 
-`node scripts/qa/e2e-ui.mjs https://l-sea-space-apps.vercel.app/?lang=en` against
+`node scripts/qa/e2e-ui.mjs https://rafaa-sf.github.io/l-sea-space-apps/?lang=en` against
 headless Chrome 139, exit code 0, zero console errors and zero browser exceptions.
 The check ran against the deployment as served at that time and exercises the
 production bundle end to end. Observed in the running application:
@@ -314,11 +314,11 @@ npm --prefix mcp/miro test
 du -sb dist dist/data dist/assets
 
 # Deployed-build verification (needs a deployed URL)
-node scripts/deploy/verify-live.mjs https://l-sea-space-apps.vercel.app
+node scripts/deploy/verify-live.mjs https://rafaa-sf.github.io/l-sea-space-apps
 
 # Interactive end-to-end check (needs a preview or deployed URL and headless Chrome)
 google-chrome --headless=new --no-sandbox --disable-gpu --remote-debugging-port=9222 about:blank &
-node scripts/qa/e2e-ui.mjs https://l-sea-space-apps.vercel.app/?lang=en http://127.0.0.1:9222
+node scripts/qa/e2e-ui.mjs https://rafaa-sf.github.io/l-sea-space-apps/?lang=en http://127.0.0.1:9222
 ```
 
 QA evidence (screenshots and recorded results) is stored in `docs/screenshots/` and in

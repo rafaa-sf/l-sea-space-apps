@@ -1,73 +1,77 @@
-# Deployment: Vercel static hosting
+# Deployment: static hosting
 
-Plan for publishing the L-SEA application for the NASA Space Apps Challenge
+Publishing plan for the L-SEA application for the NASA Space Apps Challenge
 Málaga 2026 submission. The application is a **static Vite build**: no Node.js
 runtime, no server-side rendering, no database and no server-side environment
 variables are needed in production.
 
 > **Status: deployed.** Production URL:
-> <https://l-sea-space-apps.vercel.app> (Vercel project `l-sea-space-apps`,
-> Git integration connected to `rafaa-sf/l-sea-space-apps`; pushes to `main`
-> deploy automatically). Never store credentials in the repository,
-> documentation, issues or chat.
+> <https://rafaa-sf.github.io/l-sea-space-apps/> — GitHub Pages, built and
+> published by [`.github/workflows/pages.yml`](../.github/workflows/pages.yml)
+> on every push to `main`. The site must open **without login or password**
+> (submission rule). Never store credentials in the repository, documentation,
+> issues or chat.
 
 ## 1. Target
 
 | Item | Detail |
 | --- | --- |
-| Platform | **Vercel** (static hosting / CDN) |
-| Runtime | None in production. Node 24 is used only to build `dist/` (locally or in CI). |
-| URL | `https://<project>.vercel.app` (or a custom domain). Must open **without login or password** (submission rule). |
-| Config | [`vercel.json`](../vercel.json) at the repository root |
-| Framework | Vite — detected automatically; explicit build command and output directory in `vercel.json` |
+| Platform | **GitHub Pages** (static hosting, free for public repositories) |
+| Runtime | None in production. Node 24 is used only to build `dist/` in CI. |
+| URL | <https://rafaa-sf.github.io/l-sea-space-apps/> |
+| Base path | `/l-sea-space-apps/` (`npm run build -- --base=/l-sea-space-apps/`) |
+| Routing | Hash routing (`/#/tool`), so no server rewrite is required; `dist/404.html` serves the app shell for other paths |
+| Config | [`.github/workflows/pages.yml`](../.github/workflows/pages.yml) |
+
+The previous Vercel project (`l-sea-space-apps`) remains available as a legacy
+mirror but is no longer the documented production target; its daily deployment
+quota can be exhausted during event week. The GitHub Pages deployment has no
+runtime quota concerns for this static site.
 
 ## 2. How to deploy
 
-### Option A — GitHub integration (recommended)
+### Automatic (recommended)
 
-1. Go to <https://vercel.com/new> and import `rafaa-sf/l-sea-space-apps`.
-2. Framework preset: **Vite** (auto-detected). The values in `vercel.json`
-   (`buildCommand: npm run build`, `outputDirectory: dist`) are used automatically.
-3. Deploy. Every push to `main` then produces a production deployment; every pull
-   request gets a preview URL.
-4. Copy the production URL into [submission.md](submission.md).
+1. Push to `main`. The **Deploy GitHub Pages** workflow:
+   - checks out the commit and installs the locked dependencies (`npm ci`);
+   - builds with the Pages base path
+     (`npm run build -- --base=/l-sea-space-apps/`);
+   - writes `dist/404.html` (copy of the app shell for hash routing);
+   - uploads the artifact and deploys it with `actions/deploy-pages`.
+2. The workflow reports the deployment URL; no tokens or secrets are needed
+   (the workflow uses the repository `GITHUB_TOKEN` with `pages: write` and
+   `id-token: write`).
 
-### Option B — CLI
+### Manual dispatch
 
-```bash
-# authenticate (interactive, once per machine)
-npx vercel login
-
-# deploy a preview
-npx vercel
-
-# deploy production
-npx vercel --prod
-```
-
-For CI/non-interactive use, create a token at
-<https://vercel.com/account/tokens> and pass it through the environment:
+From the GitHub UI: **Actions → Deploy GitHub Pages → Run workflow** on `main`,
+or from the CLI:
 
 ```bash
-VERCEL_TOKEN='<token>' npx vercel --prod --yes
+gh workflow run "Deploy GitHub Pages" --repo rafaa-sf/l-sea-space-apps --ref main
 ```
 
-The token is a secret: keep it in the local `.env` or the shell environment,
-never in the repository.
+### One-time repository setting
+
+Pages must use the workflow build type. This is already configured; to
+re-create it from scratch:
+
+```bash
+gh api -X POST repos/rafaa-sf/l-sea-space-apps/pages -f build_type=workflow
+```
 
 ## 3. Build output
 
-`npm run build` produces the static site in `dist/`: `index.html`, `favicon.svg`,
-hashed JavaScript and CSS bundles with sourcemaps, and a verbatim copy of
-`public/data/` (POIs, ephemerides, layers, terrain and the AI usage declaration) under
-`dist/data/`. No API keys are embedded: Vite only exposes `VITE_*` variables and the
-application reads pre-computed datasets instead of calling NASA APIs at runtime.
+`npm run build` produces the static site in `dist/`: `index.html`,
+`favicon.svg`, hashed JavaScript and CSS bundles with sourcemaps, and a
+verbatim copy of `public/data/` (POIs, ephemerides, layers, terrain and the AI
+usage declaration) under `dist/data/`. No API keys are embedded: Vite only
+exposes `VITE_*` variables and the application reads pre-computed datasets
+instead of calling NASA APIs at runtime.
 
-Deployment configuration lives in [`vercel.json`](../vercel.json): Vite preset, SPA
-rewrite to `index.html` for unknown paths, immutable caching for `/assets/*`, one-day
-caching for `/data/*`, and Markdown served as `text/markdown`. Vite's `base` is `/`
-(see `vite.config.js`), so the app is served from the root of the Vercel project; a
-subpath deployment would need `--base=/subpath/` plus a matching rewrite.
+For GitHub Pages the build uses `--base=/l-sea-space-apps/`, so asset and data
+URLs are prefixed with the repository path. A root deployment (such as the
+legacy Vercel mirror) builds with the default `/` base.
 
 ## 4. Pre-deploy checklist
 
@@ -78,41 +82,37 @@ dirty working tree.
 - [ ] Release commit recorded: `git rev-parse --short HEAD`.
 - [ ] `npm ci` installs the locked dependency tree without errors.
 - [ ] `npm test` is green and CI is green on `main`.
-- [ ] `npm run build` succeeds and `dist/index.html` exists.
-- [ ] `dist/data/` contains `pois.json`, `ephemeris/`, `layers.json`, `terrain/`.
-- [ ] No secrets in the build:
-      `grep -rIl -E 'NASA_API_KEY|api_key=|Bearer |BEGIN (RSA|PRIVATE)' dist || true`
-      prints nothing; no `.env` file inside `dist/`.
-- [ ] No local-only URLs in the build:
-      `grep -rIl -E 'localhost|127\.0\.0\.1|:5173' dist || true` prints nothing.
-- [ ] `vercel.json` is present and valid JSON.
+- [ ] `npm run build -- --base=/l-sea-space-apps/` succeeds.
+- [ ] `dist/index.html`, `dist/404.html`, `dist/data/` and `dist/assets/` exist.
+- [ ] No secrets or local-only files copied into `dist/`.
+- [ ] After the workflow finishes:
+  - [ ] `node scripts/deploy/verify-live.mjs https://rafaa-sf.github.io/l-sea-space-apps/`
+        reports all checks passing (the script accepts the GitHub Pages
+        404 app-shell fallback and the 600 s static-asset cache).
+  - [ ] Browser console has no errors and the worker badge shows “Worker OK”.
+  - [ ] `/#/tool` loads the mission console and the DEM selector shows the six
+        local area presets.
 
-## 5. Post-deploy verification
+Record the deployed commit and URL in the submission notes.
 
-Open the production URL and verify:
+## 5. Rollback
 
-- [ ] `/` returns the app (HTTP 200, `text/html`).
-- [ ] `/favicon.svg` returns 200.
-- [ ] `/data/pois.json`, `/data/layers.json`, `/data/terrain/index.json`,
-      `/data/ai-usage.md` return 200.
-- [ ] Terrain `.bin` files load (the 3D view renders real LOLA terrain).
-- [ ] The app works in a private window (no login, no permissions).
-- [ ] Browser console has no errors and the worker badge shows “Worker OK”.
-- [ ] Deep links / refresh on the root page work (SPA rewrite).
+- **Git**: revert the offending commit on `main`; the next Pages workflow
+  rebuilds from the reverted state.
+- **Workflow**: re-run the workflow on the last known-good commit
+  (`gh workflow run ... --ref <sha>` with a commit that is reachable on `main`,
+  or revert first).
 
-The release commit is `git rev-parse --short HEAD`; record it with the deployed
-URL in the submission notes.
+## 6. Legacy Vercel project
 
-## 6. Rollback
-
-- **Dashboard**: Project → Deployments → open the last known-good deployment →
-  Promote to Production.
-- **Git**: revert the offending commit on `main`; the next deployment rebuilds
-  from the reverted state.
+`vercel.json` keeps a valid Vercel configuration (Vite preset, SPA rewrite,
+cache headers) so the mirror can be refreshed with `npx vercel --prod` when
+quota allows. It is not the documented production target and must not be used
+for the submission link.
 
 ## 7. Cleanup after the event
 
-- The Vercel project can stay as a public demo. Keep the deployment URL in the
-  submission and in the README.
-- Do not commit Vercel tokens, `.vercel/` project metadata or local deployment
-  state (the root `.gitignore` already ignores `.vercel`).
+- Keep the GitHub Pages deployment as the public demo; record the URL in the
+  submission and the README.
+- Do not commit deployment tokens or local state (`.vercel/` and `.cache/` are
+  already ignored).

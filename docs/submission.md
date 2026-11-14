@@ -4,7 +4,7 @@ Content and checklist for the official NASA Space Apps **Project page**, plus th
 links and evidence the team submits. Everything below is in English, as required.
 
 > **Status (2026-11-14):** application implemented, tested, merged on `main` and
-> deployed. Live application: <https://l-sea-space-apps.vercel.app>. Automated tests:
+> deployed. Live application: <https://rafaa-sf.github.io/l-sea-space-apps>. Automated tests:
 > 104 application tests in 7 files plus 8 MCP tests, all passing; CI green; production
 > build green. The only outstanding item before **Submit for Judging** is the
 > **Project Demo link**.
@@ -18,7 +18,7 @@ links and evidence the team submits. Everything below is in English, as required
 | Challenge | Lunar Landing Site Navigator (challenge 10, partner agency CSA) |
 | Event | NASA International Space Apps Challenge, Málaga 2026 |
 | Repository | <https://github.com/rafaa-sf/l-sea-space-apps> |
-| Live application | <https://l-sea-space-apps.vercel.app> |
+| Live application | <https://rafaa-sf.github.io/l-sea-space-apps> |
 | Project Demo | Single public link, at most 7 slides or a 30-second video (content in [demo.md](demo.md)); link pending |
 | Team | L-SEA (no names of minors) |
 
@@ -284,7 +284,7 @@ source rules):
 
 | Purpose | URL |
 | --- | --- |
-| Live application | <https://l-sea-space-apps.vercel.app> |
+| Live application | <https://rafaa-sf.github.io/l-sea-space-apps> |
 | Repository | <https://github.com/rafaa-sf/l-sea-space-apps> |
 | Documentation | <https://github.com/rafaa-sf/l-sea-space-apps/tree/main/docs> |
 | Project Demo | Pending: single public link, at most 7 slides or a 30-second video |

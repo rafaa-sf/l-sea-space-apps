@@ -7,7 +7,7 @@ all teammates; changes to a public interface are coordinated through the Lead.
 
 Vue 3 and Vite for the interface, Three.js for the 3D viewport, plain JavaScript ES
 modules for the domain core, a single Web Worker for background compute, vue-i18n for
-English and Spanish, Vitest for tests, and a static Vite build deployed on Vercel. No
+English and Spanish, Vitest for tests, and a static Vite build deployed on GitHub Pages. No
 TypeScript. The developer workflow and commands are in the [README](../README.md) and
 [contributing.md](contributing.md).
 

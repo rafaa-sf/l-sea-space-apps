@@ -9,11 +9,11 @@ and Earth relative to the local terrain horizon, with power and direct-to-Earth
 communication windows derived from real NASA data.
 
 [![CI](https://github.com/rafaa-sf/l-sea-space-apps/actions/workflows/ci.yml/badge.svg)](https://github.com/rafaa-sf/l-sea-space-apps/actions/workflows/ci.yml)
-[![Live](https://img.shields.io/badge/live-l--sea--space--apps.vercel.app-2ea44f)](https://l-sea-space-apps.vercel.app)
+[![Live](https://img.shields.io/badge/live-rafaa--sf.github.io%2Fl--sea--space--apps-2ea44f)](https://rafaa-sf.github.io/l-sea-space-apps/)
 [![Stack](https://img.shields.io/badge/stack-Vue%203%20%2B%20Three.js-3f80ea)](https://vuejs.org)
 [![Docs](https://img.shields.io/badge/docs-index-6f42c1)](docs/README.md)
 
-**Live application:** <https://l-sea-space-apps.vercel.app>
+**Live application:** <https://rafaa-sf.github.io/l-sea-space-apps>
 
 ![L-SEA application overview](docs/screenshots/app-3d.png)
 
@@ -71,7 +71,7 @@ The data pipeline, verification evidence and attribution are documented in
 Vue 3 and Vite for the interface, Three.js for the 3D viewport, plain
 JavaScript for the framework-agnostic domain core, a single Web Worker for
 background scoring, Vitest for tests and GitHub Actions for continuous
-integration. The production build is fully static and is deployed on Vercel.
+integration. The production build is fully static and is deployed on GitHub Pages (with Vercel kept as a legacy mirror).
 
 ## Repository layout
 
@@ -105,10 +105,11 @@ The Miro MCP server is a separate package: `npm --prefix mcp/miro ci` and
 
 ## Deployment
 
-Production is deployed on Vercel at
-<https://l-sea-space-apps.vercel.app>. The Vercel project is connected to this
-repository, so every push to `main` deploys automatically. Deployment details,
-verification steps and rollback are in [`docs/deployment.md`](docs/deployment.md).
+Production is deployed on **GitHub Pages** at
+<https://rafaa-sf.github.io/l-sea-space-apps/>. The Pages workflow builds and
+publishes every push to `main` (the old Vercel project is kept only as a legacy
+mirror). Deployment details, verification steps and rollback are in
+[`docs/deployment.md`](docs/deployment.md).
 
 ## Quality and verification
 
@@ -132,7 +133,7 @@ The application ships with an automated test bench under [`qa/`](qa/README.md):
   [`qa/README.md`](qa/README.md) and [`qa/REPORT.md`](qa/REPORT.md); the test
   strategy is in [`docs/qa.md`](docs/qa.md).
 
-Production verification: <https://l-sea-space-apps.vercel.app> returns HTTP 200,
+Production verification: <https://rafaa-sf.github.io/l-sea-space-apps> returns HTTP 200,
 serves the pre-computed NASA datasets and the AI-use declaration at
 `/data/ai-usage.md`.
 

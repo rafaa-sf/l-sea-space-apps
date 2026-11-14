@@ -3,7 +3,7 @@
 Canonical documentation for **L-SEA Space Apps**, the lunar landing-site
 navigator built for the NASA International Space Apps Challenge, Málaga 2026.
 
-Live application: <https://l-sea-space-apps.vercel.app>
+Live application: <https://rafaa-sf.github.io/l-sea-space-apps/>
 
 This index is the entry point when browsing the `docs/` directory. Every
 document is written in English and kept in sync with the implementation.
