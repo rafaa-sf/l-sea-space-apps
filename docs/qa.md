@@ -193,6 +193,20 @@ the caveats noted.
 | 14 | English and Spanish UI | Present; covered by the live checks, not by a unit test |
 | 15 | JSON brief export | Present, unit-tested and exercised in the live E2E check |
 
+### 7.1 Functional viewer checks
+
+The end-to-end script also asserts the viewer geometry and the map scale:
+
+- **Square canvases, no stretching.** The 3D and the 2D canvases are checked to be
+  genuinely square: `canvas.clientWidth === canvas.clientHeight` and the drawing
+  buffer matches the CSS size (`canvas.width === canvas.height`), in both renderers.
+- **Live scale bar.** The scale bar is present and updates when zooming: the 3D
+  label changes from `100 km` (1 px = 823 m) to `50 km` (1 px = 728 m) on a wheel
+  zoom, and the 2D fallback from `100 km` (1 px = 808 m) to `50 km` (1 px = 564 m).
+- **Regression gate.** `scripts/qa/e2e-ui.mjs` exits non-zero if a canvas is not
+  square or if the scale label/caption does not change on zoom, so aspect-ratio and
+  scale regressions fail QA instead of passing silently.
+
 ## 8. Historical baseline (superseded)
 
 The first Gate S baseline was executed at the initial scaffold commit `263d724`, when
