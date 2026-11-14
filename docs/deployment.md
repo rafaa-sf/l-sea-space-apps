@@ -23,10 +23,11 @@ variables are needed in production.
 | Routing | Hash routing (`/#/tool`), so no server rewrite is required; `dist/404.html` serves the app shell for other paths |
 | Config | [`.github/workflows/pages.yml`](../.github/workflows/pages.yml) |
 
-The previous Vercel project (`l-sea-space-apps`) remains available as a legacy
-mirror but is no longer the documented production target; its daily deployment
-quota can be exhausted during event week. The GitHub Pages deployment has no
-runtime quota concerns for this static site.
+The earlier Vercel project (`l-sea-space-apps`) is no longer part of the
+deployment setup: the GitHub integration was disconnected and `vercel.json` was
+removed. Its history is recorded in [section 6](#6-deployment-history-vercel--github-pages)
+and in the decision log (`docs/decisions.md`). GitHub Pages is the single
+documented production target and needs no runtime quota or secrets.
 
 ## 2. How to deploy
 
@@ -70,8 +71,8 @@ exposes `VITE_*` variables and the application reads pre-computed datasets
 instead of calling NASA APIs at runtime.
 
 For GitHub Pages the build uses `--base=/l-sea-space-apps/`, so asset and data
-URLs are prefixed with the repository path. A root deployment (such as the
-legacy Vercel mirror) builds with the default `/` base.
+URLs are prefixed with the repository path. Local preview and any other host at
+a domain root build with the default `/` base.
 
 ## 4. Pre-deploy checklist
 
@@ -103,16 +104,29 @@ Record the deployed commit and URL in the submission notes.
   (`gh workflow run ... --ref <sha>` with a commit that is reachable on `main`,
   or revert first).
 
-## 6. Legacy Vercel project
+## 6. Deployment history: Vercel → GitHub Pages
 
-`vercel.json` keeps a valid Vercel configuration (Vite preset, SPA rewrite,
-cache headers) so the mirror can be refreshed with `npx vercel --prod` when
-quota allows. It is not the documented production target and must not be used
-for the submission link.
+The project was first published on **Vercel** (free plan) because it offered
+Git-based deploys and HTTPS in minutes. During event week the free plan reached
+its daily deployment quota and added a security checkpoint, so production moved
+to **GitHub Pages**, built and published by
+[`.github/workflows/pages.yml`](../.github/workflows/pages.yml) on every push to
+`main` with the `/l-sea-space-apps/` base path and a `404.html` app-shell
+fallback.
+
+| Stage | Date | Detail |
+| --- | --- | --- |
+| Initial host | 2026-11-14 | Vercel project `l-sea-space-apps`, built from the default `/` base with `vercel.json` (Vite preset, SPA rewrite, cache headers) |
+| Migration | 2026-11-14 | GitHub Pages became the production target; the workflow builds with the repository base path and needs no secrets (decision D-024) |
+| Cleanup | 2026-11-14 | The Vercel GitHub integration was disconnected and `vercel.json` removed (decision D-025); no Vercel tokens or configuration remain in the repository |
+
+The migration kept the same static build: only the hosting, base path and the
+routing fallback changed. The historical Vercel-era decisions remain in
+`docs/decisions.md` (D-015, D-019, D-024, D-025).
 
 ## 7. Cleanup after the event
 
 - Keep the GitHub Pages deployment as the public demo; record the URL in the
   submission and the README.
-- Do not commit deployment tokens or local state (`.vercel/` and `.cache/` are
-  already ignored).
+- Do not commit deployment tokens or local state (`.cache/` is ignored; no
+  deployment token is needed for GitHub Pages).
