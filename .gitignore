@@ -46,6 +46,9 @@ env/
 .ruff_cache/
 .ipynb_checkpoints/
 
+# Local data caches (downloaded NASA products, never committed)
+.cache/
+
 # Logs
 *.log
 logs/

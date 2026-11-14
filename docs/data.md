@@ -245,6 +245,58 @@ Measured elevation ranges of the web grids: -4,378 to +2,369 m (high resolution)
 **Attribution:** NASA/GSFC/LOLA (PDS Geosciences Node), data set
 `LRO-L-LOLA-4-GDR-V1.0`.
 
+### Local DEM downloader (before the first render)
+
+`scripts/nasa/download-lola.mjs` is the user-facing local download step: it
+acquires the official PDS products, verifies them, caches them under
+`.cache/lola/` (gitignored) and builds browser terrain regions at the size the
+user wants. The application lists every region in `public/data/terrain/index.json`
+in its DEM area selector, so a newly built region appears in the dropdown after
+the app reloads.
+
+| Product | URL (PDS Geosciences, `polar/jp2/`) | Size | SHA-256 |
+| --- | --- | --- | --- |
+| `ldem_875s_20m.jp2` | `https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/jp2/ldem_875s_20m.jp2` | 21,462,406 B | `fff7c2017a192788066a0867d78fd1ccf783216e26974b5e65287669aa472bac` |
+| `ldem_80s_80m.jp2` | `https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/jp2/ldem_80s_80m.jp2` | 29,837,992 B | `c088dd4f510e879375ee7e6f0d320ba84115f535f45fb592dd7f83a7d2e83ae3` |
+
+```bash
+npm run data:lola                                   # both standard regions (2048 px / 1024 px)
+npm run data:lola -- --region=high-detail --size=1024
+npm run data:lola -- --product=ldem_80s_80m --mpp=250
+npm run data:lola -- --extent-km=400 --size=1024    # custom 400 km square, wide-area product
+npm run data:lola -- --extent=-150000,-150000,150000,150000 --size=512 --id=custom-300km-512px
+npm run data:lola -- --dry-run                      # plan only, no downloads or writes
+npm run data:lola -- --region=both --force          # re-download the products
+npm run data:lola -- --extent-km=400 --overwrite    # replace a changed existing region
+```
+
+- Downloads are polite (project `User-Agent`, 300 s timeout, three attempts with
+  backoff) and are verified against the exact byte size and SHA-256 above before
+  use; a corrupt cache file is re-downloaded automatically.
+- Output follows the same contract as the committed grids: `<id>.bin` (int16
+  metres, little-endian, row 0 = maxY) and `<id>.json` with the projection and
+  grid metadata, built with a rasterio windowed crop and average resample
+  (`scripts/nasa/lola_crop.py`).
+- `index.json` is updated in place: existing regions, `defaultRegionId`,
+  `projection` and `attribution` are preserved and the new or refreshed region is
+  added. Standard regions regenerate **byte-identically** from the verified
+  products (the two committed bins keep their SHA-256
+  `146dff6a...a656dc0` and `b916c7aa...bbb6514`), so a standard run does not
+  modify the committed data.
+- Custom regions are square and are named like `custom-400km-1024px`. The source
+  product is selected automatically from the extent: high-detail up to
+  plus/minus 75,840 m, wide area up to plus/minus 304,000 m; larger extents are
+  rejected. `--center-x/--center-y` shift a square extent within the product.
+- `--overwrite` is required when a generated region differs from an existing
+  region with the same id, which protects committed grids from accidental change.
+- Generated region files are ordinary files under `public/data/terrain/`; commit them
+  only if you want that custom region shipped with the application.
+- Verified on 2026-11-14: custom `--extent-km=400 --size=1024` (1024 x 1024 px,
+  390.625 m/px, bounds plus/minus 200,000 m, elevation -5,494 to +7,020 m,
+  SHA-256 `103c4eec...c1cb52e4`) is byte-identical to an independent rasterio
+  recomputation of the same source window; sampled cells agree with the source
+  point values within 19 m (a 390 m cell averages about 24 source pixels).
+
 ## 5. LROC QuickMap: links only
 
 QuickMap (Arizona State University) is used for human cross-checks and for the site
@@ -392,6 +444,10 @@ terrain grids, ephemeris files and layer catalogue needed by this application.
 ## 10. Pre-compute plan and reproducibility
 
 ```bash
+# 0. Local DEM: download + verify the products and build the terrain regions
+npm run data:lola
+#    (or: node scripts/nasa/download-lola.mjs --extent-km=400 --size=1024)
+
 # 1. Ephemerides (Node 24, no dependencies; one request every 1.5 s)
 node scripts/nasa/fetch-horizons.mjs --force
 
@@ -405,8 +461,10 @@ node scripts/nasa/build-layers.mjs
 python3 scripts/nasa/build-terrain.py --jpeg2000-dir /tmp/lola --out-dir public/data/terrain
 ```
 
-Source products and caches live outside the repository (for example `/tmp/lola`); the
-repository contains only the derived, browser-ready files. Rebuild the ephemerides
+Source products are cached under `.cache/lola/` (gitignored); the repository contains
+only the derived, browser-ready files. `build-terrain.py` remains the reproducible
+builder for the two committed grids, while `download-lola.mjs` is the user-facing
+local download and custom-region step. Rebuild the ephemerides
 only when the mission window changes, the layer catalogue when it is edited or a layer
 disappears, and terrain only if the grid geometry changes. `npm run build` copies
 `public/data/` into `dist/data/`.

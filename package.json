@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --host",
-    "test": "vitest run"
+    "test": "vitest run",
+    "data:lola": "node scripts/nasa/download-lola.mjs"
   },
   "dependencies": {
     "three": "^0.187.0",
