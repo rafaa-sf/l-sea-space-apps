@@ -36,6 +36,7 @@ The repository is public: <https://github.com/rafaa-sf/l-sea-space-apps>
 | Language | All submitted materials in English |
 | Submission | Save Progress → **Submit for Judging** + visible confirmation |
 | Challenge | Lunar Landing Site Navigator |
+| Live app | https://l-sea-space-apps.vercel.app |
 
 Full rules: [docs/guide.md](docs/guide.md).
 
@@ -44,7 +45,7 @@ Full rules: [docs/guide.md](docs/guide.md).
 | Item | Detail |
 | --- | --- |
 | Stack | Vue 3 + Vite + Three.js (plain JavaScript) |
-| Deployment | Static build on Vercel |
+| Deployment | Static build on Vercel — live at https://l-sea-space-apps.vercel.app |
 | UI languages | English and Spanish |
 | NASA data | JPL Horizons, LOLA DEM (PDS Geosciences), Moon Trek |
 | Fallback | Canvas 2D renderer for machines without WebGL |

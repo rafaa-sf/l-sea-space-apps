@@ -21,7 +21,7 @@
 
 Short form for the submission form: **L-SEA — Lunar Landing Site Navigator**.
 Repository (Final Project link candidate): <the public project repository (see `README.md`)> (public).
-Deployment/demo URL: **TODO — add the public static URL** (per `docs/deployment.md` the target is static hosting; the link must open without login, password or permission request, per the participant guide).
+Live URL: <https://l-sea-space-apps.vercel.app> (Vercel production; opens without login, password or permission request, per the participant guide). Project Demo URL: **TODO** (single public link, still to be published).
 
 Do not use NASA or CSA logos, flags or mission identifiers as project branding; the team name is **L-SEA**.
 
@@ -102,7 +102,7 @@ Interfaces are implemented in `src/` and specified in `docs/architecture.md`: `s
 
 **Implemented in source and covered by tests:** all 15 features of the architecture contract (site selection, custom coordinates, comparator, dates/times, Sun/Earth horizon and ray tracing, time-to-set, power and comms, Moon Trek layers, real LOLA topography, autopilot scoring, Web Worker, no-WebGL fallback, orbital variation, EN/ES UI, JSON brief export).
 
-**Pending validation:** end-to-end demonstration on the deployed Vercel URL (not deployed yet), accuracy against live JPL Horizons reference values, and usability testing — see §3.5.
+**Pending validation:** end-to-end demonstration on the live Vercel URL (<https://l-sea-space-apps.vercel.app>), accuracy against live JPL Horizons reference values, and usability testing — see §3.5.
 
 **Not validated yet:** accuracy of computed horizons or illumination against live JPL Horizons references; end-to-end behaviour on the deployed URL; usability for mission planners or educators; accessibility of the full UI. (A minimal validation plan exists in `docs/impact-scalability.md` §5.)
 

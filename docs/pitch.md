@@ -11,7 +11,7 @@
 
 **Honesty labels used on every slide:** 🟩 **BUILT** (implemented in source, automated tests pass — and visibly working if the deployed demo is available) · 🟨 **NOT YET VALIDATED** (no accuracy-vs-Horizons/end-to-end evidence yet) · 🟦 **DATA** (real NASA data shipped).
 
-> **Reality check before you present (Lead + coder).** The status below reflects `main` @ `af859ef` (14 Nov 2026): the mission-control application is merged on `main` (11 panels, core engine, services, worker, Three.js + no-WebGL fallback, real NASA datasets, pipeline and CI), with 104 app tests passing in 7 files plus 8 MCP tests and a green build. **BUILT** = merged on `main` and covered by its module tests. **Not yet validated** = end-to-end demo on the deployed URL (Vercel deployment pending), accuracy against live JPL Horizons references, usability. Use Demo Path A (§D) if the deployed build works end to end; do not present unvalidated behaviour as proven.
+> **Reality check before you present (Lead + coder).** The status below reflects `main` @ `af859ef` (14 Nov 2026): the mission-control application is merged on `main` (11 panels, core engine, services, worker, Three.js + no-WebGL fallback, real NASA datasets, pipeline and CI), with 104 app tests passing in 7 files plus 8 MCP tests and a green build. **BUILT** = merged on `main` and covered by its module tests. **Not yet validated** = full end-to-end demo validation of the live Vercel URL (<https://l-sea-space-apps.vercel.app>), accuracy against live JPL Horizons references, usability. Use Demo Path A (§D) if the deployed build works end to end; do not present unvalidated behaviour as proven.
 
 ---
 

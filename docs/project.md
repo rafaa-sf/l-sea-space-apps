@@ -17,6 +17,7 @@ official Project page before the NASA deadline.
 | Item | Detail |
 | --- | --- |
 | Challenge | Lunar Landing Site Navigator |
+| Live app | https://l-sea-space-apps.vercel.app |
 | Event | NASA International Space Apps Challenge · Málaga 2026 |
 | Dates | 14–15 November 2026 |
 | Venue | 42 Málaga Fundación Telefónica · Av. Sor Teresa Prat, 15 · Edificio E3 · 29003 Málaga |
@@ -47,13 +48,12 @@ Coordination rules for working from two machines are described in
 **Hackathon weekend (14–15 November 2026).** The repository, documentation,
 shared resources index and real NASA datasets (JPL Horizons ephemerides, LOLA
 DEM terrain, Moon Trek layers, POIs) are ready. The Vue 3 + Three.js application
-is implemented and being hardened; the Miro MCP server is available for
-agent–board collaboration.
+is implemented, merged on `main` and deployed on Vercel
+(<https://l-sea-space-apps.vercel.app>); the Miro MCP server is available for agent–board collaboration.
 
 Pending:
 
 - Final application polish and end-to-end demo validation.
-- Vercel deployment of the static build.
 - Project page submission (Submit for Judging).
 - Demo materials (at most 7 slides or a 30-second video).
 

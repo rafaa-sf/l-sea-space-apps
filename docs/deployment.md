@@ -5,9 +5,11 @@ Málaga 2026 submission. The application is a **static Vite build**: no Node.js
 runtime, no server-side rendering, no database and no server-side environment
 variables are needed in production.
 
-> **Status: not deployed yet.** This is the agreed procedure. Deploy only after
-> the Lead gives the go-ahead and the credentials; never store credentials in the
-> repository, documentation, issues or chat.
+> **Status: deployed.** Production URL:
+> <https://l-sea-space-apps.vercel.app> (Vercel project `l-sea-space-apps`,
+> Git integration connected to `rafaa-sf/l-sea-space-apps`; pushes to `main`
+> deploy automatically). Never store credentials in the repository,
+> documentation, issues or chat.
 
 ## 1. Target
 

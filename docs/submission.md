@@ -1,7 +1,7 @@
 # Submission draft — Project page
 
 Content for the official NASA Space Apps **Project page** (English). Fill the
-links marked `TODO` once the deployment and the Project Demo are ready.
+link marked `TODO` once the Project Demo is published.
 
 ## Project
 
@@ -10,7 +10,7 @@ links marked `TODO` once the deployment and the Project Demo are ready.
   (<https://www.spaceappschallenge.org/2026/challenges/lunar-landing-site-navigator/>)
 - **Event:** NASA International Space Apps Challenge · Málaga 2026
 - **Repository:** <https://github.com/rafaa-sf/l-sea-space-apps>
-- **Live app:** TODO (Vercel deployment)
+- **Live app:** <https://l-sea-space-apps.vercel.app> (Vercel, production)
 - **Project Demo:** TODO (single public link: ≤7 slides or ≤30 s video)
 
 ## Summary (50–200 words)

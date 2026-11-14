@@ -26,7 +26,7 @@ The Gate S checks in the rest of this report are the **historical baseline at `2
 | Data pipeline | Terrain builder only | `scripts/nasa/sites.mjs`, `fetch-horizons.mjs`, `build-pois.mjs`, `build-layers.mjs`, `build-terrain.py` + README |
 | CI | None | `.github/workflows/ci.yml` — `test-and-build` and `mcp-tests` jobs on push/PR to `development` branches |
 | GitHub Actions / MCP | — | MCP package remains a separate Node package/job; not part of the application test suite |
-| Remaining gaps | — | End-to-end demo on a deployed URL (not deployed yet), accuracy validation against live Horizons references, usability/accessibility validation of the full UI |
+| Remaining gaps | — | Full end-to-end demo validation of the live Vercel URL (<https://l-sea-space-apps.vercel.app>), accuracy validation against live Horizons references, usability/accessibility validation of the full UI |
 
 > **Status snapshot (2026-11-14, main @ 35149e4).** Application and real NASA datasets are merged on main; npm test passes 104 tests in 7 files plus 8 MCP tests; CI is green. Deployment URL and Project Demo link are still pending (docs/submission.md TODOs).
 
@@ -535,7 +535,7 @@ What was **not** testable today, and why:
    15 have no code path to execute; this report records their absence, not a
    behavioural failure.
 2. **Deployed URL checks** (HTTPS, redirect, certificate, Vercel headers,
-   compression, caching, `.htaccess` behaviour) — the site is not deployed and no
+   compression, caching, SPA rewrite behaviour) — the site is live on Vercel and no
    credentials/hosting were provided; these are marked N/A in
    the deployment checklist run (internal QA evidence).
 3. **Post-deploy verification of the EN/ES switcher and JSON export from the
