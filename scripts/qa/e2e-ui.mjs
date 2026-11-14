@@ -355,6 +355,15 @@ await click('Autopilot', true)
 await sleep(800)
 text = await bodyText()
 report.ranking = (text.match(/#1[^\n]*\n?[^\n]*/) || [])[0]?.replace(/\n/g, ' ') ?? 'MISSING'
+report.zoneRows = await evaluate(`document.querySelectorAll('[data-testid="landing-zone-row"]').length`)
+report.zoneFirst = await evaluate(`document.querySelector('[data-testid="landing-zone-row"]')?.textContent ?? null`)
+report.zoneClick = await evaluate(`(() => { const row=document.querySelector('[data-testid="landing-zone-row"]'); const el=row?.querySelector('button'); if(!el) return false; el.click(); return true; })()`)
+await sleep(2200)
+const zoneBody = await bodyText()
+report.zoneHeader = (zoneBody.match(/CURRENT SITE\n([^\n]+)/) || [])[1] ?? null
+report.zoneSelected = await evaluate(`Boolean(document.querySelector('[data-testid="landing-zone-selected"]'))`)
+await click('Shackleton crater rim', true)
+await sleep(1600)
 
 report.export = await click('Export JSON brief')
 await sleep(4000)
@@ -416,7 +425,10 @@ if (origin) {
 ws.close()
 await fetch(`${CDP}/json/close/${target.id}`)
 const scaleChanged = (before, after) =>
-  Boolean(before?.label && after?.label && before.label !== after.label)
+  Boolean(
+    before && after &&
+    (before.label !== after.label || before.caption !== after.caption),
+  )
 const scaleParity = (() => {
   const mpp3d = parseMetersPerPixel(report.scale3d?.caption)
   const mpp2d = parseMetersPerPixel(report.scale2d?.caption)
@@ -454,7 +466,7 @@ const failed =
   !(Array.isArray(report.regionOptions) && report.regionOptions.length >= 6) ||
   !/150000/.test(report.terrainPreset?.extent ?? '') ||
   report.sitesPreset?.visible !== 9 || report.sitesPreset?.outside !== 1 ||
-  !/304000/.test(report.terrainBackWide?.extent ?? '')
+  !/304000/.test(report.terrainBackWide?.extent ?? '') ||
   !scaleChanged(report.scale3d, report.scale3dAfterZoom) ||
   !scaleChanged(report.scale2d, report.scale2dAfterZoom) ||
   report.terrain?.layout !== 'rectangular' ||
@@ -466,6 +478,10 @@ const failed =
   !report.nowClicked || !report.nowPaused || report.nowLabel !== 'Play' ||
   !report.playAdvances || report.playLabel !== 'Pause' ||
   !report.pauseStops || report.pauseLabel !== 'Play' ||
+  !(report.zoneRows >= 1) ||
+  !/km/.test(report.zoneFirst ?? '') || !/slope/i.test(report.zoneFirst ?? '') ||
+  !report.zoneClick || !report.zoneSelected ||
+  !/Landing zone/i.test(report.zoneHeader ?? '') ||
   report.layerCoverage === 'MISSING' ||
   !/Zoom\s+[5-9],/.test(report.layerZoom ?? '') ||
   report.consoleErrors.length > 0
