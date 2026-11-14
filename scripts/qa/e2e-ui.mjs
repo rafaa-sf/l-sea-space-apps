@@ -13,7 +13,15 @@
  * the LOLA panel, comparator selection, 2D fallback, autopilot re-run, and that
  * the JSON brief downloads a valid file. Fails on browser console errors.
  */
-const APP = process.argv[2] || 'http://localhost:4186/?lang=en'
+// The application opens on a project landing page; the interactive console is
+// the hash route #/tool. Normalise any app URL so the E2E always exercises the
+// tool regardless of whether the caller included the route.
+function withToolRoute(url) {
+  const [base, hash = ''] = String(url).split('#')
+  if (hash === '/tool' || hash === 'tool') return url
+  return `${base}#/tool`
+}
+const APP = withToolRoute(process.argv[2] || 'http://localhost:4186/?lang=en')
 const CDP = (process.argv[3] || 'http://127.0.0.1:9222').replace(/\/$/, '')
 const DOWNLOAD_DIR = '/tmp/lsea-e2e-downloads'
 
@@ -337,7 +345,7 @@ report.railLeftAfterKeyboard = await railWidth('layout-left-rail')
 // per-layer zoom and tile count.
 const origin = await evaluate('location.origin')
 if (origin) {
-  await send('Page.navigate', { url: `${origin}/?lang=en` })
+  await send('Page.navigate', { url: `${origin}/?lang=en#/tool` })
   await sleep(9000)
   await click('Layers')
   await sleep(1500)
