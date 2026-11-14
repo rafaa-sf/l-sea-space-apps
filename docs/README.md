@@ -21,6 +21,7 @@ document is written in English and kept in sync with the implementation.
 
 | Document | What it covers |
 | --- | --- |
+| [mission-presets.md](mission-presets.md) | Historical mission profile presets for the site comparator, with sources and modelling assumptions |
 | [submission.md](submission.md) | Project page content, submission checklist and link inventory |
 | [demo.md](demo.md) | Project Demo format, seven-slide plan, 30-second video script and evidence values |
 | [scalability.md](scalability.md) | Impact assessment and scalability analysis: beneficiaries, measurable impact, growth, scale limits and roadmap |
