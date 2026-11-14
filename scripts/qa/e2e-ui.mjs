@@ -69,6 +69,56 @@ const click = (text, exact = false) =>
     button.click();
     return 'CLICKED';
   })()`)
+const readScale = () =>
+  evaluate(`(() => {
+    const label = document.querySelector('[data-testid="scale-bar-label"]');
+    const caption = document.querySelector('[data-testid="scale-bar-caption"]');
+    return { label: label?.textContent?.trim() ?? null, caption: caption?.textContent?.trim() ?? null };
+  })()`)
+const readCanvas = () =>
+  evaluate(`(() => {
+    const canvas = document.querySelector('[data-testid="viewport-canvas"]');
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      clientWidth: Math.round(rect.width),
+      clientHeight: Math.round(rect.height),
+      bufferWidth: canvas.width,
+      bufferHeight: canvas.height,
+    };
+  })()`)
+const canvasCentre = () =>
+  evaluate(`(() => {
+    const canvas = document.querySelector('[data-testid="viewport-canvas"]');
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    return { x: Math.round(rect.x + rect.width / 2), y: Math.round(rect.y + rect.height / 2) };
+  })()`)
+const squareCanvas = (canvas) =>
+  canvas &&
+  canvas.clientWidth > 100 &&
+  Math.abs(canvas.clientWidth - canvas.clientHeight) <= 1 &&
+  Math.abs(canvas.bufferWidth / canvas.bufferHeight - canvas.clientWidth / canvas.clientHeight) < 0.01
+const waitForSquareCanvas = async () => {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const canvas = await readCanvas()
+    if (squareCanvas(canvas)) return canvas
+    await sleep(200)
+  }
+  return readCanvas()
+}
+const wheelZoom = async (deltaY = -240) => {
+  const centre = await canvasCentre()
+  if (!centre) return
+  await send('Input.dispatchMouseEvent', {
+    type: 'mouseWheel',
+    x: centre.x,
+    y: centre.y,
+    deltaX: 0,
+    deltaY,
+  })
+  await sleep(900)
+}
 const bodyText = () => evaluate('document.body.innerText')
 const section = (text, needle, length = 200) => {
   const index = text.indexOf(needle)
@@ -79,6 +129,12 @@ rmSync(DOWNLOAD_DIR, { recursive: true, force: true })
 mkdirSync(DOWNLOAD_DIR, { recursive: true })
 
 await send('Runtime.enable')
+await send('Emulation.setDeviceMetricsOverride', {
+  width: 1600,
+  height: 1000,
+  deviceScaleFactor: 1,
+  mobile: false,
+})
 await send('Browser.setDownloadBehavior', {
   behavior: 'allow',
   downloadPath: DOWNLOAD_DIR,
@@ -93,6 +149,11 @@ await click('Autopilot', true)
 await sleep(800)
 text = await bodyText()
 report.initialAutopilot = (text.match(/Status: [^\n]+/) || [])[0] ?? 'MISSING'
+
+report.canvas = await waitForSquareCanvas()
+report.scale3d = await readScale()
+await wheelZoom()
+report.scale3dAfterZoom = await readScale()
 
 report.selectSite = await click('de Gerlache rim 1')
 await sleep(1000)
@@ -112,6 +173,11 @@ report.toggle2d = await click('2D', true)
 await sleep(3000)
 text = await bodyText()
 report.fallbackBanner = section(text, '2D fallback', 180)
+
+report.canvas2d = await waitForSquareCanvas()
+report.scale2d = await readScale()
+await wheelZoom()
+report.scale2dAfterZoom = await readScale()
 
 report.toggle3d = await click('3D', true)
 await sleep(1500)
@@ -138,9 +204,17 @@ console.log(JSON.stringify(report, null, 2))
 
 ws.close()
 await fetch(`${CDP}/json/close/${target.id}`)
+const scaleChanged = (before, after) =>
+  Boolean(before?.label && after?.label && before.label !== after.label)
+
 const failed =
   consoleErrors.length > 0 ||
   report.workerBadge === 'MISSING' ||
   report.downloads.length === 0 ||
-  report.briefSchema !== 'lsea.mission-brief/1'
+  report.briefSchema !== 'lsea.mission-brief/1' ||
+  !report.scale3d?.label ||
+  !squareCanvas(report.canvas) ||
+  !squareCanvas(report.canvas2d) ||
+  !scaleChanged(report.scale3d, report.scale3dAfterZoom) ||
+  !scaleChanged(report.scale2d, report.scale2dAfterZoom)
 process.exit(failed ? 1 : 0)
