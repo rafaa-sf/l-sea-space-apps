@@ -6,14 +6,17 @@ L-SEA Space Apps is the team's project for the **NASA International Space Apps
 Challenge · Málaga 2026**, a global hackathon that brings together participants
 to solve challenges using NASA and partner open data.
 
-The project must answer a 2026 challenge, integrate at least one NASA resource
-from that challenge with an explained real contribution, and be submitted through
-the official Project page before the NASA deadline.
+The project answers the 2026 challenge **Lunar Landing Site Navigator**
+(<https://www.spaceappschallenge.org/2026/challenges/lunar-landing-site-navigator/>)
+and integrates NASA resources from that challenge (JPL Horizons, LOLA, Moon Trek,
+QuickMap) with an explained real contribution. It must be submitted through the
+official Project page before the NASA deadline.
 
 ## Event facts
 
 | Item | Detail |
 | --- | --- |
+| Challenge | Lunar Landing Site Navigator |
 | Event | NASA International Space Apps Challenge · Málaga 2026 |
 | Dates | 14–15 November 2026 |
 | Venue | 42 Málaga Fundación Telefónica · Av. Sor Teresa Prat, 15 · Edificio E3 · 29003 Málaga |

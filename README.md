@@ -35,6 +35,7 @@ The repository is public: <https://github.com/rafaa-sf/l-sea-space-apps>
 | Project Demo | At most 7 slides (cover included) OR a video of at most 30 seconds |
 | Language | All submitted materials in English |
 | Submission | Save Progress → **Submit for Judging** + visible confirmation |
+| Challenge | Lunar Landing Site Navigator |
 
 Full rules: [docs/guide.md](docs/guide.md).
 
@@ -55,7 +56,10 @@ Architecture and module contracts: [docs/architecture.md](docs/architecture.md).
 | Document | Contents |
 | --- | --- |
 | [docs/project.md](docs/project.md) | Project scope, event facts, team roles and current status |
+| [docs/challenge.md](docs/challenge.md) | Official 2026 challenge statement, objectives and NASA resources |
 | [docs/guide.md](docs/guide.md) | English summary of the official participant guide and event rules |
+| [docs/submission.md](docs/submission.md) | Project page submission draft (name, summary, description, NASA data, AI declaration) |
+| [docs/demo-script.md](docs/demo-script.md) | Project Demo script (7 slides or 30-second video) |
 | [docs/resources.md](docs/resources.md) | Shared Drive folder, official links and NASA data resources |
 | [docs/architecture.md](docs/architecture.md) | Technical architecture, data flow and module contracts |
 | [docs/api-integrations.md](docs/api-integrations.md) | NASA endpoints, exact queries, CORS status and attribution |
