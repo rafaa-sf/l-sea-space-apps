@@ -368,8 +368,8 @@ export function scoreSite({ site, terrain, ephemeris, mission } = {}) {
     normalizedMission.dataNeedMb != null && normalizedMission.dataNeedMb > 0
       ? clamp(budget.estimatedMb / normalizedMission.dataNeedMb, 0, 1)
       : fractionScore
-  const mastFactor = clamp(mastM / 10, 0, 1)
-  const commsScore = 100 * clamp(0.6 * fractionScore + 0.3 * dataScore + 0.1 * mastFactor, 0, 1)
+  const antennaMastFactor = clamp(mastM / 10, 0, 1)
+  const commsScore = 100 * clamp(0.6 * fractionScore + 0.3 * dataScore + 0.1 * antennaMastFactor, 0, 1)
 
   // --- Terrain component ---------------------------------------------------
   let terrainScore = 0
