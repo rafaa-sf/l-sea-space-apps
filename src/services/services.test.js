@@ -231,6 +231,10 @@ describe('export service', () => {
         ephemerisSiteId: 'nobile-rim-2',
         nearestSiteDistanceM: 113100,
         confidence: 0.9,
+        feasible: false,
+        feasibility: { feasible: false, status: 'infeasible', violations: [{ code: 'feasibility.powerDeficit' }] },
+        rawScore: 78.3,
+        scoreCapApplied: true,
         inputSignature: 'abcd1234',
         components: { power: 80, sun: 90, comms: 70, safety: 95, thermal: 60, logistics: 50, science: 40 },
         metrics: {
@@ -251,6 +255,10 @@ describe('export service', () => {
     expect(brief.rankedLandingZones[0].metrics.thermal.nightC).toBe(-180)
     expect(brief.rankedLandingZones[0].components.power).toBe(80)
     expect(brief.rankedLandingZones[0].inputSignature).toBe('abcd1234')
+    expect(brief.rankedLandingZones[0].feasible).toBe(false)
+    expect(brief.rankedLandingZones[0].feasibility.violations[0].code).toBe('feasibility.powerDeficit')
+    expect(brief.rankedLandingZones[0].rawScore).toBe(78.3)
+    expect(brief.rankedLandingZones[0].scoreCapApplied).toBe(true)
     expect(JSON.parse(briefToJson(brief)).rankedLandingZones).toHaveLength(1)
   })
 
