@@ -114,6 +114,15 @@ describe('dataBudget', () => {
     expect(budget.estimatedMb).toBe(14400)
   })
 
+  it('honours the flat mission bitrate field used by the UI', () => {
+    const windows = [{ from: START, to: new Date(START_MS + 3600 * 1000).toISOString(), durationSeconds: 3600 }]
+    const flat = dataBudget(windows, { bitrateMbps: 5 })
+    expect(flat.estimatedMb).toBe(18000)
+    expect(flat.model.dataRateMbps).toBe(5)
+    const nestedWins = dataBudget(windows, { bitrateMbps: 5, comms: { dataRateMbps: 2 } })
+    expect(nestedWins.estimatedMb).toBe(7200)
+  })
+
   it('reports whether the mission data need is covered', () => {
     const windows = [{ from: START, to: new Date(START_MS + 7200 * 1000).toISOString(), durationSeconds: 7200 }]
     const budget = dataBudget(windows, { dataNeedMb: 5000, comms: { dataRateMbps: 1 } })

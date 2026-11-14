@@ -58,6 +58,22 @@ export function normalizeCommsModel(model = {}) {
 }
 
 /**
+ * Resolve the communications model from a mission profile.
+ *
+ * Supports both the nested `mission.comms` object and the flat UI field
+ * `mission.bitrateMbps`; explicit nested values win.
+ *
+ * @param {Object} [mission] Mission profile.
+ * @returns {Object} Normalized communications model.
+ */
+export function commsModelFromMission(mission = {}) {
+  const overrides = {}
+  if (Number.isFinite(Number(mission.bitrateMbps))) overrides.dataRateMbps = Number(mission.bitrateMbps)
+  if (mission.comms && typeof mission.comms === 'object') Object.assign(overrides, mission.comms)
+  return normalizeCommsModel(overrides)
+}
+
+/**
  * Communications windows between two dates.
  *
  * With `mission.relayInOrbit` the windows describe relay availability
@@ -73,7 +89,7 @@ export function normalizeCommsModel(model = {}) {
  * @returns {Array<{from: string, to: string, durationSeconds: number, source: 'earth'|'relay'}>}
  */
 export function commWindows(site, terrain, ephemeris, mission = {}, from, to) {
-  const model = normalizeCommsModel(mission.comms)
+  const model = commsModelFromMission(mission)
   if (!ephemeris) return []
   const dataset = normalizeEphemerisDataset(ephemeris)
 
@@ -161,7 +177,7 @@ function relayWindows(fromMs, toMs, model) {
  * }}
  */
 export function dataBudget(commWindows, mission = {}) {
-  const model = normalizeCommsModel(mission.comms)
+  const model = commsModelFromMission(mission)
   let totalSeconds = 0
   let estimatedMb = 0
 
@@ -214,7 +230,7 @@ export function dataBudget(commWindows, mission = {}) {
 export function commSummary(site, terrain, ephemeris, mission = {}, from, to) {
   const windows = commWindows(site, terrain, ephemeris, mission, from, to)
   const budget = dataBudget(windows, mission)
-  const model = normalizeCommsModel(mission.comms)
+  const model = commsModelFromMission(mission)
   const fromMs = Number.isFinite(toTimestamp(from))
     ? toTimestamp(from)
     : Number.isFinite(toTimestamp(mission.startTime))

@@ -80,6 +80,17 @@ export const SCORE_GRADES = Object.freeze([
  */
 export function normalizeMission(mission = {}) {
   const merged = { ...DEFAULT_MISSION, ...(mission && typeof mission === 'object' ? mission : {}) }
+  // The UI mission profile uses flat fields (`panelAreaM2`, `bitrateMbps`);
+  // accept them alongside the nested `power`/`comms` objects the core documents.
+  const powerOverrides = {}
+  if (Number.isFinite(Number(merged.panelAreaM2))) powerOverrides.panelAreaM2 = Number(merged.panelAreaM2)
+  if (Number.isFinite(Number(merged.panelEfficiency))) {
+    powerOverrides.panelEfficiency = Number(merged.panelEfficiency)
+  }
+  Object.assign(powerOverrides, (mission && typeof mission === 'object' ? mission.power : null) ?? {})
+  const commsOverrides = {}
+  if (Number.isFinite(Number(merged.bitrateMbps))) commsOverrides.dataRateMbps = Number(merged.bitrateMbps)
+  Object.assign(commsOverrides, (mission && typeof mission === 'object' ? mission.comms : null) ?? {})
   return {
     missionDays: clamp(Number(merged.missionDays) || DEFAULT_MISSION.missionDays, 1 / 24, 365),
     powerNeedW: Math.max(0, Number(merged.powerNeedW) || 0),
@@ -91,8 +102,8 @@ export function normalizeMission(mission = {}) {
     dataNeedMb: Number.isFinite(Number(merged.dataNeedMb)) ? Number(merged.dataNeedMb) : null,
     stepSeconds: Math.max(10, Number(merged.stepSeconds) || DEFAULT_MISSION.stepSeconds),
     profileStepDeg: Math.max(0.25, Number(merged.profileStepDeg) || 1),
-    power: normalizePowerModel(merged.power),
-    comms: normalizeCommsModel(merged.comms),
+    power: normalizePowerModel(powerOverrides),
+    comms: normalizeCommsModel(commsOverrides),
   }
 }
 

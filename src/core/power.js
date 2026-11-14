@@ -79,6 +79,25 @@ export function normalizePowerModel(model = {}) {
 }
 
 /**
+ * Resolve the power model from a mission profile.
+ *
+ * Supports both the nested `mission.power` object and the flat UI fields
+ * `mission.panelAreaM2` / `mission.panelEfficiency`; explicit nested values win.
+ *
+ * @param {Object} [mission] Mission profile.
+ * @returns {Object} Normalized power model.
+ */
+export function powerModelFromMission(mission = {}) {
+  const overrides = {}
+  if (Number.isFinite(Number(mission.panelAreaM2))) overrides.panelAreaM2 = Number(mission.panelAreaM2)
+  if (Number.isFinite(Number(mission.panelEfficiency))) {
+    overrides.panelEfficiency = Number(mission.panelEfficiency)
+  }
+  if (mission.power && typeof mission.power === 'object') Object.assign(overrides, mission.power)
+  return normalizePowerModel(overrides)
+}
+
+/**
  * Instantaneous electrical power from one solar array for a Sun position.
  *
  * Pure helper, independent of the terrain: it only applies the panel
@@ -178,7 +197,7 @@ export function missionWindow(dataset, mission = {}, fallbackDays = 14) {
  * }} Power estimate.
  */
 export function solarPowerEstimate(site, terrain, ephemeris, mission = {}) {
-  const model = normalizePowerModel(mission.power)
+  const model = powerModelFromMission(mission)
   if (!ephemeris) {
     return {
       averageW: 0,

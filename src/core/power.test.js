@@ -121,6 +121,18 @@ describe('solarPowerEstimate', () => {
     expect(estimate.sunlitFraction).toBe(0)
   })
 
+  it('honours the flat mission panel fields used by the UI', () => {
+    const ephemeris = constantEphemeris({ sun: { az: 270, el: 1 } })
+    const estimate = solarPowerEstimate(SITE, flatTerrain(), ephemeris, {
+      missionDays: 2,
+      startTime: START,
+      panelAreaM2: 4,
+    })
+    const expected = panelPowerW({ az: 270, el: 1 }, normalizePowerModel({ panelAreaM2: 4 }))
+    expect(estimate.averageW).toBeCloseTo(expected, 0)
+    expect(estimate.model.panelAreaM2).toBe(4)
+  })
+
   it('flags a missing ephemeris instead of throwing', () => {
     const estimate = solarPowerEstimate(SITE, flatTerrain(), null)
     expect(estimate.unavailable).toBe(true)

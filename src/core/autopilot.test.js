@@ -108,6 +108,15 @@ describe('mission profile normalization', () => {
     expect(mission.comms.dataRateMbps).toBe(DEFAULT_MISSION.comms.dataRateMbps)
   })
 
+  it('accepts the flat UI mission fields', () => {
+    const mission = normalizeMission({ panelAreaM2: 4, bitrateMbps: 5 })
+    expect(mission.power.panelAreaM2).toBe(4)
+    expect(mission.comms.dataRateMbps).toBe(5)
+    const nested = normalizeMission({ panelAreaM2: 4, bitrateMbps: 5, power: { panelAreaM2: 1 }, comms: { dataRateMbps: 2 } })
+    expect(nested.power.panelAreaM2).toBe(1)
+    expect(nested.comms.dataRateMbps).toBe(2)
+  })
+
   it('clamps invalid values', () => {
     const mission = normalizeMission({ missionDays: -4, sunDaysNeeded: -1, powerNeedW: -10 })
     expect(mission.missionDays).toBeGreaterThan(0)
