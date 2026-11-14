@@ -271,6 +271,13 @@ await sleep(3000)
 report.terrainWide = await terrainAttributes()
 report.sitesWideAgain = await siteCounters()
 report.regionOptions = await evaluate(`[...(document.querySelector('[data-testid="dem-region-select"]')?.options ?? [])].map((o) => o.value)`)
+report.regionPreset = await selectDemRegion('south-pole-300km-1024px')
+await sleep(3500)
+report.terrainPreset = await terrainAttributes()
+report.sitesPreset = await siteCounters()
+report.regionBackWide = await selectDemRegion('south-pole-80s-80m')
+await sleep(3500)
+report.terrainBackWide = await terrainAttributes()
 report.canvas = await waitForCanvas()
 report.scale3d = await waitForScaleLabel()
 const canvasHeightBeforeSplit = report.canvas?.clientHeight ?? 0
@@ -416,7 +423,10 @@ const failed =
   report.sitesHighDetail.visible + report.sitesHighDetail.outside !== 10 ||
   !(report.sitesHighDetail.visible < 10) ||
   report.sitesWideAgain?.visible !== 10 ||
-  !(Array.isArray(report.regionOptions) && report.regionOptions.length >= 2)
+  !(Array.isArray(report.regionOptions) && report.regionOptions.length >= 6) ||
+  !/150000/.test(report.terrainPreset?.extent ?? '') ||
+  report.sitesPreset?.visible !== 9 || report.sitesPreset?.outside !== 1 ||
+  !/304000/.test(report.terrainBackWide?.extent ?? '')
   !scaleChanged(report.scale3d, report.scale3dAfterZoom) ||
   !scaleChanged(report.scale2d, report.scale2dAfterZoom) ||
   report.terrain?.layout !== 'rectangular' ||
