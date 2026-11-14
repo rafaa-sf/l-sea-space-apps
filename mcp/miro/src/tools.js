@@ -246,16 +246,13 @@ export const tools = [
       const { boardId, title, fillColor } = args
       const style = {}
       if (fillColor) style.fillColor = fillColor
-      const body = withDataAndStyle({ title, format: 'custom' }, style)
-      Object.assign(
-        body,
-        buildPosition({
-          x: args.x,
-          y: args.y,
-          width: args.width,
-          height: args.height,
-        }),
-      )
+      // Miro frames use `geometry` for width/height (position only accepts x/y).
+      const body = {
+        data: { title, format: 'custom' },
+        position: { x: args.x ?? 0, y: args.y ?? 0 },
+        geometry: { width: args.width ?? 800, height: args.height ?? 600 },
+      }
+      if (Object.keys(style).length > 0) body.style = style
       return client.createFrame(boardId, body)
     },
   },
