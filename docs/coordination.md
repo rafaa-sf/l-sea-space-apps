@@ -30,6 +30,14 @@ Example: `lock/primary/20261114T1201Z`.
 - Lock tags are coordination-only. They are deleted when released; they are
   not release tags.
 
+### Legacy tags
+
+`claim/*` and `sync/*` tags pushed by the commercial machine predate this lock
+protocol and are **advisory only**: they are kept as that machine's artifacts
+and are not used or interpreted by `scripts/machine-lock.mjs` or the pre-push
+hook. Do not delete them. All new coordination uses
+`lock/<machine>/<stamp>` tags.
+
 ## Commands
 
 ```bash
