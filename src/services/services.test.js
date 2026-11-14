@@ -230,6 +230,16 @@ describe('export service', () => {
         grade: 'excellent',
         ephemerisSiteId: 'nobile-rim-2',
         nearestSiteDistanceM: 113100,
+        confidence: 0.9,
+        inputSignature: 'abcd1234',
+        components: { power: 80, sun: 90, comms: 70, safety: 95, thermal: 60, logistics: 50, science: 40 },
+        metrics: {
+          power: { averageW: 546, requiredBatteryWh: 37085, heaterWh: 18691 },
+          thermal: { nightC: -180, dayC: -52.5 },
+          comms: { earthVisibilityFraction: 0.73 },
+          illumination: { sunlitFraction: 0.801, continuousSunDays: 11.2 },
+        },
+        warnings: [{ code: 'ephemeris-nearest-site' }],
       },
     ]
     const brief = buildBrief({ sites, mission, computation: { scores, landingZones } })
@@ -237,6 +247,10 @@ describe('export service', () => {
     expect(brief.rankedLandingZones[0].areaKm2).toBe(174.2)
     expect(brief.rankedLandingZones[0].meanSlopeDeg).toBe(0.3)
     expect(brief.rankedLandingZones[0].ephemerisSiteId).toBe('nobile-rim-2')
+    expect(brief.rankedLandingZones[0].metrics.power.averageW).toBe(546)
+    expect(brief.rankedLandingZones[0].metrics.thermal.nightC).toBe(-180)
+    expect(brief.rankedLandingZones[0].components.power).toBe(80)
+    expect(brief.rankedLandingZones[0].inputSignature).toBe('abcd1234')
     expect(JSON.parse(briefToJson(brief)).rankedLandingZones).toHaveLength(1)
   })
 

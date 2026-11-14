@@ -153,6 +153,11 @@ function normalizeBriefZone(entry, index) {
     reliefM: num(zone.reliefM),
     score: num(entry.score),
     grade: entry.grade ?? null,
+    confidence: num(entry.confidence),
+    components: entry.components ?? null,
+    metrics: entry.metrics ?? null,
+    warnings: Array.isArray(entry.warnings) ? entry.warnings : [],
+    inputSignature: entry.inputSignature ?? null,
     ephemerisSiteId: entry.ephemerisSiteId ?? entry.nearestSiteId ?? null,
     nearestSiteDistanceM: num(entry.nearestSiteDistanceM),
   }
