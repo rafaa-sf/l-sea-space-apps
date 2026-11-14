@@ -114,5 +114,5 @@ export function formatLon(lon) {
 /** Truncate a display string without cutting surrogate pairs. */
 export function truncate(value, length = 60) {
   const text = String(value ?? '')
-  return text.length > length ? `${text.slice(0, length - 1)}…` : text
+  return text.length > length ? `${text.slice(0, length - 3)}...` : text
 }

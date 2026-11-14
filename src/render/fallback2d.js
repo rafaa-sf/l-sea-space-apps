@@ -238,7 +238,7 @@ export function createFallback2D(canvas, options = {}) {
     const tip = { x: origin.x + dx, y: origin.y + dy }
     context.setLineDash(visible ? [] : [5, 5])
     context.strokeStyle = color
-    context.lineWidth = 1.6
+    context.lineWidth = 1.2
     context.beginPath()
     context.moveTo(origin.x, origin.y)
     context.lineTo(tip.x, tip.y)
@@ -350,8 +350,8 @@ export function createFallback2D(canvas, options = {}) {
     drawReference()
     drawRay()
     drawMarkers()
-    if (sunDirection) drawDirectionArrow(sunDirection, COLOR_SUN, labels.sun, sunVisible, 0.42)
-    if (earthDirection) drawDirectionArrow(earthDirection, COLOR_EARTH, labels.earth, earthVisible, 0.34)
+    if (sunDirection) drawDirectionArrow(sunDirection, COLOR_SUN, labels.sun, sunVisible, 0.28)
+    if (earthDirection) drawDirectionArrow(earthDirection, COLOR_EARTH, labels.earth, earthVisible, 0.22)
   }
 
   function requestDraw() {
@@ -367,7 +367,7 @@ export function createFallback2D(canvas, options = {}) {
     canvas.width = Math.round(width * dpr)
     canvas.height = Math.round(height * dpr)
     center = { x: width / 2, y: height / 2 }
-    mapRadius = Math.min(width, height) * 0.42
+    mapRadius = Math.min(width, height) * 0.46
     stars = []
     for (let i = 0; i < 90; i += 1) {
       stars.push({ x: random() * width, y: random() * height, r: random() * 1.2 + 0.3 })

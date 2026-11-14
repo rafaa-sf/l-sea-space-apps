@@ -83,8 +83,8 @@ const windowLabel = computed(() => {
       <span><i class="legend-dot legend-dot--sun" aria-hidden="true" />{{ t('orbital.sunElevation') }}</span>
       <span><i class="legend-dot legend-dot--earth" aria-hidden="true" />{{ t('orbital.earthElevation') }}</span>
     </div>
-    <StatRow v-if="stats.sunMin !== null" label-key="orbital.sunRange" :value="`${formatAngle(stats.sunMin, 2)} → ${formatAngle(stats.sunMax, 2)}`" />
-    <StatRow v-if="stats.earthMin !== null" label-key="orbital.earthRange" :value="`${formatAngle(stats.earthMin, 2)} → ${formatAngle(stats.earthMax, 2)}`" />
+    <StatRow v-if="stats.sunMin !== null" label-key="orbital.sunRange" :value="`${formatAngle(stats.sunMin, 2)} / ${formatAngle(stats.sunMax, 2)}`" />
+    <StatRow v-if="stats.earthMin !== null" label-key="orbital.earthRange" :value="`${formatAngle(stats.earthMin, 2)} / ${formatAngle(stats.earthMax, 2)}`" />
     <StatRow label-key="orbital.window" :value="windowLabel" :mono="false" />
     <StatRow label-key="orbital.period" :value="t('orbital.synodicPeriod')" :mono="false" />
     <p class="panel-note">{{ t('orbital.librationNote') }}</p>

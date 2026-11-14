@@ -42,7 +42,7 @@ const regionLabel = computed(
     <StatRow label-key="topo.resolution" :value="resolutionLabel" />
     <StatRow
       label-key="topo.grid"
-      :value="terrain ? `${terrain.width} × ${terrain.height}` : t('common.notAvailable')"
+      :value="terrain ? `${terrain.width} x ${terrain.height}` : t('common.notAvailable')"
     />
     <template v-if="stats">
       <StatRow label-key="topo.minElevation" :value="formatMeters(stats.minM)" />
@@ -61,7 +61,7 @@ const regionLabel = computed(
       <li v-for="(crater, index) in craters" :key="`${crater.lat}-${crater.lon}-${index}`" class="crater-item">
         <span class="crater-item__name">#{{ index + 1 }} {{ formatLat(crater.lat) }}, {{ formatLon(crater.lon) }}</span>
         <span class="crater-item__meta">
-          {{ t('topo.diameter') }} {{ formatDistance(crater.diameterM) }} · {{ t('topo.depth') }} {{ formatMeters(crater.depthM) }}
+          {{ t('topo.diameter') }} {{ formatDistance(crater.diameterM) }} / {{ t('topo.depth') }} {{ formatMeters(crater.depthM) }}
         </span>
       </li>
     </ul>
@@ -73,7 +73,7 @@ const regionLabel = computed(
       target="_blank"
       rel="noopener noreferrer"
     >
-      {{ t('topo.pdsLink') }} ↗
+      {{ t('topo.pdsLink') }}
     </a>
     <p class="panel-note">{{ t('topo.attribution') }}</p>
   </PanelCard>

@@ -30,7 +30,7 @@ const open = ref(props.defaultOpen)
         :aria-controls="bodyId"
         @click="open = !open"
       >
-        <span class="panel-card__chev" aria-hidden="true">{{ open ? '▾' : '▸' }}</span>
+        <span class="panel-card__chev" :class="{ 'is-open': open }" aria-hidden="true" />
         <span class="panel-card__title">{{ titleKey ? t(titleKey) : title }}</span>
         <span v-if="badge" class="chip panel-card__badge">{{ badge }}</span>
       </button>

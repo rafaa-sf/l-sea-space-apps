@@ -8,7 +8,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import PanelCard from '../ui/PanelCard.vue'
 import StatRow from '../ui/StatRow.vue'
-import { actions, state } from '../composables/useAppState.js'
+import { state } from '../composables/useAppState.js'
 import { sourceLabelKey } from '../composables/labels.js'
 import { formatUtc } from '../composables/format.js'
 
@@ -31,16 +31,6 @@ const rendererLabel = computed(() => {
   if (state.system.renderer === '3d') return t('viewport.mode.threeD')
   return t('common.loading')
 })
-
-const modeOptions = computed(() => [
-  { value: 'auto', label: t('viewport.mode.auto') },
-  { value: '3d', label: t('viewport.mode.threeD') },
-  { value: '2d', label: t('viewport.mode.twoD') },
-])
-
-function setMode(value) {
-  actions.setViewMode(value)
-}
 
 const exportLabel = computed(() => {
   switch (state.export.status) {
@@ -65,20 +55,7 @@ const exportLabel = computed(() => {
     <StatRow label-key="fallback.ephemeris" :value="t(sourceLabelKey(state.data.ephemerisSource, 'ephemeris'))" :mono="false" />
     <StatRow label-key="fallback.layers" :value="t(sourceLabelKey(state.data.layersSource, 'layers'))" :mono="false" />
 
-    <div class="segmented segmented--full" role="group" :aria-label="t('viewport.modeLabel')">
-      <button
-        v-for="option in modeOptions"
-        :key="option.value"
-        type="button"
-        class="segmented__button"
-        :class="{ 'is-active': state.system.viewMode === option.value }"
-        :aria-pressed="state.system.viewMode === option.value"
-        @click="setMode(option.value)"
-      >
-        {{ option.label }}
-      </button>
-    </div>
-
+    <p class="panel-note">{{ t('fallback.switchHint') }}</p>
     <p v-if="!webglOk" class="panel-note panel-note--warn">{{ t('fallback.note') }}</p>
     <p v-else class="panel-note">{{ t('fallback.webglNote') }}</p>
 

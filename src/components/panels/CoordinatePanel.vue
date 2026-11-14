@@ -32,7 +32,7 @@ const regionLabel = computed(() => {
   if (region) return region
   if (state.data.terrainSource === 'synthetic') return t('coords.syntheticRegion')
   const terrain = state.terrain
-  if (terrain) return `${terrain.width} × ${terrain.height} @ ${formatAngle(terrain.lat1, 1)}`
+  if (terrain) return `${terrain.width} x ${terrain.height} @ ${formatAngle(terrain.lat1, 1)}`
   return t('common.notAvailable')
 })
 

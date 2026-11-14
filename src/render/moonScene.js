@@ -92,7 +92,7 @@ export async function createMoonScene(canvas, options = {}) {
   scene.background = new THREE.Color(COLOR_SPACE)
 
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 800)
-  camera.position.set(0, 15, 21)
+  camera.position.set(0, 23, 16)
 
   const controls = new OrbitControls(camera, canvas)
   controls.enableDamping = true
@@ -153,8 +153,8 @@ export async function createMoonScene(canvas, options = {}) {
 
   const sunArrow = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), 4, COLOR_SUN, 1.1, 0.55)
   const earthArrow = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), 3.4, COLOR_EARTH, 0.9, 0.45)
-  const sunLabel = createLabelSprite(THREE, labels.sun, '#ffd166')
-  const earthLabel = createLabelSprite(THREE, labels.earth, '#7fd1ff')
+  const sunLabel = createLabelSprite(THREE, labels.sun, '#d8b156', 0.82)
+  const earthLabel = createLabelSprite(THREE, labels.earth, '#6fa8d8', 0.82)
   helperGroup.add(sunArrow, earthArrow, sunLabel, earthLabel)
 
   const rayGroup = new THREE.Group()
@@ -190,10 +190,10 @@ export async function createMoonScene(canvas, options = {}) {
         Math.sin((sunDirection.el * Math.PI) / 180),
         Math.cos((sunDirection.az * Math.PI) / 180) * Math.cos((sunDirection.el * Math.PI) / 180),
       ).normalize()
-      const length = sunVisible ? 5.2 : 3.6
+      const length = sunVisible ? 3.2 : 2.2
       sunArrow.position.copy(origin)
       sunArrow.setDirection(vector)
-      sunArrow.setLength(length, 1.1, 0.55)
+      sunArrow.setLength(length, 0.7, 0.34)
       sunArrow.setColor(new THREE.Color(COLOR_SUN))
       sunArrow.visible = true
       sunLabel.position.copy(origin.clone().add(vector.clone().multiplyScalar(length + 0.8)))
@@ -213,10 +213,10 @@ export async function createMoonScene(canvas, options = {}) {
         Math.max(0.02, Math.sin((earthDirection.el * Math.PI) / 180)),
         Math.cos((earthDirection.az * Math.PI) / 180) * Math.cos((earthDirection.el * Math.PI) / 180),
       ).normalize()
-      const length = earthVisible ? 3.9 : 2.6
+      const length = earthVisible ? 2.4 : 1.8
       earthArrow.position.copy(origin)
       earthArrow.setDirection(vector)
-      earthArrow.setLength(length, 0.9, 0.45)
+      earthArrow.setLength(length, 0.6, 0.3)
       earthArrow.visible = true
       earthLabel.position.copy(origin.clone().add(vector.clone().multiplyScalar(length + 0.7)))
       earthLabel.visible = true
@@ -409,11 +409,7 @@ export async function createMoonScene(canvas, options = {}) {
         ring.rotation.x = -Math.PI / 2
         ring.position.copy(position).add(new THREE.Vector3(0, -0.22, 0))
         markerGroup.add(ring)
-        const beamGeometry = new THREE.CylinderGeometry(0.035, 0.035, 1.4, 8)
-        const beamMaterial = new THREE.MeshBasicMaterial({ color: COLOR_SELECTED, transparent: true, opacity: 0.7 })
-        const beam = new THREE.Mesh(beamGeometry, beamMaterial)
-        beam.position.copy(position).add(new THREE.Vector3(0, 0.7, 0))
-        markerGroup.add(beam)
+
       }
     }
     updateHelpers()
@@ -631,7 +627,7 @@ export async function createMoonScene(canvas, options = {}) {
   }
 
   function resetView() {
-    camera.position.set(0, 15, 21)
+    camera.position.set(0, 23, 16)
     controls.target.set(0, 0, 0)
     controls.update()
   }

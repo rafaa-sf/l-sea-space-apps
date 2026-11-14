@@ -105,8 +105,8 @@ const ranking = computed(() => state.scores)
 
     <p class="panel-note">
       {{ t('autopilot.statusLabel') }}: {{ statusLabel }}
-      · {{ t('autopilot.sourceLabel') }}: {{ sourceLabel }}
-      <template v-if="state.autopilot.durationMs !== null"> · {{ formatDuration(state.autopilot.durationMs / 1000) }}</template>
+      / {{ t('autopilot.sourceLabel') }}: {{ sourceLabel }}
+      <template v-if="state.autopilot.durationMs !== null"> / {{ formatDuration(state.autopilot.durationMs / 1000) }}</template>
     </p>
     <p v-if="state.autopilot.error" class="panel-note panel-note--warn">
       {{ t('autopilot.fallbackNote') }}: {{ state.autopilot.error }}
@@ -128,8 +128,16 @@ const ranking = computed(() => state.scores)
           <span v-if="Number.isFinite(entry.commsHours)">{{ t('autopilot.metricComms') }} {{ formatNumber(entry.commsHours, 1) }} h</span>
         </div>
         <ul v-if="entry.reasons.length" class="reason-list">
-          <li v-for="(reason, index) in entry.reasons" :key="`${entry.siteId}-${index}`" class="reason" :class="reason.severity ? `reason--${reason.severity}` : null">
+          <li
+            v-for="(reason, index) in entry.reasons.slice(0, 3)"
+            :key="`${entry.siteId}-${index}`"
+            class="reason"
+            :class="reason.severity ? `reason--${reason.severity}` : null"
+          >
             {{ reasonText(t, te, reason) }}
+          </li>
+          <li v-if="entry.reasons.length > 3" class="reason reason--more">
+            {{ t('autopilot.reasons.moreReasons', { count: entry.reasons.length - 3 }) }}
           </li>
         </ul>
       </li>

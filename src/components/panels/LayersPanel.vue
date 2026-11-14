@@ -57,7 +57,7 @@ function statusLabel(layer) {
             :checked="Boolean(state.layerEnabled[layer.id])"
             @change="toggle(layer)"
           />
-          <span v-else class="layer-item__dot" aria-hidden="true">◇</span>
+          <span v-else class="layer-item__dot" aria-hidden="true" />
           <span class="layer-item__text">
             <span class="layer-item__name">{{ layerDisplayName(t, te, layer) }}</span>
             <span class="layer-item__meta">
@@ -69,24 +69,24 @@ function statusLabel(layer) {
               >
                 {{ statusLabel(layer) }}
               </span>
-              {{ layer.attribution }}
             </span>
           </span>
         </label>
         <a
           v-if="layer.attributionUrl || layer.url"
-          class="icon-button"
+          class="button button--quiet button--tiny layer-item__open"
           :href="layer.attributionUrl || layer.url"
           target="_blank"
           rel="noopener noreferrer"
           :title="t('layers.openExternal')"
           :aria-label="t('layers.openExternal')"
         >
-          ↗
+          {{ t('common.open') }}
         </a>
       </li>
     </ul>
     <p v-if="state.layers.length === 0" class="empty">{{ t('layers.empty') }}</p>
     <p class="panel-note">{{ t('layers.overlayNote') }}</p>
+    <p v-if="state.layers[0]?.attribution" class="panel-note">{{ state.layers[0].attribution }}</p>
   </PanelCard>
 </template>

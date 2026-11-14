@@ -266,12 +266,11 @@ onBeforeUnmount(() => {
       <p class="sr-only">{{ t('viewport.keyboardHint') }}</p>
 
       <div class="viewport__badges">
-        <span class="chip chip--mode" :class="mode === '3d' ? 'chip--ok' : 'chip--warn'">
+        <span class="toolbar-badge" :class="mode === '3d' ? 'is-ok' : 'is-warn'">
           {{ mode === '3d' ? t('viewport.mode.threeD') : mode === '2d' ? t('viewport.mode.twoD') : t('common.loading') }}
         </span>
-        <span class="chip" :title="t('viewport.terrainBadgeHint')">{{ t('viewport.terrain') }}: {{ terrainBadge }}</span>
-        <span class="chip" :title="t('viewport.ephemerisBadgeHint')">{{ t('viewport.ephemeris') }}: {{ ephemerisBadge }}</span>
-        <span class="chip">{{ t('viewport.sites', { count: state.sites.length }) }}</span>
+        <span class="toolbar-badge" :title="t('viewport.terrainBadgeHint')">{{ terrainBadge }}</span>
+        <span class="toolbar-badge" :title="t('viewport.ephemerisBadgeHint')">{{ ephemerisBadge }}</span>
       </div>
 
       <div class="viewport__controls">
@@ -288,8 +287,8 @@ onBeforeUnmount(() => {
             {{ option.label }}
           </button>
         </div>
-        <button type="button" class="button button--ghost" :title="t('viewport.resetViewHint')" @click="resetView">
-          ⟲ {{ t('viewport.resetView') }}
+        <button type="button" class="button button--quiet button--small" :title="t('viewport.resetViewHint')" @click="resetView">
+          {{ t('viewport.resetView') }}
         </button>
       </div>
 

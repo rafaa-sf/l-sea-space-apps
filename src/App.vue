@@ -1,33 +1,35 @@
 <script setup>
 /**
- * L-SEA application shell: header, three-column mission-control layout
- * (site selection / viewport + timeline / analysis) and the attribution footer.
+ * L-SEA application shell: slim header, sites rail, dominant viewport with
+ * compact timeline, analysis rail, one-line footer and the secondary-tools
+ * drawer. Progressive disclosure: only the primary workflow is visible; layers,
+ * terrain and diagnostics live in the drawer.
  */
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import HeaderBar from './components/HeaderBar.vue'
 import FooterBar from './components/FooterBar.vue'
+import SitesSurface from './components/SitesSurface.vue'
+import AnalysisSurface from './components/AnalysisSurface.vue'
 import ViewportPanel from './components/ViewportPanel.vue'
 import TimelineBar from './components/TimelineBar.vue'
-import SitesPanel from './components/panels/SitesPanel.vue'
-import CoordinatePanel from './components/panels/CoordinatePanel.vue'
-import ComparatorPanel from './components/panels/ComparatorPanel.vue'
-import TopographyPanel from './components/panels/TopographyPanel.vue'
-import DateTimePanel from './components/panels/DateTimePanel.vue'
-import HorizonPanel from './components/panels/HorizonPanel.vue'
-import CountdownPanel from './components/panels/CountdownPanel.vue'
-import PowerCommsPanel from './components/panels/PowerCommsPanel.vue'
-import AutopilotPanel from './components/panels/AutopilotPanel.vue'
-import LayersPanel from './components/panels/LayersPanel.vue'
-import OrbitalVariationPanel from './components/panels/OrbitalVariationPanel.vue'
-import WorkerStatusPanel from './components/panels/WorkerStatusPanel.vue'
-import FallbackStatusPanel from './components/panels/FallbackStatusPanel.vue'
+import ToolsDrawer from './components/ToolsDrawer.vue'
 import { actions, state } from './components/composables/useAppState.js'
 
 const { t } = useI18n()
 
+const drawer = reactive({ open: false, tab: 'layers' })
 const toast = ref(null)
 let toastTimer = null
+
+function openTools(tab) {
+  drawer.tab = tab
+  drawer.open = true
+}
+
+function closeTools() {
+  drawer.open = false
+}
 
 function showToast(error) {
   toast.value = `${error.scope}: ${error.message}`
@@ -58,35 +60,21 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="app-shell">
-    <HeaderBar />
+    <HeaderBar @open-tools="openTools" />
 
     <main class="app-main" :aria-busy="!state.booted">
-      <aside class="app-column app-column--left" :aria-label="t('app.leftColumnLabel')">
-        <SitesPanel />
-        <CoordinatePanel />
-        <ComparatorPanel />
-      </aside>
-
-      <div class="app-center">
-        <ViewportPanel />
-        <TimelineBar />
-      </div>
-
-      <aside class="app-column app-column--right" :aria-label="t('app.rightColumnLabel')">
-        <DateTimePanel />
-        <HorizonPanel />
-        <CountdownPanel />
-        <PowerCommsPanel />
-        <AutopilotPanel />
-        <LayersPanel :default-open="false" />
-        <OrbitalVariationPanel :default-open="false" />
-        <TopographyPanel :default-open="false" />
-        <WorkerStatusPanel :default-open="false" />
-        <FallbackStatusPanel />
-      </aside>
+      <SitesSurface />
+      <section class="app-center" :aria-label="t('app.centerLabel')">
+        <div class="center-stack">
+          <ViewportPanel />
+          <TimelineBar />
+        </div>
+      </section>
+      <AnalysisSurface />
     </main>
 
     <FooterBar />
+    <ToolsDrawer :open="drawer.open" :tab="drawer.tab" @close="closeTools" @update:tab="drawer.tab = $event" />
 
     <div v-if="!state.booted" class="boot-overlay" role="status" aria-live="polite">
       <div class="spinner" aria-hidden="true" />
