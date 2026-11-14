@@ -52,7 +52,13 @@ ws.onmessage = (event) => {
     message.method === 'Runtime.consoleAPICalled' &&
     ['error', 'warning'].includes(message.params.type)
   ) {
-    consoleErrors.push(`[${message.params.type}] ` + (message.params.args ?? []).join(' '))
+    const describe = (arg) => {
+      if (arg.value !== undefined) return String(arg.value)
+      if (arg.description) return String(arg.description)
+      if (arg.preview) return JSON.stringify(arg.preview)
+      return ''
+    }
+    consoleErrors.push(`[${message.params.type}] ` + (message.params.args ?? []).map(describe).join(' '))
   }
   if (message.method === 'Runtime.exceptionThrown') {
     consoleErrors.push('[exception] ' + (message.params.exceptionDetails?.exception?.description ?? ''))
@@ -364,6 +370,29 @@ report.zoneHeader = (zoneBody.match(/CURRENT SITE\n([^\n]+)/) || [])[1] ?? null
 report.zoneSelected = await evaluate(`Boolean(document.querySelector('[data-testid="landing-zone-selected"]'))`)
 await click('Shackleton crater rim', true)
 await sleep(1600)
+// Expanded zone metrics: Watts, Wh, temperatures and percentages.
+await evaluate(`(() => { const b=document.querySelector('[data-testid="landing-zone-details"]'); if(b) b.click(); return true; })()`)
+await sleep(1200)
+report.zoneMetricsText = await evaluate(`document.querySelector('.zone-detail')?.textContent ?? null`)
+const signatureOf = () => evaluate(`document.querySelector('[data-testid="landing-zone-signature"]')?.textContent?.trim() ?? null`)
+report.zoneSignatureBefore = await signatureOf()
+// Full recomputation: change the mission power need and wait for a new signature.
+report.powerInputChanged = await evaluate(`(() => {
+  const input = [...document.querySelectorAll('input[type="number"]')].find((el) => el.value === '120');
+  if (!input) return false;
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+  setter.call(input, '2000');
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+  return true;
+})()`)
+let signatureAfter = report.zoneSignatureBefore
+for (let attempt = 0; attempt < 30 && signatureAfter === report.zoneSignatureBefore; attempt += 1) {
+  await sleep(500)
+  signatureAfter = await signatureOf()
+}
+report.zoneSignatureAfter = signatureAfter
+report.zoneRecomputed = Boolean(report.zoneSignatureBefore && signatureAfter && signatureAfter !== report.zoneSignatureBefore)
 
 report.export = await click('Export JSON brief')
 await sleep(4000)
@@ -374,6 +403,7 @@ if (downloads.length > 0) {
   report.briefSchema = brief.schema
   report.briefSites = Array.isArray(brief.rankedSites) ? brief.rankedSites.length : 'MISSING'
   report.briefZones = Array.isArray(brief.rankedLandingZones) ? brief.rankedLandingZones.length : -1
+  report.briefZoneMetrics = Boolean(brief.rankedLandingZones?.[0]?.metrics?.power?.averageW != null && brief.rankedLandingZones?.[0]?.metrics?.thermal != null)
 }
 
 report.railLeftBefore = await railWidth('layout-left-rail')
@@ -448,7 +478,7 @@ const failed =
   report.workerBadge === 'MISSING' ||
   report.downloads.length === 0 ||
   report.briefSchema !== 'lsea.mission-brief/1' ||
-  !(report.briefZones >= 1) ||
+  !(report.briefZones >= 1) || !report.briefZoneMetrics ||
   !report.scale3d?.label ||
   !canvasIsUndistorted(report.canvas) ||
   !canvasIsUndistorted(report.canvas2d) ||
@@ -484,6 +514,9 @@ const failed =
   !/km/.test(report.zoneFirst ?? '') || !/slope/i.test(report.zoneFirst ?? '') ||
   !report.zoneClick || !report.zoneSelected ||
   !/Landing zone/i.test(report.zoneHeader ?? '') ||
+  !/\bW\b/.test(report.zoneMetricsText ?? '') || !/Wh/.test(report.zoneMetricsText ?? '') ||
+  !/°C/.test(report.zoneMetricsText ?? '') || !/%/.test(report.zoneMetricsText ?? '') ||
+  !report.powerInputChanged || !report.zoneRecomputed ||
   report.layerCoverage === 'MISSING' ||
   !/Zoom\s+[5-9],/.test(report.layerZoom ?? '') ||
   report.consoleErrors.length > 0
