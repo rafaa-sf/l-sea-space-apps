@@ -24,13 +24,13 @@ This document is the shared contract for both machines:
 
 | # | Requirement (guide) | Minimum values / criteria | Status | Approval needed for fixes |
 | --- | --- | --- | --- | --- |
-| 01 | **Purpose at a glance** — the product explains itself when opened: what it is, for whom, what can be done | Clear title, one sentence, one prominent button (vs. only a logo and "Start") | ✅ Compliant | — |
-| 02 | **Main flow** — the path to the most important thing the product offers; every step leads to the next; no dead-ends | No screen without a way forward or back | 🟡 Partial | Yes (`CR-05`) |
-| 03 | **Hierarchy and patterns** — the eye goes first to what matters; the same elements repeat on every screen; one primary button | One primary action per screen; consistent components | 🟡 Partial | Yes (`CR-04`) |
-| 04 | **Readability** — readable by size and by words | Web body **16 px**, secondary **never below 12 px**; max 3 type families | 🔴 Gap | Yes (`CR-01`) |
-| 05 | **Contrast and colour** — light difference text/background; never colour as the only signal | Text **4.5:1**; large text, icons and borders **3:1**; verified with WebAIM Contrast Checker or grayscale | 🔴 Gap (primary button, faint text, borders) | Yes (`CR-03`) |
-| 06 | **Tap/click targets** — the whole button responds, not only its text/icon | iOS 44×44 pt · Android 48×48 dp · Web **44×44 px (minimum 24)** · 8 px separation · no hover on mobile | 🔴 Gap | Yes (`CR-02`) |
-| 07 | **System response** — what happens after each action, during waits, and on errors/empty screens | Every step responds and says how it is going; no technical error without what to do next | 🟡 Partial | Yes (`CR-06`) |
+| 01 | **Purpose at a glance** — the product explains itself when opened: what it is, for whom, what can be done | Clear title, one sentence, one prominent button (vs. only a logo and "Start") | PASS Compliant | — |
+| 02 | **Main flow** — the path to the most important thing the product offers; every step leads to the next; no dead-ends | No screen without a way forward or back | PARTIAL Partial | Yes (`CR-05`) |
+| 03 | **Hierarchy and patterns** — the eye goes first to what matters; the same elements repeat on every screen; one primary button | One primary action per screen; consistent components | PARTIAL Partial | Yes (`CR-04`) |
+| 04 | **Readability** — readable by size and by words | Web body **16 px**, secondary **never below 12 px**; max 3 type families | FAIL Gap | Yes (`CR-01`) |
+| 05 | **Contrast and colour** — light difference text/background; never colour as the only signal | Text **4.5:1**; large text, icons and borders **3:1**; verified with WebAIM Contrast Checker or grayscale | FAIL Gap (primary button, faint text, borders) | Yes (`CR-03`) |
+| 06 | **Tap/click targets** — the whole button responds, not only its text/icon | iOS 44×44 pt · Android 48×48 dp · Web **44×44 px (minimum 24)** · 8 px separation · no hover on mobile | FAIL Gap | Yes (`CR-02`) |
+| 07 | **System response** — what happens after each action, during waits, and on errors/empty screens | Every step responds and says how it is going; no technical error without what to do next | PARTIAL Partial | Yes (`CR-06`) |
 
 The product already meets the guide's **purpose, flow skeleton, component
 consistency, colour-not-as-only-signal, loading/empty states and accessibility
@@ -42,7 +42,7 @@ targets, contrast of one button style and technical error copy**.
 
 ## 2. Requirement-by-requirement audit
 
-### 01 · Purpose at a glance — ✅ compliant
+### 01 · Purpose at a glance — compliant
 
 **Guide asks:** the product explains itself on open: what it is, for whom, what
 you can do with it. Good: clear title, one sentence, one prominent button. Bad:
@@ -62,7 +62,7 @@ landing is the documented entry point (`README.md` → *Entry points*).
 
 ---
 
-### 02 · Main flow — 🟡 partial
+### 02 · Main flow — partial
 
 **Guide asks:** the path to the most important thing the product offers. Every
 step leads to the next until the flow can be completed. Bad: a screen with no
@@ -83,7 +83,7 @@ one-line contextual hint on first entry to the console (`CR-05`).
 
 ---
 
-### 03 · Hierarchy and patterns — 🟡 partial
+### 03 · Hierarchy and patterns — partial
 
 **Guide asks:** order the screen so the eye goes first to what matters, and repeat
 the same elements; **one primary button**; bad: buttons without hierarchy or a
@@ -102,7 +102,7 @@ secondary (`CR-04`).
 
 ---
 
-### 04 · Readability — 🔴 gap
+### 04 · Readability — gap
 
 **Guide asks:** text readable by its size and by its words. Minimum values (the
 reference to meet): **web body 16 px**, secondary text **never below 12 px**,
@@ -122,7 +122,7 @@ keeping the two families (`CR-01`). Re-run the device matrix and landing checks.
 
 ---
 
-### 05 · Contrast and colour — 🔴 gap
+### 05 · Contrast and colour — gap
 
 **Guide asks:** enough light difference between text and background; never use
 colour as the only signal. Minimum values: text **4.5:1**, large text/icons/borders
@@ -132,16 +132,16 @@ colour as the only signal. Minimum values: text **4.5:1**, large text/icons/bord
 
 | Pair | Ratio | Verdict |
 | --- | ---: | --- |
-| Primary text `#e5e9f0` on background `#080a0e` | 16.27:1 | ✅ |
-| Primary text on surface `#0d1016` | 15.64:1 | ✅ |
-| Secondary `#9aa4b5` on surface | 7.57:1 | ✅ |
-| Faint `#697386` on surface | **3.99:1** | 🔴 below 4.5 (used for 9–11 px labels) |
-| Accent `#5b8def` on surface | 5.90:1 | ✅ |
-| OK `#4fa877` / warn `#c9973f` / danger `#d9645c` on surface | 6.53 / 7.24 / 5.38:1 | ✅ |
-| **Primary button label `#f4f7ff` on accent `#5b8def`** | **3.01:1** | 🔴 fails 4.5 for normal-size text |
-| UI border `#2a3342` on surface | 1.50:1 | 🔴 below 3:1 for component boundaries |
+| Primary text `#e5e9f0` on background `#080a0e` | 16.27:1 | PASS |
+| Primary text on surface `#0d1016` | 15.64:1 | PASS |
+| Secondary `#9aa4b5` on surface | 7.57:1 | PASS |
+| Faint `#697386` on surface | **3.99:1** | FAIL below 4.5 (used for 9–11 px labels) |
+| Accent `#5b8def` on surface | 5.90:1 | PASS |
+| OK `#4fa877` / warn `#c9973f` / danger `#d9645c` on surface | 6.53 / 7.24 / 5.38:1 | PASS |
+| **Primary button label `#f4f7ff` on accent `#5b8def`** | **3.01:1** | FAIL fails 4.5 for normal-size text |
+| UI border `#2a3342` on surface | 1.50:1 | FAIL below 3:1 for component boundaries |
 
-**Colour as the only signal:** ✅ does not happen for meaning — visibility states
+**Colour as the only signal:** PASS does not happen for meaning — visibility states
 are rendered with words ("Visible"/"Hidden"), chips carry labels, and chart
 series have legends. Verify once in grayscale.
 
@@ -153,7 +153,7 @@ series have legends. Verify once in grayscale.
 
 ---
 
-### 06 · Tap/click targets — 🔴 gap
+### 06 · Tap/click targets — gap
 
 **Guide asks:** the responding area is the whole button, not just the text/icon.
 Minimum values: iOS **44×44 pt**, Android **48×48 dp**, web **44×44 px (minimum
@@ -172,7 +172,7 @@ matrix; the `@ui/interactive-targets` check must reach a pass.
 
 ---
 
-### 07 · System response — 🟡 partial
+### 07 · System response — partial
 
 **Guide asks:** what happens after each action, during waits, and on errors and
 empty screens. Good: every step responds and says how it is going. Bad: technical
