@@ -25,7 +25,7 @@ const APP = withToolRoute(process.argv[2] || 'http://localhost:4186/?lang=en')
 const CDP = (process.argv[3] || 'http://127.0.0.1:9222').replace(/\/$/, '')
 const DOWNLOAD_DIR = '/tmp/lsea-e2e-downloads'
 
-import { mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -375,35 +375,74 @@ await evaluate(`(() => { const b=document.querySelector('[data-testid="landing-z
 await sleep(1200)
 report.zoneMetricsText = await evaluate(`document.querySelector('.zone-detail')?.textContent ?? null`)
 const signatureOf = () => evaluate(`document.querySelector('[data-testid="landing-zone-signature"]')?.textContent?.trim() ?? null`)
+const zonePanelText = () => bodyText()
+report.defaultFeasible = /FEASIBLE/i.test(await zonePanelText()) && !/NOT FEASIBLE/i.test(await zonePanelText())
+report.zoneDuplicateLabels = await evaluate(`(() => {
+  const labels = [...document.querySelectorAll('.zone-detail dt')].map((el) => el.textContent.trim());
+  const dup = labels.filter((label, index) => labels.indexOf(label) !== index);
+  return [...new Set(dup)];
+})()`)
 report.zoneSignatureBefore = await signatureOf()
-// Full recomputation: change the mission power need and wait for a new signature.
-report.powerInputChanged = await evaluate(`(() => {
-  const input = [...document.querySelectorAll('input[type="number"]')].find((el) => el.value === '120');
+
+const setPowerNeed = (value) => evaluate(`(() => {
+  const input = [...document.querySelectorAll('input[type="number"]')].find((el) => el.value === '120' || el.value === '1200' || el.value === '2000');
   if (!input) return false;
   const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
-  setter.call(input, '2000');
+  setter.call(input, ${JSON.stringify(String(value))});
   input.dispatchEvent(new Event('input', { bubbles: true }));
   input.dispatchEvent(new Event('change', { bubbles: true }));
   return true;
 })()`)
-let signatureAfter = report.zoneSignatureBefore
-for (let attempt = 0; attempt < 30 && signatureAfter === report.zoneSignatureBefore; attempt += 1) {
+
+report.powerInputChanged = await setPowerNeed(1200)
+let infeasibleSignature = report.zoneSignatureBefore
+for (let attempt = 0; attempt < 30 && infeasibleSignature === report.zoneSignatureBefore; attempt += 1) {
   await sleep(500)
-  signatureAfter = await signatureOf()
+  infeasibleSignature = await signatureOf()
 }
-report.zoneSignatureAfter = signatureAfter
-report.zoneRecomputed = Boolean(report.zoneSignatureBefore && signatureAfter && signatureAfter !== report.zoneSignatureBefore)
+report.zoneSignatureAfter = infeasibleSignature
+report.zoneRecomputed = Boolean(report.zoneSignatureBefore && infeasibleSignature !== report.zoneSignatureBefore)
+let infeasibleText = await zonePanelText()
+for (let attempt = 0; attempt < 20 && !/NOT FEASIBLE/i.test(infeasibleText); attempt += 1) {
+  await sleep(500)
+  infeasibleText = await zonePanelText()
+}
+report.infeasibleSignature = infeasibleSignature
+report.infeasibleState = report.zoneRecomputed
+report.infeasibleBadge = /NOT FEASIBLE/i.test(infeasibleText)
+report.infeasibleAlert = /No fully feasible landing zone|no fully feasible landing zone/i.test(infeasibleText)
+
+report.restorePower = await setPowerNeed(120)
+let restoredSignature = infeasibleSignature
+for (let attempt = 0; attempt < 30 && restoredSignature === infeasibleSignature; attempt += 1) {
+  await sleep(500)
+  restoredSignature = await signatureOf()
+}
+let restoredText = await zonePanelText()
+for (let attempt = 0; attempt < 20 && !(/FEASIBLE/i.test(restoredText) && !/NOT FEASIBLE/i.test(restoredText)); attempt += 1) {
+  await sleep(500)
+  restoredText = await zonePanelText()
+}
+report.restoredFeasible = /FEASIBLE/i.test(restoredText) && !/NOT FEASIBLE/i.test(restoredText)
 
 report.export = await click('Export JSON brief')
 await sleep(4000)
 const downloads = readdirSync(DOWNLOAD_DIR)
 report.downloads = downloads
-if (downloads.length > 0) {
-  const brief = JSON.parse(readFileSync(`${DOWNLOAD_DIR}/${downloads[0]}`, 'utf8'))
-  report.briefSchema = brief.schema
-  report.briefSites = Array.isArray(brief.rankedSites) ? brief.rankedSites.length : 'MISSING'
-  report.briefZones = Array.isArray(brief.rankedLandingZones) ? brief.rankedLandingZones.length : -1
-  report.briefZoneMetrics = Boolean(brief.rankedLandingZones?.[0]?.metrics?.power?.averageW != null && brief.rankedLandingZones?.[0]?.metrics?.thermal != null)
+const briefFile = downloads
+  .filter((name) => name.endsWith('.json'))
+  .sort((a, b) => statSync(`${DOWNLOAD_DIR}/${a}`).mtimeMs - statSync(`${DOWNLOAD_DIR}/${b}`).mtimeMs)
+  .at(-1)
+if (briefFile) {
+  try {
+    const brief = JSON.parse(readFileSync(`${DOWNLOAD_DIR}/${briefFile}`, 'utf8'))
+    report.briefSchema = brief.schema
+    report.briefSites = Array.isArray(brief.rankedSites) ? brief.rankedSites.length : 'MISSING'
+    report.briefZones = Array.isArray(brief.rankedLandingZones) ? brief.rankedLandingZones.length : -1
+    report.briefZoneMetrics = Boolean(brief.rankedLandingZones?.[0]?.metrics?.power?.averageW != null && brief.rankedLandingZones?.[0]?.metrics?.thermal != null)
+  } catch (error) {
+    report.briefParseError = String(error)
+  }
 }
 
 report.railLeftBefore = await railWidth('layout-left-rail')
@@ -520,6 +559,9 @@ const failed =
   !/\bW\b/.test(report.zoneMetricsText ?? '') || !/Wh/.test(report.zoneMetricsText ?? '') ||
   !/°C/.test(report.zoneMetricsText ?? '') || !/%/.test(report.zoneMetricsText ?? '') ||
   !report.powerInputChanged || !report.zoneRecomputed ||
+  !report.defaultFeasible || !Array.isArray(report.zoneDuplicateLabels) || report.zoneDuplicateLabels.length > 0 ||
+  !report.infeasibleState || !report.infeasibleBadge || !report.infeasibleAlert ||
+  !report.restorePower || !report.restoredFeasible ||
   report.layerCoverage === 'MISSING' ||
   !/Zoom\s+[5-9],/.test(report.layerZoom ?? '') ||
   report.consoleErrors.length > 0
