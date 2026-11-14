@@ -529,15 +529,15 @@ const ranking = computed(() => state.scores)
     <div class="field-grid">
       <label class="field">
         <span class="field__label">{{ t('autopilot.missionDays') }}</span>
-        <input v-model.number="missionDays" class="input" type="number" min="1" max="60" step="1" />
+        <input v-model.number="missionDays" class="input" type="number" min="1" max="60" step="1" data-testid="mission-days" />
       </label>
       <label class="field">
         <span class="field__label">{{ t('autopilot.powerNeedW') }}</span>
-        <input v-model.number="powerNeedW" class="input" type="number" min="10" max="2000" step="10" />
+        <input v-model.number="powerNeedW" class="input" type="number" min="10" max="2000" step="10" data-testid="mission-power-need" />
       </label>
       <label class="field">
         <span class="field__label">{{ t('autopilot.sunDaysNeeded') }}</span>
-        <input v-model.number="sunDaysNeeded" class="input" type="number" min="0" max="60" step="1" />
+        <input v-model.number="sunDaysNeeded" class="input" type="number" min="0" max="60" step="1" data-testid="mission-sun-days" />
       </label>
       <label class="field">
         <span class="field__label">{{ t('autopilot.perimeter') }}</span>
