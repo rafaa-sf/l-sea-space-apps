@@ -81,13 +81,13 @@ failure.
 
 | @ui check | Result |
 | --- | --- |
-| `@ui/no-console-errors` | ✅ 104/104 |
-| `@ui/boxes-in-viewport` | ✅ 104/104 |
-| `@ui/no-vertical-overflow` | ✅ 104/104 |
-| `@ui/panels-rendered` | ✅ 104/104 (13/13 panels + viewport) |
-| `@ui/no-horizontal-overflow` | ❌ 6/104 (narrow phones only) |
-| `@ui/interactive-targets` | ❌ 0/104 (20 violations per run) |
-| `@ui/fonts-readable` | ❌ 0/104 (minimum font size 9 px) |
+| `@ui/no-console-errors` | PASS — 104/104 |
+| `@ui/boxes-in-viewport` | PASS — 104/104 |
+| `@ui/no-vertical-overflow` | PASS — 104/104 |
+| `@ui/panels-rendered` | PASS — 104/104 (13/13 panels + viewport) |
+| `@ui/no-horizontal-overflow` | FAIL — 6/104 (narrow phones only) |
+| `@ui/interactive-targets` | FAIL — 0/104 (20 violations per run) |
+| `@ui/fonts-readable` | FAIL — 0/104 (minimum font size 9 px) |
 
 ### Findings
 
