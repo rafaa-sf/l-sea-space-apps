@@ -212,6 +212,34 @@ describe('export service', () => {
     expect(JSON.parse(briefToJson(brief)).schema).toBe(BRIEF_SCHEMA)
   })
 
+  it('includes ranked landing zones from the zone autopilot', () => {
+    const landingZones = [
+      {
+        rank: 1,
+        zone: {
+          id: 'zone-02',
+          lat: 84.71,
+          lon: 96.13,
+          areaKm2: 174.2,
+          meanSlopeDeg: 0.3,
+          maxSlopeDeg: 0.6,
+          elevationM: -3720,
+          reliefM: 79,
+        },
+        score: 99.1,
+        grade: 'excellent',
+        ephemerisSiteId: 'nobile-rim-2',
+        nearestSiteDistanceM: 113100,
+      },
+    ]
+    const brief = buildBrief({ sites, mission, computation: { scores, landingZones } })
+    expect(brief.rankedLandingZones).toHaveLength(1)
+    expect(brief.rankedLandingZones[0].areaKm2).toBe(174.2)
+    expect(brief.rankedLandingZones[0].meanSlopeDeg).toBe(0.3)
+    expect(brief.rankedLandingZones[0].ephemerisSiteId).toBe('nobile-rim-2')
+    expect(JSON.parse(briefToJson(brief)).rankedLandingZones).toHaveLength(1)
+  })
+
   it('handles empty input', () => {
     const brief = buildBrief({})
     expect(brief.sites).toEqual([])

@@ -134,6 +134,30 @@ function normalizeBriefScore(score) {
  * }} input
  * @returns {Object} JSON-serializable mission brief.
  */
+
+/** Compact a zone-autopilot entry for the mission brief. */
+function normalizeBriefZone(entry, index) {
+  if (!entry || typeof entry !== 'object') return null
+  const zone = entry.zone ?? entry
+  const num = (value) => (Number.isFinite(Number(value)) ? Number(value) : null)
+  return {
+    rank: Number.isFinite(Number(entry.rank)) ? Number(entry.rank) : index + 1,
+    id: zone.id ?? null,
+    name: zone.name ?? null,
+    lat: num(zone.lat),
+    lon: num(zone.lon),
+    areaKm2: num(zone.areaKm2),
+    meanSlopeDeg: num(zone.meanSlopeDeg),
+    maxSlopeDeg: num(zone.maxSlopeDeg),
+    elevationM: num(zone.elevationM),
+    reliefM: num(zone.reliefM),
+    score: num(entry.score),
+    grade: entry.grade ?? null,
+    ephemerisSiteId: entry.ephemerisSiteId ?? entry.nearestSiteId ?? null,
+    nearestSiteDistanceM: num(entry.nearestSiteDistanceM),
+  }
+}
+
 export function buildBrief(input = {}) {
   const generatedAt = input.generatedAt ? new Date(input.generatedAt) : new Date()
   const sites = (Array.isArray(input.sites) ? input.sites : [])
@@ -154,6 +178,11 @@ export function buildBrief(input = {}) {
     normalizeBriefSite(input.computation?.selectedSite ?? input.selectedSite ?? null) ??
     sites[0] ??
     null
+  const landingZones = Array.isArray(input.computation?.landingZones) ? input.computation.landingZones : []
+  const rankedLandingZones = landingZones
+    .map((entry, index) => normalizeBriefZone(entry, index))
+    .filter(Boolean)
+    .sort((a, b) => a.rank - b.rank)
 
   return {
     schema: BRIEF_SCHEMA,
@@ -168,6 +197,8 @@ export function buildBrief(input = {}) {
     selectedSite,
     sites,
     rankedSites,
+    rankedLandingZones,
+    landingZonesMeta: input.computation?.landingZonesMeta ?? null,
     analysis: input.computation?.analysis ?? null,
     links: {
       quickMap: selectedSite?.links.quickMap ?? buildQuickMapUrl(selectedSite ?? {}),

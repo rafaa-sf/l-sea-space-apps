@@ -1047,6 +1047,8 @@ export async function runExport() {
       mission: state.mission,
       analysis: analysisSnapshot(),
       scores: state.scores,
+      landingZones: state.landingZones,
+      landingZonesMeta: state.landingZonesMeta,
       locale: i18n.global.locale.value,
     })
     state.export.status = 'done'
