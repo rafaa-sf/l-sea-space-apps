@@ -10,7 +10,8 @@ import { actions, selectedSite, state } from './composables/useAppState.js'
 import { getCompute } from './composables/useCompute.js'
 import { detectWebgl } from '../render/webgl.js'
 import { siteDisplayName, sourceLabelKey } from './composables/labels.js'
-import { formatLat, formatLon } from './composables/format.js'
+import { formatNumber } from './composables/format.js'
+import { hypsometricCssGradient } from '../render/geo.js'
 
 const { t, te, locale } = useI18n()
 
@@ -20,6 +21,8 @@ const mode = ref('initializing')
 const initializing = ref(true)
 const webgl = ref(state.system.webgl)
 const note = ref(null)
+const cameraAzimuth = ref(0)
+const scaleInfo = ref(null)
 
 let api = null
 let compute = null
@@ -54,6 +57,38 @@ const fallbackReason = computed(() => {
 const terrainBadge = computed(() => t(sourceLabelKey(state.data.terrainSource, 'terrain')))
 const ephemerisBadge = computed(() => t(sourceLabelKey(state.data.ephemerisSource, 'ephemeris')))
 
+const legendGradient = hypsometricCssGradient()
+const elevationStats = computed(() => state.data.terrainStats)
+const elevationMaxLabel = computed(() =>
+  elevationStats.value ? `${formatNumber(elevationStats.value.maxM, 0)} m` : '',
+)
+const elevationMinLabel = computed(() =>
+  elevationStats.value ? `${formatNumber(elevationStats.value.minM, 0)} m` : '',
+)
+
+function niceScaleMeters(target) {
+  const safe = Math.max(1, target)
+  const exponent = Math.floor(Math.log10(safe))
+  const base = safe / 10 ** exponent
+  const nice = base >= 5 ? 5 : base >= 2 ? 2 : 1
+  return nice * 10 ** exponent
+}
+
+/**
+ * Scale bar from the renderer's view info: the visible ground width at the
+ * target plane is `2 * distance * tan(fov/2) / unitsPerMeter`; pick a round
+ * metre value close to 1/6 of that width and size the bar proportionally.
+ */
+function updateScaleBar(info) {
+  if (!info || !Number.isFinite(info.visibleMeters) || info.visibleMeters <= 0) return
+  cameraAzimuth.value = info.azimuthDeg
+  const meters = niceScaleMeters(info.visibleMeters / 6)
+  const px = Math.max(36, Math.min(220, (meters / info.visibleMeters) * info.widthPx))
+  const metersPerPixel = info.visibleMeters / Math.max(1, info.widthPx)
+  const label = meters >= 1000 ? `${formatNumber(meters / 1000, 0)} km` : `${formatNumber(meters, 0)} m`
+  scaleInfo.value = { meters, px, label, metersPerPixel }
+}
+
 function rendererOptions() {
   return {
     labels: labels.value,
@@ -64,6 +99,7 @@ function rendererOptions() {
     onLayerStatus: (id, status) => {
       actions.setLayerStatus(id, status)
     },
+    onViewChange: (info) => updateScaleBar(info),
   }
 }
 
@@ -261,6 +297,8 @@ onBeforeUnmount(() => {
         tabindex="0"
         role="img"
         :aria-label="t('viewport.canvasLabel', { site: selectedName })"
+        :title="t('viewport.canvasTitle')"
+        data-testid="viewport-canvas"
         @keydown="onCanvasKeydown"
       />
       <p class="sr-only">{{ t('viewport.keyboardHint') }}</p>
@@ -319,20 +357,26 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
-      <div class="viewport__legend" :aria-label="t('viewport.legendLabel')">
-        <span class="legend-item"><i class="legend-dot legend-dot--selected" aria-hidden="true" />{{ t('viewport.legend.selected') }}</span>
-        <span class="legend-item"><i class="legend-dot legend-dot--compare" aria-hidden="true" />{{ t('viewport.legend.compare') }}</span>
-        <span class="legend-item"><i class="legend-dot legend-dot--site" aria-hidden="true" />{{ t('viewport.legend.site') }}</span>
-        <span class="legend-item"><i class="legend-dot legend-dot--sun" aria-hidden="true" />{{ t('viewport.legend.sun') }}</span>
-        <span class="legend-item"><i class="legend-dot legend-dot--earth" aria-hidden="true" />{{ t('viewport.legend.earth') }}</span>
+      <div v-if="mode === '3d'" class="map-compass" data-testid="north-indicator" :aria-label="t('viewport.northIndicator')">
+        <span class="map-compass__letter">{{ t('viewport.northShort') }}</span>
+        <span class="map-compass__needle" :style="{ transform: `rotate(${cameraAzimuth}deg)` }" aria-hidden="true" />
       </div>
 
-      <div class="viewport__footer-hint">
-        <span>{{ t('viewport.hint.marker') }}</span>
-        <span>{{ t('viewport.hint.terrain') }}</span>
-        <span v-if="state.pointer.at" class="viewport__pointer">
-          {{ t('viewport.pointer', { lat: formatLat(state.pointer.lat), lon: formatLon(state.pointer.lon) }) }}
+      <div v-if="elevationStats" class="map-legend" data-testid="elevation-legend" :aria-label="t('viewport.elevationLegend')">
+        <span class="map-legend__title">{{ t('viewport.elevationLegend') }}</span>
+        <span class="map-legend__body">
+          <span class="map-legend__bar" :style="{ background: legendGradient }" aria-hidden="true" />
+          <span class="map-legend__ticks">
+            <span>{{ elevationMaxLabel }}</span>
+            <span>{{ elevationMinLabel }}</span>
+          </span>
         </span>
+      </div>
+
+      <div v-if="scaleInfo" class="map-scale" :aria-label="t('viewport.scaleBar')" data-testid="scale-bar">
+        <span class="map-scale__label" data-testid="scale-bar-label">{{ scaleInfo.label }}</span>
+        <span class="map-scale__line" :style="{ width: `${scaleInfo.px}px` }" aria-hidden="true" />
+        <span class="map-scale__caption" data-testid="scale-bar-caption">{{ t('viewport.metersPerPixel', { value: formatNumber(scaleInfo.metersPerPixel, 0) }) }}</span>
       </div>
     </div>
   </section>

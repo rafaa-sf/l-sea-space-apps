@@ -19,10 +19,10 @@ const { t, te } = useI18n()
 const activeTab = ref('position')
 
 const tabs = [
-  { id: 'position', labelKey: 'tabs.position' },
-  { id: 'lighting', labelKey: 'tabs.lighting' },
-  { id: 'power', labelKey: 'tabs.power' },
-  { id: 'autopilot', labelKey: 'tabs.autopilot' },
+  { id: 'position', labelKey: 'tabs.position', testId: 'analysis-tab-position' },
+  { id: 'lighting', labelKey: 'tabs.lighting', testId: 'analysis-tab-lighting' },
+  { id: 'power', labelKey: 'tabs.power', testId: 'analysis-tab-power' },
+  { id: 'autopilot', labelKey: 'tabs.autopilot', testId: 'analysis-tab-autopilot' },
 ]
 </script>
 

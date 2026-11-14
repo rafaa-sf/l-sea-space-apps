@@ -119,6 +119,12 @@ export default {
       terrain: 'Click terrain to capture coordinates',
     },
     pointer: 'Pointer: {lat} {lon}',
+    elevationLegend: 'Elevation',
+    northIndicator: 'North indicator',
+    northShort: 'N',
+    scaleBar: 'Scale bar',
+    metersPerPixel: '1 px = {value} m',
+    canvasTitle: 'Click a marker to select a site. Click the terrain to capture coordinates.',
   },
   timeline: {
     regionLabel: 'Mission timeline and system status',

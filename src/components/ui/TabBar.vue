@@ -46,6 +46,7 @@ function onKeydown(event) {
       :class="{ 'is-active': tab.id === modelValue }"
       :aria-selected="tab.id === modelValue"
       :tabindex="tab.id === modelValue ? 0 : -1"
+      :data-testid="tab.testId ?? null"
       @click="select(tab.id)"
     >
       {{ tab.labelKey ? t(tab.labelKey) : tab.label }}

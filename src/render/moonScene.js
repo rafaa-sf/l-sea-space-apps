@@ -13,8 +13,11 @@
  */
 
 import {
+  boxBlurGrid,
   createPolarProjection,
-  createRandom,
+  hillshadeShade,
+  sRGBToLinear,
+  sunDirectionVector,
   terrainColor,
 } from './geo.js'
 import { loadMoonTrekMosaic } from './moontrekTiles.js'
@@ -92,7 +95,8 @@ export async function createMoonScene(canvas, options = {}) {
   scene.background = new THREE.Color(COLOR_SPACE)
 
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 800)
-  camera.position.set(0, 23, 16)
+  // Nearly top-down: the polar cap reads as a clean circle instead of an ellipse.
+  camera.position.set(0, 28, 7)
 
   const controls = new OrbitControls(camera, canvas)
   controls.enableDamping = true
@@ -102,32 +106,8 @@ export async function createMoonScene(canvas, options = {}) {
   controls.maxPolarAngle = Math.PI * 0.52
   controls.target.set(0, 0, 0)
 
-  // Moon is airless: keep a low ambient term so the night side is readable.
-  const ambient = new THREE.AmbientLight(0x8899bb, 0.55)
-  scene.add(ambient)
-  const sunLight = new THREE.DirectionalLight(0xfff3dd, 2.1)
-  sunLight.position.set(10, 14, 8)
-  scene.add(sunLight)
-  const fillLight = new THREE.DirectionalLight(0x445577, 0.35)
-  fillLight.position.set(-12, -6, -10)
-  scene.add(fillLight)
-
-  // Star field.
-  const starsGeometry = new THREE.BufferGeometry()
-  const random = createRandom(20261114)
-  const starPositions = new Float32Array(1200 * 3)
-  for (let i = 0; i < 1200; i += 1) {
-    const radius = 240 + random() * 160
-    const theta = random() * Math.PI * 2
-    const phi = Math.acos(2 * random() - 1)
-    starPositions[i * 3] = radius * Math.sin(phi) * Math.cos(theta)
-    starPositions[i * 3 + 1] = radius * Math.cos(phi) * 0.8 + 40
-    starPositions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta)
-  }
-  starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3))
-  const starsMaterial = new THREE.PointsMaterial({ color: 0x9fb4d8, size: 0.9, sizeAttenuation: true, transparent: true, opacity: 0.8 })
-  const stars = new THREE.Points(starsGeometry, starsMaterial)
-  scene.add(stars)
+  // The terrain uses baked cartographic shading (hypsometric tint x hillshade),
+  // so the scene itself needs no dynamic light sources.
 
   const terrainGroup = new THREE.Group()
   const markerGroup = new THREE.Group()
@@ -138,6 +118,8 @@ export async function createMoonScene(canvas, options = {}) {
   let projection = null
   let terrainMesh = null
   let terrainGeometry = null
+  let terrainNormals = null
+  let terrainTints = null
   let terrainStats = { minM: 0, maxM: 1 }
   let lastTerrain = null
   let sites = []
@@ -160,12 +142,41 @@ export async function createMoonScene(canvas, options = {}) {
   const rayGroup = new THREE.Group()
   helperGroup.add(rayGroup)
 
+  let lastViewInfo = { azimuthDeg: Number.NaN, visibleMeters: Number.NaN }
+
+  function computeViewInfo() {
+    if (!projection) return null
+    const size = Math.max(1, Math.min(canvas.clientWidth || 1, canvas.clientHeight || 1))
+    const distance = camera.position.distanceTo(controls.target)
+    const visibleMeters =
+      (2 * distance * Math.tan((camera.fov * Math.PI) / 360)) / Math.max(1e-9, projection.unitsPerMeter)
+    const azimuthDeg =
+      (Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z) * 180) / Math.PI
+    return { visibleMeters, widthPx: size, heightPx: size, azimuthDeg }
+  }
+
+  function notifyViewChange(force = false) {
+    const info = computeViewInfo()
+    if (!info) return
+    const azimuthChanged = Math.abs(info.azimuthDeg - lastViewInfo.azimuthDeg) > 0.5
+    const scaleChanged = Math.abs(info.visibleMeters - lastViewInfo.visibleMeters) > info.visibleMeters * 0.01
+    if (!force && !azimuthChanged && !scaleChanged) return
+    lastViewInfo = { azimuthDeg: info.azimuthDeg, visibleMeters: info.visibleMeters }
+    options.onViewChange?.(info)
+  }
+
+  // Always render a square canvas with a 1:1 camera aspect, so the polar cap is
+  // never stretched by the container aspect ratio.
   function cameraFrame() {
-    const width = canvas.clientWidth || 1
-    const height = canvas.clientHeight || 1
-    renderer.setSize(width, height, false)
-    camera.aspect = width / height
+    const cssWidth = canvas.clientWidth || 1
+    const cssHeight = canvas.clientHeight || 1
+    const size = Math.max(1, Math.min(cssWidth, cssHeight))
+    renderer.setSize(size, size, false)
+    canvas.style.width = `${size}px`
+    canvas.style.height = `${size}px`
+    camera.aspect = 1
     camera.updateProjectionMatrix()
+    notifyViewChange(true)
   }
 
   function sampleElevation(lat, lon) {
@@ -198,10 +209,6 @@ export async function createMoonScene(canvas, options = {}) {
       sunArrow.visible = true
       sunLabel.position.copy(origin.clone().add(vector.clone().multiplyScalar(length + 0.8)))
       sunLabel.visible = true
-      // Sun light follows the real direction; dim it below the horizon.
-      sunLight.position.copy(vector.clone().multiplyScalar(60))
-      sunLight.intensity = sunVisible ? 2.1 : 0.35
-      ambient.intensity = sunVisible ? 0.55 : 0.4
     } else {
       sunArrow.visible = false
       sunLabel.visible = false
@@ -223,6 +230,15 @@ export async function createMoonScene(canvas, options = {}) {
     } else {
       earthArrow.visible = false
       earthLabel.visible = false
+    }
+
+    // Simple declutter: separate the Sun/Earth sprite labels when their anchor
+    // points are close in scene space.
+    if (sunLabel.visible && earthLabel.visible) {
+      const separation = sunLabel.position.distanceTo(earthLabel.position)
+      if (Number.isFinite(separation) && separation < 1.1) {
+        earthLabel.position.y += 0.8
+      }
     }
 
     updateRay()
@@ -270,17 +286,25 @@ export async function createMoonScene(canvas, options = {}) {
     rayGroup.add(endMarker)
   }
 
+  /**
+   * Build the cap mesh from a de-noised (box-blurred) elevation field.
+   * Returns positions, per-vertex Sun-independent hypsometric tints and smooth
+   * surface normals; the colour attribute is filled by `applyHillshade()`.
+   */
   function buildTerrainGeometry(terrain) {
-    const maxVertices = options.maxVertices ?? 40000
+    const maxVertices = options.maxVertices ?? 90000
     const step = Math.max(1, Math.ceil(Math.sqrt((terrain.width * terrain.height) / maxVertices)))
-    const cols = Math.floor((terrain.width - 1) / step) + 1
+    const wrap = Math.abs(terrain.lon1 - terrain.lon0) >= 359.5
+    const cols = wrap ? Math.floor((terrain.width - 1) / step) : Math.floor((terrain.width - 1) / step) + 1
     const rows = Math.floor((terrain.height - 1) / step) + 1
+    const smoothed = boxBlurGrid(terrain.data, terrain.width, terrain.height, 1, 1)
     const positions = new Float32Array(cols * rows * 3)
     const colors = new Float32Array(cols * rows * 3)
     const uvs = new Float32Array(cols * rows * 2)
+    const normals = new Float32Array(cols * rows * 3)
+    const tints = new Float32Array(cols * rows * 3)
     const latSpan = terrain.lat1 - terrain.lat0
     const lonSpan = terrain.lon1 - terrain.lon0
-    const baseElevation = terrainStats.minM ?? 0
 
     let index = 0
     for (let row = 0; row < rows; row += 1) {
@@ -289,28 +313,74 @@ export async function createMoonScene(canvas, options = {}) {
       for (let col = 0; col < cols; col += 1) {
         const sourceCol = Math.min(col * step, terrain.width - 1)
         const lon = terrain.lon0 + (lonSpan * sourceCol) / (terrain.width - 1)
-        const elevation = terrain.data[sourceRow * terrain.width + sourceCol] ?? baseElevation
+        const elevation = smoothed[sourceRow * terrain.width + sourceCol] ?? 0
         const point = projection.project(lat, lon, elevation)
         positions[index * 3] = point.x
         positions[index * 3 + 1] = point.y
         positions[index * 3 + 2] = point.z
         const [r, g, b] = terrainColor(elevation, terrainStats.minM, terrainStats.maxM)
-        colors[index * 3] = r
-        colors[index * 3 + 1] = g
-        colors[index * 3 + 2] = b
+        tints[index * 3] = r
+        tints[index * 3 + 1] = g
+        tints[index * 3 + 2] = b
         uvs[index * 2] = lonSpan > 0 ? (lon - terrain.lon0) / lonSpan : 0
         uvs[index * 2 + 1] = latSpan > 0 ? (lat - terrain.lat0) / latSpan : 0
         index += 1
       }
     }
 
+    // Smooth vertex normals from the de-noised height field. Shading uses the
+    // *true* terrain slopes (metres per metre), not the exaggerated geometry, so
+    // the 3D hillshade matches the 2D cartographic raster while the vertical
+    // exaggeration only affects the perspective relief.
+    const spacingScene = (2 * projection.radius) / Math.max(1, Math.max(cols - 1, rows - 1))
+    const spacingMeters = spacingScene / Math.max(1e-12, projection.unitsPerMeter)
+    for (let row = 0; row < rows; row += 1) {
+      for (let col = 0; col < cols; col += 1) {
+        const index3 = (row * cols + col) * 3
+        const leftCol = wrap ? (col === 0 ? cols - 1 : col - 1) : Math.max(0, col - 1)
+        const rightCol = wrap ? (col === cols - 1 ? 0 : col + 1) : Math.min(cols - 1, col + 1)
+        const upRow = Math.max(0, row - 1)
+        const downRow = Math.min(rows - 1, row + 1)
+        const left = (row * cols + leftCol) * 3
+        const right = (row * cols + rightCol) * 3
+        const up = (upRow * cols + col) * 3
+        const down = (downRow * cols + col) * 3
+        const dhdx =
+          (positions[right + 1] - positions[left + 1]) /
+          Math.max(1e-12, projection.elevationScale) /
+          (2 * spacingMeters)
+        const dhdz =
+          (positions[down + 1] - positions[up + 1]) /
+          Math.max(1e-12, projection.elevationScale) /
+          (2 * spacingMeters)
+        let nx = -dhdx
+        let ny = 1
+        let nz = -dhdz
+        const length = Math.hypot(nx, ny, nz)
+        if (length < 1e-9) {
+          nx = 0
+          ny = 1
+          nz = 0
+        } else {
+          nx /= length
+          ny /= length
+          nz /= length
+        }
+        normals[index3] = nx
+        normals[index3 + 1] = ny
+        normals[index3 + 2] = nz
+      }
+    }
+
     const indices = []
+    const columnCount = wrap ? cols : cols - 1
     for (let row = 0; row < rows - 1; row += 1) {
-      for (let col = 0; col < cols - 1; col += 1) {
+      for (let col = 0; col < columnCount; col += 1) {
+        const nextCol = wrap && col === cols - 1 ? 0 : col + 1
         const a = row * cols + col
-        const b = a + 1
-        const c = a + cols
-        const d = c + 1
+        const b = row * cols + nextCol
+        const c = (row + 1) * cols + col
+        const d = (row + 1) * cols + nextCol
         indices.push(a, c, b, b, c, d)
       }
     }
@@ -320,8 +390,65 @@ export async function createMoonScene(canvas, options = {}) {
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
     geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2))
     geometry.setIndex(indices)
-    geometry.computeVertexNormals()
-    return geometry
+
+    return { geometry, positions, normals, tints, rows, cols }
+  }
+
+  /** Thin neutral rim that closes the cut edge of the polar cap. */
+  function buildCapRim(positions, rows, cols) {
+    const rimDepth = Math.max(0.25, projection.radius * 0.05)
+    const vertices = []
+    const indices = []
+    const wrap = Math.abs((lastTerrain?.lon1 ?? 0) - (lastTerrain?.lon0 ?? 0)) >= 359.5
+    const columnCount = wrap ? cols : cols - 1
+    for (let col = 0; col < columnCount; col += 1) {
+      const nextCol = wrap && col === cols - 1 ? 0 : col + 1
+      const i = ((rows - 1) * cols + col) * 3
+      const j = ((rows - 1) * cols + nextCol) * 3
+      const base = vertices.length / 3
+      vertices.push(
+        positions[i], positions[i + 1], positions[i + 2],
+        positions[i], positions[i + 1] - rimDepth, positions[i + 2],
+        positions[j], positions[j + 1], positions[j + 2],
+        positions[j], positions[j + 1] - rimDepth, positions[j + 2],
+      )
+      indices.push(base, base + 1, base + 2, base + 2, base + 1, base + 3)
+    }
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3))
+    geometry.setIndex(indices)
+    return new THREE.Mesh(
+      geometry,
+      new THREE.MeshBasicMaterial({ color: 0x262b31, side: THREE.DoubleSide }),
+    )
+  }
+
+  /** Recompute vertex colours from the smoothed normals and the current Sun. */
+  function applyHillshade() {
+    if (!terrainGeometry || !terrainNormals || !terrainTints) return
+    const colorAttribute = terrainGeometry.getAttribute('color')
+    if (!colorAttribute) return
+    const colors = colorAttribute.array
+    const sun = sunDirection
+      ? sunDirectionVector(sunDirection.az, sunDirection.el)
+      : sunDirectionVector(0, 90)
+    const visible = Boolean(sunDirection) && sunVisible
+    const vertexCount = colorAttribute.count
+    for (let index = 0; index < vertexCount; index += 1) {
+      const offset = index * 3
+      const normal = {
+        x: terrainNormals[offset],
+        y: terrainNormals[offset + 1],
+        z: terrainNormals[offset + 2],
+      }
+      const shade = sunDirection
+        ? hillshadeShade(normal, sun, visible, { ambient: 0.3, diffuse: 1.35, flatShade: 0.4 })
+        : 0.9
+      colors[offset] = sRGBToLinear(Math.min(1, terrainTints[offset] * shade))
+      colors[offset + 1] = sRGBToLinear(Math.min(1, terrainTints[offset + 1] * shade))
+      colors[offset + 2] = sRGBToLinear(Math.min(1, terrainTints[offset + 2] * shade))
+    }
+    colorAttribute.needsUpdate = true
   }
 
   function clearTerrain() {
@@ -329,6 +456,8 @@ export async function createMoonScene(canvas, options = {}) {
     terrainGroup.clear()
     terrainMesh = null
     terrainGeometry = null
+    terrainNormals = null
+    terrainTints = null
     pickables.length = 0
   }
 
@@ -336,34 +465,23 @@ export async function createMoonScene(canvas, options = {}) {
     if (!terrain || !terrain.data) return
     lastTerrain = terrain
     terrainStats = options.terrainStats?.(terrain) ?? { minM: 0, maxM: 1 }
-    projection = createPolarProjection(terrain, { radius: options.radius ?? 10, exaggeration: options.exaggeration ?? 6 })
+    projection = createPolarProjection(terrain, { radius: options.radius ?? 10, exaggeration: options.exaggeration ?? 3.5 })
     clearTerrain()
 
-    terrainGeometry = buildTerrainGeometry(terrain)
-    const material = new THREE.MeshStandardMaterial({
-      vertexColors: true,
-      roughness: 0.96,
-      metalness: 0.02,
-      flatShading: false,
-    })
+    const built = buildTerrainGeometry(terrain)
+    terrainGeometry = built.geometry
+    terrainNormals = built.normals
+    terrainTints = built.tints
+    applyHillshade()
+
+    const material = new THREE.MeshBasicMaterial({ vertexColors: true })
     terrainMesh = new THREE.Mesh(terrainGeometry, material)
     terrainMesh.userData.pickTerrain = true
     terrainGroup.add(terrainMesh)
     pickables.push(terrainMesh)
 
-    // Subtle polar reference rings.
-    for (const fraction of [0.33, 0.66, 1]) {
-      const points = []
-      const segments = 128
-      for (let i = 0; i <= segments; i += 1) {
-        const angle = (i / segments) * Math.PI * 2
-        const r = projection.radius * fraction
-        points.push(new THREE.Vector3(r * Math.sin(angle), 0.02, r * Math.cos(angle)))
-      }
-      const ringGeometry = new THREE.BufferGeometry().setFromPoints(points)
-      const ringMaterial = new THREE.LineBasicMaterial({ color: 0x2b3a52, transparent: true, opacity: 0.6 })
-      terrainGroup.add(new THREE.Line(ringGeometry, ringMaterial))
-    }
+    // Close the cut cap edge so the disc does not look like a paper cut-out.
+    terrainGroup.add(buildCapRim(built.positions, built.rows, built.cols))
 
     layerToken += 1
     clearOverlays()
@@ -387,15 +505,9 @@ export async function createMoonScene(canvas, options = {}) {
       const isCompared = compareIds.includes(site.id)
       const position = sitePosition(site)
       const color = isSelected ? COLOR_SELECTED : isCompared ? COLOR_COMPARE : COLOR_SITE
-      const radius = isSelected ? 0.26 : 0.18
+      const radius = isSelected ? 0.14 : 0.09
       const geometry = new THREE.OctahedronGeometry(radius, 0)
-      const material = new THREE.MeshStandardMaterial({
-        color,
-        emissive: new THREE.Color(color),
-        emissiveIntensity: isSelected ? 0.9 : 0.35,
-        roughness: 0.4,
-        metalness: 0.1,
-      })
+      const material = new THREE.MeshBasicMaterial({ color })
       const marker = new THREE.Mesh(geometry, material)
       marker.position.copy(position)
       marker.userData.pickSiteId = site.id
@@ -403,11 +515,11 @@ export async function createMoonScene(canvas, options = {}) {
       pickables.push(marker)
 
       if (isSelected) {
-        const ringGeometry = new THREE.RingGeometry(0.34, 0.44, 40)
-        const ringMaterial = new THREE.MeshBasicMaterial({ color: COLOR_SELECTED, transparent: true, opacity: 0.85, side: THREE.DoubleSide })
+        const ringGeometry = new THREE.RingGeometry(0.19, 0.25, 40)
+        const ringMaterial = new THREE.MeshBasicMaterial({ color: COLOR_SELECTED, transparent: true, opacity: 0.8, side: THREE.DoubleSide })
         const ring = new THREE.Mesh(ringGeometry, ringMaterial)
         ring.rotation.x = -Math.PI / 2
-        ring.position.copy(position).add(new THREE.Vector3(0, -0.22, 0))
+        ring.position.copy(position).add(new THREE.Vector3(0, -0.12, 0))
         markerGroup.add(ring)
 
       }
@@ -434,6 +546,7 @@ export async function createMoonScene(canvas, options = {}) {
   function setSunDirection(sun, visible = true) {
     sunDirection = sun ? { az: Number(sun.az) || 0, el: Number(sun.el) || 0 } : null
     sunVisible = Boolean(visible)
+    applyHillshade()
     updateHelpers()
   }
 
@@ -627,9 +740,10 @@ export async function createMoonScene(canvas, options = {}) {
   }
 
   function resetView() {
-    camera.position.set(0, 23, 16)
+    camera.position.set(0, 28, 7)
     controls.target.set(0, 0, 0)
     controls.update()
+    notifyViewChange(true)
   }
 
   /* ------------------------------ interaction ----------------------------- */
@@ -710,6 +824,7 @@ export async function createMoonScene(canvas, options = {}) {
   function animate() {
     frameId = requestAnimationFrame(animate)
     controls.update()
+    notifyViewChange(false)
     renderer.render(scene, camera)
   }
   animate()
@@ -724,8 +839,6 @@ export async function createMoonScene(canvas, options = {}) {
     canvas.removeEventListener('pointermove', onPointerMove)
     disposeObject(scene)
     scene.clear()
-    starsGeometry.dispose()
-    starsMaterial.dispose()
     controls.dispose()
     renderer.dispose()
   }
