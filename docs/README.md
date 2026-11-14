@@ -58,6 +58,7 @@ documentation:
 | [layer-coverage-3d.png](screenshots/layer-coverage-3d.png) | Moon Trek layer with its coverage footprint and per-layer zoom |
 | [custom-extent-3d.png](screenshots/custom-extent-3d.png) | Custom rectangular LOLA DEM extent with a Moon Trek layer draped in 3D |
 | [area-presets-3d.png](screenshots/area-presets-3d.png) | LOLA area preset (300 km) selected from the DEM area dropdown |
+| [landing-zones-3d.png](screenshots/landing-zones-3d.png) | Autopilot ranking of flat landing zones detected from the LOLA DEM |
 
 ## Repository entry points
 
