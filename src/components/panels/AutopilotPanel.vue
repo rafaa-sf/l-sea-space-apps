@@ -58,6 +58,23 @@ const noFeasibleZone = computed(() => {
   return feasibleCount.value === 0
 })
 
+function isRtg(entry) {
+  return (entry?.metrics?.power?.source ?? entry?.feasibility?.powerSource ?? state.mission.powerSource) === 'rtg'
+}
+
+function sunRequirement(entry) {
+  const offered = Number(entry?.metrics?.illumination?.continuousSunDays)
+  const needed = Number(state.mission.sunDaysNeeded)
+  if (!Number.isFinite(offered) || !Number.isFinite(needed)) return null
+  return { offered, needed, met: offered >= needed, deficit: Math.max(0, needed - offered) }
+}
+
+function visibleViolations(entry) {
+  const violations = Array.isArray(entry?.feasibility?.violations) ? entry.feasibility.violations : []
+  if (!isRtg(entry)) return violations
+  return violations.filter((violation) => !/(batteryInsufficient|illuminationInsufficient|powerDeficit|batteryNotSpecified)/.test(violation.code ?? ''))
+}
+
 function isInfeasible(entry) {
   if (typeof entry?.feasible === 'boolean') return !entry.feasible
   return Boolean(entry?.feasibility && entry.feasibility.feasible === false)
@@ -123,6 +140,15 @@ const MISSION_FIELD_SPECS = [
   { key: 'minOperatingTemperatureC', min: -200, max: 50, step: 5 },
   { key: 'maxOperatingTemperatureC', min: -50, max: 200, step: 5 },
 ]
+const powerSource = computed({
+  get: () => state.mission.powerSource ?? 'solar',
+  set: (value) => actions.updateMission({ powerSource: value }),
+})
+const rtgPowerW = computed({
+  get: () => state.mission.rtgPowerW ?? 0,
+  set: (value) => actions.updateMission({ rtgPowerW: Number(value) }),
+})
+
 const extraMissionFields = computed(() =>
   MISSION_FIELD_SPECS.filter(
     (spec) => Object.prototype.hasOwnProperty.call(state.mission, spec.key) && !['powerNeedW', 'sunDaysNeeded', 'perimeterM', 'mastM'].includes(spec.key),
@@ -469,6 +495,15 @@ const sunDaysNeeded = missionField('sunDaysNeeded')
 const perimeterM = missionField('perimeterM')
 const mastM = missionField('mastM')
 
+const batteryCapacityWh = missionField('batteryCapacityWh')
+const heaterMaxW = missionField('heaterMaxW')
+const heaterWPerK = missionField('heaterWPerK')
+const minOperatingTemperatureC = missionField('minOperatingTemperatureC')
+const maxOperatingTemperatureC = missionField('maxOperatingTemperatureC')
+const dataNeedMb = missionField('dataNeedMb')
+const panelAreaM2 = missionField('panelAreaM2')
+const bitrateMbps = missionField('bitrateMbps')
+
 const relayInOrbit = computed({
   get: () => state.mission.relayInOrbit,
   set: (value) => actions.updateMission({ relayInOrbit: Boolean(value) }),
@@ -515,6 +550,49 @@ const ranking = computed(() => state.scores)
       <label class="field field--inline">
         <input v-model="relayInOrbit" type="checkbox" />
         <span>{{ t('autopilot.relay') }}</span>
+      </label>
+      <label class="field">
+        <span class="field__label">{{ t('autopilot.powerSource') }}</span>
+        <select v-model="powerSource" class="input" data-testid="mission-power-source" :aria-label="t('autopilot.powerSource')">
+          <option value="solar">{{ t('autopilot.powerSourceSolar') }}</option>
+          <option value="rtg">{{ t('autopilot.powerSourceRtg') }}</option>
+        </select>
+      </label>
+      <label v-if="powerSource === 'rtg'" class="field">
+        <span class="field__label">{{ t('autopilot.rtgPowerW') }}</span>
+        <input v-model.number="rtgPowerW" class="input" type="number" min="0" max="5000" step="10" data-testid="mission-rtg-power" />
+      </label>
+      <label class="field">
+        <span class="field__label">{{ t('autopilot.mission.batteryCapacityWh') }}</span>
+        <input v-model.number="batteryCapacityWh" class="input" type="number" min="0" max="50000" step="1000" data-testid="mission-battery-wh" />
+      </label>
+      <label class="field">
+        <span class="field__label">{{ t('autopilot.mission.heaterMaxW') }}</span>
+        <input v-model.number="heaterMaxW" class="input" type="number" min="0" max="2000" step="10" />
+      </label>
+      <label class="field">
+        <span class="field__label">{{ t('autopilot.mission.heaterWPerK') }}</span>
+        <input v-model.number="heaterWPerK" class="input" type="number" min="0" max="50" step="0.5" />
+      </label>
+      <label class="field">
+        <span class="field__label">{{ t('autopilot.mission.minOperatingTemperatureC') }}</span>
+        <input v-model.number="minOperatingTemperatureC" class="input" type="number" min="-200" max="50" step="5" />
+      </label>
+      <label class="field">
+        <span class="field__label">{{ t('autopilot.mission.maxOperatingTemperatureC') }}</span>
+        <input v-model.number="maxOperatingTemperatureC" class="input" type="number" min="-50" max="200" step="5" />
+      </label>
+      <label class="field">
+        <span class="field__label">{{ t('autopilot.mission.dataNeedMb') }}</span>
+        <input v-model.number="dataNeedMb" class="input" type="number" min="0" max="100000" step="10" />
+      </label>
+      <label class="field">
+        <span class="field__label">{{ t('autopilot.mission.panelAreaM2') }}</span>
+        <input v-model.number="panelAreaM2" class="input" type="number" min="0.2" max="20" step="0.1" />
+      </label>
+      <label class="field">
+        <span class="field__label">{{ t('autopilot.mission.bitrateMbps') }}</span>
+        <input v-model.number="bitrateMbps" class="input" type="number" min="0.1" max="1000" step="0.1" />
       </label>
     </div>
 
@@ -600,6 +678,16 @@ const ranking = computed(() => state.scores)
             {{ expandedZoneId === entry.zone.id ? t('autopilot.hideDetails') : t('autopilot.showDetails') }}
           </button>
           <div v-if="expandedZoneId === entry.zone.id" class="zone-detail">
+            <p v-if="isRtg(entry)" class="panel-note">{{ t('autopilot.rtgNote') }}</p>
+            <p
+              v-else-if="sunRequirement(entry)"
+              class="sun-requirement"
+              :class="sunRequirement(entry).met ? 'is-met' : 'is-unmet'"
+            >
+              {{ sunRequirement(entry).met
+                ? t('autopilot.sunRequirementMet', { offered: formatNumber(sunRequirement(entry).offered, 1), needed: sunRequirement(entry).needed })
+                : t('autopilot.sunRequirementUnmet', { offered: formatNumber(sunRequirement(entry).offered, 1), needed: sunRequirement(entry).needed }) }}
+            </p>
             <section v-for="group in zoneGroups(entry)" :key="group.key" class="zone-detail__group">
               <h4 class="zone-detail__title">{{ groupLabel(group.key) }}</h4>
               <dl class="zone-detail__grid">
@@ -611,8 +699,13 @@ const ranking = computed(() => state.scores)
             </section>
             <p v-if="!zoneGroups(entry).length" class="panel-hint">{{ t('autopilot.noDetails') }}</p>
           </div>
-          <ul v-if="entry.feasibility && entry.feasibility.violations?.length" class="reason-list violation-list">
-            <li v-for="(violation, index) in entry.feasibility.violations" :key="`${entry.zone.id}-violation-${index}`" class="reason reason--danger">
+          <ul v-if="visibleViolations(entry).length" class="reason-list violation-list">
+            <li
+              v-for="(violation, index) in visibleViolations(entry)"
+              :key="`${entry.zone.id}-violation-${index}`"
+              class="reason"
+              :class="violation.severity === 'warn' ? 'reason--approx' : 'reason--danger'"
+            >
               {{ violationText(violation) }}
             </li>
           </ul>
