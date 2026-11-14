@@ -18,6 +18,7 @@ import ViewportPanel from './components/ViewportPanel.vue'
 import TimelineBar from './components/TimelineBar.vue'
 import ToolsDrawer from './components/ToolsDrawer.vue'
 import ResizeHandle from './components/ui/ResizeHandle.vue'
+import HorizontalSplitHandle from './components/ui/HorizontalSplitHandle.vue'
 import { actions, state } from './components/composables/useAppState.js'
 
 const { t } = useI18n()
@@ -55,22 +56,75 @@ function readStoredWidth(side) {
   return spec.defaultWidth
 }
 
+const MAP_RATIO_KEY = 'lsea.layout.mapRatio'
+const MAP_RATIO_MIN = 0.55
+const MAP_RATIO_MAX = 1
+const MAP_RATIO_DEFAULT = 0.92
+
+function readStoredRatio() {
+  try {
+    const raw = localStorage.getItem(MAP_RATIO_KEY)
+    const stored = Number(raw)
+    if (raw !== null && raw !== '' && Number.isFinite(stored)) {
+      return Math.min(MAP_RATIO_MAX, Math.max(MAP_RATIO_MIN, stored))
+    }
+  } catch {
+    /* storage unavailable */
+  }
+  return MAP_RATIO_DEFAULT
+}
+
 const layout = reactive({
   left: readStoredWidth('left'),
   right: readStoredWidth('right'),
 })
-
-let persistTimer = null
-let resizeRaf = null
+const mapRatio = ref(readStoredRatio())
+const mapSide = ref(480)
+const viewportHeightPx = ref(480)
+const timelineHeightPx = ref(72)
+const centerRef = ref(null)
+let centerObserver = null
 
 function saveWidths() {
   try {
     localStorage.setItem(LAYOUT_SPEC.left.storageKey, String(layout.left))
     localStorage.setItem(LAYOUT_SPEC.right.storageKey, String(layout.right))
+    localStorage.setItem(MAP_RATIO_KEY, String(Number(mapRatio.value.toFixed(3))))
   } catch {
     /* storage unavailable */
   }
 }
+
+function computeMapSide() {
+  const el = centerRef.value
+  if (!el) return
+  const availableHeight = Math.max(220, el.clientHeight)
+  const handleSpace = 10
+  const gap = 16
+  const usable = Math.max(180, availableHeight - handleSpace - gap)
+  const share = Math.min(MAP_RATIO_MAX, Math.max(MAP_RATIO_MIN, mapRatio.value))
+  // Timeline stays compact by default (64px) and can grow when the user drags
+  // the vertical split downwards; the viewport always fills the remainder, so
+  // there is no dead space below the timeline.
+  const timelineMax = Math.max(64, usable - 220)
+  const timelineHeight = Math.round(Math.min(timelineMax, Math.max(64, usable * (1 - share))))
+  const viewportHeight = Math.round(usable - timelineHeight)
+  mapSide.value = viewportHeight
+  viewportHeightPx.value = viewportHeight
+  timelineHeightPx.value = timelineHeight
+}
+
+function updateMapRatio(value) {
+  const next = Math.min(MAP_RATIO_MAX, Math.max(MAP_RATIO_MIN, Number(value) || MAP_RATIO_DEFAULT))
+  if (next === mapRatio.value) return
+  mapRatio.value = next
+  computeMapSide()
+  schedulePersist()
+}
+
+
+let persistTimer = null
+let resizeRaf = null
 
 function schedulePersist() {
   if (persistTimer) clearTimeout(persistTimer)
@@ -122,6 +176,7 @@ function onWindowResize() {
   resizeRaf = requestAnimationFrame(() => {
     resizeRaf = null
     clampLayout()
+    computeMapSide()
     saveWidths()
   })
 }
@@ -156,6 +211,9 @@ watch(
 
 onMounted(() => {
   clampLayout()
+  computeMapSide()
+  centerObserver = new ResizeObserver(() => computeMapSide())
+  if (centerRef.value) centerObserver.observe(centerRef.value)
   window.addEventListener('resize', onWindowResize)
   actions.boot().catch((error) => {
     console.error('[lsea] boot failed', error)
@@ -167,6 +225,7 @@ onBeforeUnmount(() => {
   if (toastTimer) clearTimeout(toastTimer)
   if (persistTimer) clearTimeout(persistTimer)
   if (resizeRaf !== null) cancelAnimationFrame(resizeRaf)
+  if (centerObserver) centerObserver.disconnect()
   window.removeEventListener('resize', onWindowResize)
   document.body.classList.remove('is-resizing-panes')
 })
@@ -192,9 +251,22 @@ onBeforeUnmount(() => {
         @update:width="updateWidth('left', $event)"
         @commit="saveWidths"
       />
-      <section class="app-center" data-testid="layout-center" :aria-label="t('app.centerLabel')">
-        <div class="center-stack">
-          <ViewportPanel />
+      <section ref="centerRef" class="app-center" data-testid="layout-center" :aria-label="t('app.centerLabel')">
+        <div
+          class="center-stack"
+          :style="{ '--viewport-height': `${viewportHeightPx}px`, '--timeline-height': `${timelineHeightPx}px` }"
+        >
+          <div class="center-map">
+            <ViewportPanel />
+          </div>
+          <HorizontalSplitHandle
+            :ratio="mapRatio"
+            :min="MAP_RATIO_MIN"
+            :max="MAP_RATIO_MAX"
+            :default-ratio="MAP_RATIO_DEFAULT"
+            @update:ratio="updateMapRatio"
+            @commit="saveWidths"
+          />
           <TimelineBar />
         </div>
       </section>

@@ -10,6 +10,7 @@
 import { computed, markRaw, reactive, watch } from 'vue'
 import i18n from '../../i18n/index.js'
 import { getCompute } from './useCompute.js'
+import { lonLatToPlanarMeters } from '../../render/geo.js'
 import { hasWorker, runInWorker } from './moduleBridge.js'
 import {
   createCustomSite,
@@ -23,6 +24,7 @@ import { toTimestamp } from './format.js'
 
 const STORAGE_MISSION = 'lsea.mission'
 const STORAGE_SITE = 'lsea.selectedSite'
+const STORAGE_REGION = 'lsea.terrainRegion'
 
 export const MAX_COMPARE = 3
 
@@ -377,6 +379,70 @@ export function setPointerLocation(coordinates) {
   const lon = Number(coordinates?.lon)
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return
   state.pointer = { lat, lon, at: new Date().toISOString() }
+}
+
+/**
+ * Reload the terrain from another LOLA DEM region ("high detail" vs "wide
+ * area"), keeping a valid selected site and refreshing every derived view.
+ */
+export async function setTerrainRegion(regionId) {
+  if (!regionId || regionId === state.data.terrainRegionId) return
+  const compute = await ensureCompute()
+  state.loading.terrain = true
+  try {
+    const result = await loadTerrain({ regionId })
+    if (!result.terrain) return
+    state.terrain = markRaw(result.terrain)
+    state.viewTerrain = markRaw(result.viewTerrain ?? result.terrain)
+    state.data.terrainSource = result.source
+    state.data.terrainOrigin = result.origin ?? null
+    state.data.terrainRegionId = result.regionId ?? regionId
+    state.data.terrainRegionName = result.regionName ?? result.terrain.name ?? null
+    state.data.terrainAttribution = result.attribution ?? result.terrain.attribution ?? null
+    state.data.terrainStats = compute.terrainStats(result.terrain)
+    try {
+      state.data.craters = compute.findCraters(result.terrain, { limit: 8 }) ?? []
+    } catch (error) {
+      reportError('craters', error)
+      state.data.craters = []
+    }
+    state.layerStatus = {}
+    state.autopilot.status = 'stale'
+    try {
+      localStorage.setItem(STORAGE_REGION, state.data.terrainRegionId)
+    } catch {
+      /* storage unavailable */
+    }
+    // Keep the selected site if it lies inside the new extent, else pick the
+    // nearest site that does.
+    const terrain = state.terrain
+    if (Number.isFinite(Number(terrain.minX)) && state.selectedSiteId) {
+      const inside = (site) => {
+        const point = lonLatToPlanarMeters(site.lat, site.lon, Number(terrain.datum ?? terrain.referenceRadiusM ?? 1737400))
+        return point.x >= terrain.minX && point.x <= terrain.maxX && point.y >= terrain.minY && point.y <= terrain.maxY
+      }
+      if (!state.sites.some((site) => site.id === state.selectedSiteId && inside(site))) {
+        const selected = state.sites.find((site) => site.id === state.selectedSiteId)
+        const candidates = state.sites.filter(inside)
+        if (candidates.length) {
+          const reference = selected ?? candidates[0]
+          const referencePoint = lonLatToPlanarMeters(reference.lat, reference.lon, Number(terrain.datum ?? 1737400))
+          candidates.sort((a, b) => {
+            const pa = lonLatToPlanarMeters(a.lat, a.lon, Number(terrain.datum ?? 1737400))
+            const pb = lonLatToPlanarMeters(b.lat, b.lon, Number(terrain.datum ?? 1737400))
+            return Math.hypot(pa.x - referencePoint.x, pa.y - referencePoint.y) - Math.hypot(pb.x - referencePoint.x, pb.y - referencePoint.y)
+          })
+          await selectSite(candidates[0].id)
+        }
+      }
+    }
+    scheduleInstant(0)
+    scheduleMission(0)
+  } catch (error) {
+    reportError('terrain-region', error)
+  } finally {
+    state.loading.terrain = false
+  }
 }
 
 /** Add/remove a site from the comparator. Returns the resulting ids. */
@@ -862,6 +928,7 @@ export const actions = {
   addCustomSite,
   updateSite,
   setPointerLocation,
+  setTerrainRegion,
   toggleCompare,
   clearCompare,
   setTime,

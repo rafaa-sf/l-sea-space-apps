@@ -165,8 +165,66 @@ a:hover {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: min(100%, calc(100vh - 180px));
-  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.center-map {
+  flex: 0 0 auto;
+  width: 100%;
+  height: var(--viewport-height, 520px);
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+
+.center-map .viewport {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  min-height: 0;
+  max-width: none;
+}
+
+.center-stack > .timeline {
+  flex: 0 0 auto;
+  height: var(--timeline-height, 72px);
+  min-height: 52px;
+  max-height: none;
+}
+
+.split-handle-horizontal {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 10px;
+  cursor: row-resize;
+  touch-action: none;
+  border-radius: var(--radius-xs);
+  outline: none;
+}
+
+.split-handle-horizontal__line {
+  width: 100%;
+  height: 1px;
+  border-radius: 1px;
+  background: var(--color-border-strong);
+  transition: background 120ms ease, height 120ms ease;
+}
+
+.split-handle-horizontal:hover .split-handle-horizontal__line,
+.split-handle-horizontal:focus-visible .split-handle-horizontal__line,
+.split-handle-horizontal.is-dragging .split-handle-horizontal__line {
+  height: 2px;
+  background: var(--color-accent);
+}
+
+.split-handle-horizontal:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
 }
 
 .app-rail {
@@ -1327,6 +1385,19 @@ body.is-resizing-panes * {
   border-color: rgba(201, 151, 63, 0.35);
 }
 
+.dem-select {
+  display: inline-flex;
+  align-items: center;
+}
+
+.dem-select__control {
+  max-width: 190px;
+  height: 24px;
+  font-size: 10px;
+  padding: 0 5px;
+  background: var(--color-bg);
+}
+
 .viewport__controls {
   position: absolute;
   top: 8px;
@@ -2226,8 +2297,13 @@ body.is-resizing-panes * {
   }
 
   .center-stack {
-    width: min(100%, calc(100dvh - 220px));
+    width: 100%;
     min-width: 0;
+  }
+
+  .center-map {
+    width: 100%;
+    height: var(--viewport-height, 480px);
   }
 
   .viewport {

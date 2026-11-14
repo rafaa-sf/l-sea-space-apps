@@ -37,6 +37,11 @@ export default {
     resizeRight: 'Resize right panel',
     resizeHint: 'Drag to resize. Arrow keys adjust, Home or double-click resets.',
   },
+  dem: {
+    title: 'LOLA DEM area',
+    highDetail: 'High detail - 152 km, 74 m/px',
+    wide: 'Wide area - 608 km, 594 m/px',
+  },
   common: {
     open: 'Open',
     loading: 'Loading…',

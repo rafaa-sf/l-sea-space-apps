@@ -37,6 +37,11 @@ export default {
     resizeRight: 'Redimensionar panel derecho',
     resizeHint: 'Arrastra para redimensionar. Las flechas ajustan, Inicio o doble clic restablece.',
   },
+  dem: {
+    title: 'Área del MDE LOLA',
+    highDetail: 'Alta resolución - 152 km, 74 m/px',
+    wide: 'Área amplia - 608 km, 594 m/px',
+  },
   common: {
     open: 'Abrir',
     loading: 'Cargando…',
