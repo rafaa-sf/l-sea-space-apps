@@ -107,6 +107,14 @@ const waitForSquareCanvas = async () => {
   }
   return readCanvas()
 }
+const waitForScaleLabel = async () => {
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    const scale = await readScale()
+    if (scale?.label) return scale
+    await sleep(150)
+  }
+  return readScale()
+}
 const wheelZoom = async (deltaY = -240) => {
   const centre = await canvasCentre()
   if (!centre) return
@@ -151,9 +159,9 @@ text = await bodyText()
 report.initialAutopilot = (text.match(/Status: [^\n]+/) || [])[0] ?? 'MISSING'
 
 report.canvas = await waitForSquareCanvas()
-report.scale3d = await readScale()
+report.scale3d = await waitForScaleLabel()
 await wheelZoom()
-report.scale3dAfterZoom = await readScale()
+report.scale3dAfterZoom = await waitForScaleLabel()
 
 report.selectSite = await click('de Gerlache rim 1')
 await sleep(1000)
@@ -175,9 +183,9 @@ text = await bodyText()
 report.fallbackBanner = section(text, '2D fallback', 180)
 
 report.canvas2d = await waitForSquareCanvas()
-report.scale2d = await readScale()
+report.scale2d = await waitForScaleLabel()
 await wheelZoom()
-report.scale2dAfterZoom = await readScale()
+report.scale2dAfterZoom = await waitForScaleLabel()
 
 report.toggle3d = await click('3D', true)
 await sleep(1500)
