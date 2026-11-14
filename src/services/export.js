@@ -256,10 +256,14 @@ export function briefSummaryText(brief) {
     '',
   ]
   const ranked = Array.isArray(brief.rankedSites) ? brief.rankedSites : []
+  const nameById = new Map(
+    (Array.isArray(brief.sites) ? brief.sites : []).map((site) => [site.id, site.name]),
+  )
   if (ranked.length > 0) {
     lines.push('Ranked sites:')
     for (const entry of ranked) {
-      lines.push(`  ${entry.rank ?? '-'}. ${entry.siteId}: score ${entry.score ?? '-'} (${entry.grade ?? '-'})`)
+      const label = nameById.get(entry.siteId) ?? entry.siteId
+      lines.push(`  ${entry.rank ?? '-'}. ${label}: score ${entry.score ?? '-'} (${entry.grade ?? '-'})`)
     }
   }
   if (brief.links?.quickMap) lines.push('', `QuickMap: ${brief.links.quickMap}`)
