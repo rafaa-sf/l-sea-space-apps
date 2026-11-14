@@ -1,0 +1,40 @@
+#!/bin/sh
+# Pre-push hook: refuse to push while the other machine is using the test bench.
+#
+# Install with: git config core.hooksPath .githooks
+# Emergency bypass: LSEA_LOCK_BYPASS=1 git push ...
+#
+# Lock-tag management (creating/deleting refs/tags/lock/*) always bypasses the
+# check, otherwise releasing a lock could be blocked by another machine's lock.
+if [ "${LSEA_LOCK_BYPASS:-0}" = "1" ]; then
+  echo "[lsea-lock] bypassed by LSEA_LOCK_BYPASS=1" >&2
+  exit 0
+fi
+
+repo_root=$(git rev-parse --show-toplevel)
+
+# Inspect the refs git is about to push (stdin: local_ref local_sha remote_ref remote_sha).
+lock_only=1
+while read -r local_ref _local_sha remote_ref _remote_sha; do
+  case "$local_ref" in
+    refs/tags/lock/*|"(delete)") ;;
+    *) lock_only=0 ;;
+  esac
+  case "$remote_ref" in
+    refs/tags/lock/*) ;;
+    *) lock_only=0 ;;
+  esac
+done
+
+if [ "$lock_only" = "1" ]; then
+  exit 0
+fi
+
+if command -v node >/dev/null 2>&1; then
+  node "$repo_root/scripts/machine-lock.mjs" check || {
+    echo "" >&2
+    echo "[lsea-lock] push blocked: the other machine is using the test bench." >&2
+    echo "[lsea-lock] Wait for it to finish, or set LSEA_LOCK_BYPASS=1 for an emergency push." >&2
+    exit 1
+  }
+fi
