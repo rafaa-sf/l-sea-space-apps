@@ -11,7 +11,7 @@
  *
  * Usage:
  *   node ui-matrix.mjs [--devices all|@device/mobile|id1,id2]
- *                      [--locale en,es] [--url <preview-url>]
+ *                      [--locale en,es] [--url <preview-url>] [--hash '#/tool']
  *                      [--tag <t>]... [--exclude-tag <t>]...
  *                      [--out results] [--timeout 20000] [--no-build]
  */
@@ -40,6 +40,7 @@ function parseArgs(argv) {
     devices: 'all',
     locale: 'en,es',
     url: null,
+    hash: '#/tool',
     tags: [],
     excludeTags: [],
     out: RESULTS_DIR,
@@ -55,6 +56,7 @@ function parseArgs(argv) {
     if (a === '--devices') args.devices = next()
     else if (a === '--locale' || a === '--locales') args.locale = next()
     else if (a === '--url') args.url = next()
+    else if (a === '--hash') args.hash = next()
     else if (a === '--tag') args.tags.push(next())
     else if (a === '--exclude-tag') args.excludeTags.push(next())
     else if (a === '--out') args.out = resolve(process.cwd(), next())
@@ -444,7 +446,7 @@ const MEASURE_SCRIPT = String.raw`(() => {
 /* One run                                                             */
 /* ------------------------------------------------------------------ */
 async function runOne(ctx, { device, locale, runIndex }) {
-  const { cdp, url, noWebgl, timeout } = ctx
+  const { cdp, url, noWebgl, timeout, hash } = ctx
   const events = { consoleErrors: [], consoleWarnings: [], exceptions: [], logErrors: [], failedRequests: [] }
   const onEvent = (msg) => {
     if (msg.method === 'Runtime.consoleAPICalled') {
@@ -526,7 +528,13 @@ async function runOne(ctx, { device, locale, runIndex }) {
       initScripts.push((await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: stub })).identifier)
     }
 
-    const targetUrl = `${url}${url.includes('?') ? '&' : '?'}run=${runIndex}`
+    // Query string must come before the hash fragment: the application routes on
+    // the hash (`#/` landing, `#/tool` console), so `?run=` goes first.
+    const explicitHash = url.includes('#') ? url.slice(url.indexOf('#')) : ''
+    const baseUrl = url.includes('#') ? url.slice(0, url.indexOf('#')) : url
+    const defaultHash = hash ? (hash.startsWith('#') ? hash : `#${hash}`) : ''
+    const hashFrag = explicitHash || defaultHash
+    const targetUrl = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}run=${runIndex}${hashFrag}`
     const loadPromise = new Promise((res) => {
       const t = setTimeout(res, timeout)
       const off = (msg) => {
@@ -743,7 +751,7 @@ async function main() {
     while (true) {
       const item = queue[next++]
       if (!item) return
-      const ctx = { cdp: page.cdp, url: preview.url, noWebgl: item.noWebgl, timeout: args.timeout, autoFallback: item.autoFallback }
+      const ctx = { cdp: page.cdp, url: preview.url, hash: args.hash, noWebgl: item.noWebgl, timeout: args.timeout, autoFallback: item.autoFallback }
       try {
         let r
         try {
