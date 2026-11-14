@@ -1,0 +1,72 @@
+{
+  "generated": "2026-11-14T10:35:42.456Z",
+  "source": "NASA/JPL Horizons API (DE441), topocentric apparent az/el from each site",
+  "range": {
+    "start": "2026-11-01T00:00:00Z",
+    "end": "2026-12-31T23:30:00Z"
+  },
+  "stepMinutes": 30,
+  "sampleCount": 2928,
+  "files": [
+    {
+      "siteId": "shackleton-rim",
+      "file": "shackleton-rim.json",
+      "lat": -89.78,
+      "lon": 204.27
+    },
+    {
+      "siteId": "peak-near-shackleton",
+      "file": "peak-near-shackleton.json",
+      "lat": -89.01701,
+      "lon": 126.27302
+    },
+    {
+      "siteId": "connecting-ridge",
+      "file": "connecting-ridge.json",
+      "lat": -89.45,
+      "lon": 222.69
+    },
+    {
+      "siteId": "de-gerlache-rim-1",
+      "file": "de-gerlache-rim-1.json",
+      "lat": -88.68,
+      "lon": 292.07
+    },
+    {
+      "siteId": "de-gerlache-rim-2",
+      "file": "de-gerlache-rim-2.json",
+      "lat": -88.45,
+      "lon": 292.1409
+    },
+    {
+      "siteId": "haworth",
+      "file": "haworth.json",
+      "lat": -86.7,
+      "lon": 336.3
+    },
+    {
+      "siteId": "malapert-massif",
+      "file": "malapert-massif.json",
+      "lat": -86,
+      "lon": 0.3
+    },
+    {
+      "siteId": "leibnitz-beta",
+      "file": "leibnitz-beta.json",
+      "lat": -85.42,
+      "lon": 31.74
+    },
+    {
+      "siteId": "nobile-rim-1",
+      "file": "nobile-rim-1.json",
+      "lat": -85.295,
+      "lon": 36.9168
+    },
+    {
+      "siteId": "nobile-rim-2",
+      "file": "nobile-rim-2.json",
+      "lat": -83.9,
+      "lon": 58.7
+    }
+  ]
+}
