@@ -373,6 +373,7 @@ if (downloads.length > 0) {
   const brief = JSON.parse(readFileSync(`${DOWNLOAD_DIR}/${downloads[0]}`, 'utf8'))
   report.briefSchema = brief.schema
   report.briefSites = Array.isArray(brief.rankedSites) ? brief.rankedSites.length : 'MISSING'
+  report.briefZones = Array.isArray(brief.rankedLandingZones) ? brief.rankedLandingZones.length : -1
 }
 
 report.railLeftBefore = await railWidth('layout-left-rail')
@@ -447,6 +448,7 @@ const failed =
   report.workerBadge === 'MISSING' ||
   report.downloads.length === 0 ||
   report.briefSchema !== 'lsea.mission-brief/1' ||
+  !(report.briefZones >= 1) ||
   !report.scale3d?.label ||
   !canvasIsUndistorted(report.canvas) ||
   !canvasIsUndistorted(report.canvas2d) ||
