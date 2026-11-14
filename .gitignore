@@ -59,5 +59,7 @@ Thumbs.db
 .idea/
 *.swp
 *~
+# Vercel CLI and local environment values; keep the tracked template addable.
 .vercel
 .env*
+!.env.example
