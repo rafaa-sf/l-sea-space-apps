@@ -186,6 +186,37 @@ Mission profile input:
 }
 ```
 
+### `src/core/zones.js`
+
+- `detectLandingZones(terrain, options) -> { zones, meta }` — flat landing zones
+  detected from the loaded DEM: central-difference slope in metres, a slope gate
+  (`maxSlopeDeg`, default 8°), an optional roughness gate (`maxRoughnessM`, local
+  max−min inside `roughnessRadiusCells`), 4-neighbour connected components and a
+  minimum area (`minAreaKm2`, default 1 km²). Large grids are downsampled
+  automatically (`maxCells`); the processing resolution is reported in
+  `meta.resolutionM`. Returns at most `maxZones` (default 12) zones sorted
+  largest-and-flattest first.
+- Zone shape: `{ id, name, lat, lon, xMeters, yMeters, areaKm2, meanSlopeDeg,
+  maxSlopeDeg, elevationM, reliefM, cellCount, suitability }`.
+
+### `src/core/zoneAutopilot.js`
+
+- `rankLandingZones({ terrain, ephemeris, sites, mission, options }) -> { zones, meta }`
+  — scores the detected zones with the regular mission model (`scoreSite`) using
+  the zone coordinates and the terrain horizon at the zone; each zone selects the
+  nearest curated site and borrows its precomputed Sun/Earth ephemeris.
+- **Approximation note:** the borrowed ephemeris is reported as an
+  `ephemeris-nearest-site` warning and in `meta.approximation`. It is safe in
+  practice: the topocentric Earth parallax difference is below 0.1° even across
+  the 608 km wide south-pole DEM (the Sun is effectively unaffected), which is
+  well inside the terrain-horizon uncertainty; the terrain itself is always
+  evaluated at the zone. Only the **currently loaded DEM region** is used (not
+  all regions), because that is the terrain the user sees, and the zone autopilot
+  is meant to run in the background worker.
+- Ranked entry: `{ zone, rank, score, grade, components, reasons, warnings,
+  ephemerisSiteId }` plus convenience fields (`siteId`, `siteName`, `metrics`,
+  `nearestSiteId`, `nearestSiteDistanceM`).
+
 ### `src/services/`
 
 - `sites.js` — `loadSites()`, `createCustomSite({ lat, lon })`.
@@ -208,6 +239,18 @@ Single background CPU thread. Message protocol:
 { id, type: 'result', payload: { scores } }
 // error
 { id, type: 'error', payload: { message } }
+```
+
+The worker also exposes the landing-zone autopilot (task type `landingZones`),
+which ranks flat DEM zones instead of named POIs. The payload carries the
+*currently loaded* terrain region (so results match the visible map) and is
+answered with `{ zones, meta }`:
+
+```js
+// request
+{ id, type: 'landingZones', payload: { terrain, sites, mission, ephemeris?, maxZones?, options? } }
+// response
+{ id, type: 'result', payload: { zones, meta } }
 ```
 
 ## UI interfaces (ui)
@@ -233,7 +276,7 @@ Single background CPU thread. Message protocol:
 | 7 | Power and communications | power, comms |
 | 8 | Layers (Moon Trek) | moontrek |
 | 9 | Real topography and craters (LOLA DEM, PDS) | terrain, lola |
-| 10 | Autopilot algorithm (mission characteristics, power, relay, sun days) | autopilot |
+| 10 | Autopilot algorithm (flat landing zones from the LOLA DEM, mission characteristics, power, relay, sun days) | autopilot, zones, zoneAutopilot |
 | 11 | Background worker (single CPU thread) | workers |
 | 12 | Adapter for PCs without WebGL | render/fallback2d |
 | 13 | Orbital variation | ephemeris |
