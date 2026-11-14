@@ -61,9 +61,9 @@ const exportLabel = computed(() => {
     <StatRow label-key="fallback.webgl" :value="webglLabel" :tone="webglOk ? 'ok' : 'warn'" :mono="false" />
     <StatRow v-if="reasonLabel" label-key="fallback.reasonLabel" :value="reasonLabel" :mono="false" />
     <StatRow label-key="fallback.renderer" :value="rendererLabel" :mono="false" />
-    <StatRow label-key="fallback.terrain" :value="t(sourceLabelKey(state.data.terrainSource))" :mono="false" />
-    <StatRow label-key="fallback.ephemeris" :value="t(sourceLabelKey(state.data.ephemerisSource))" :mono="false" />
-    <StatRow label-key="fallback.layers" :value="t(sourceLabelKey(state.data.layersSource))" :mono="false" />
+    <StatRow label-key="fallback.terrain" :value="t(sourceLabelKey(state.data.terrainSource, 'terrain'))" :mono="false" />
+    <StatRow label-key="fallback.ephemeris" :value="t(sourceLabelKey(state.data.ephemerisSource, 'ephemeris'))" :mono="false" />
+    <StatRow label-key="fallback.layers" :value="t(sourceLabelKey(state.data.layersSource, 'layers'))" :mono="false" />
 
     <div class="segmented segmented--full" role="group" :aria-label="t('viewport.modeLabel')">
       <button

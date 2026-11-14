@@ -438,6 +438,9 @@ export default {
   data: {
     source: {
       dataset: 'Dataset NASA',
+      datasetTerrain: 'Dataset NASA (LOLA)',
+      datasetEphemeris: 'Dataset NASA (JPL Horizons)',
+      datasetLayers: 'Dataset NASA (Moon Trek)',
       service: 'Módulo de servicio',
       synthetic: 'Marcador (sintético)',
       error: 'Error de carga',

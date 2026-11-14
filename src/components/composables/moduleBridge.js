@@ -64,13 +64,16 @@ export function detectedModules() {
  * core function is treated as "not computed": valid falsy results (0, false)
  * are kept.
  */
-export function withFallback(coreModule, functionName, localFunctionName = functionName) {
+export function withFallback(coreModule, functionName, localFunctionName = functionName, options = {}) {
   const local = localCore[localFunctionName]
   return (...args) => {
     const fn = coreModule && typeof coreModule[functionName] === 'function' ? coreModule[functionName] : null
     if (fn) {
       try {
         const result = fn(...args)
+        // Some documented core functions legally return `null` (for example a
+        // ray with a clear line of sight, or "no set event in the window").
+        if (options.nullable) return result
         if (result !== undefined && result !== null) return result
       } catch (error) {
         console.warn(`[lsea] core.${functionName} failed, using local fallback`, error)
@@ -88,67 +91,101 @@ let workerState = null
 let requestCounter = 0
 const pending = new Map()
 
-function getWorkerConstructor() {
+function getWorkerLoader() {
   const key = Object.keys(workerModules)[0]
   return key ? workerModules[key] : null
 }
 
+function rejectAllPending(message) {
+  for (const [, entry] of pending) {
+    clearTimeout(entry.timer)
+    entry.reject(new Error(message))
+  }
+  pending.clear()
+}
+
+/**
+ * Instantiate the coder's background worker and wire the message protocol from
+ * docs/architecture.md. Returns `null` when the worker module is unavailable.
+ */
+async function createWorker() {
+  const loader = getWorkerLoader()
+  if (!loader) return null
+  const WorkerCtor = (await loader()).default ?? (await loader())
+  if (typeof WorkerCtor !== 'function') return null
+
+  const worker = new WorkerCtor()
+  worker.addEventListener('message', (event) => {
+    const data = event.data ?? {}
+    const entry = pending.get(data.id)
+    if (!entry) return
+    pending.delete(data.id)
+    clearTimeout(entry.timer)
+    if (data.type === 'error') entry.reject(new Error(data.payload?.message ?? 'worker error'))
+    else entry.resolve(data.payload)
+  })
+  worker.addEventListener('error', (event) => {
+    const detail = [
+      event?.message || 'worker crashed',
+      event?.filename ? `@ ${event.filename}` : null,
+      Number.isFinite(event?.lineno) && event.lineno > 0 ? `:${event.lineno}` : null,
+    ]
+      .filter(Boolean)
+      .join(' ')
+    rejectAllPending(detail)
+    try {
+      worker.terminate()
+    } catch {
+      /* ignore */
+    }
+    workerState = null
+  })
+  return worker
+}
+
 /**
  * Run a task in the coder's single background worker when available. Resolves
- * with `{ ok, source, payload, error }` and never rejects.
+ * with `{ ok, source, payload, error }` and never rejects. Startup failures are
+ * retried once with a fresh worker; the main-thread fallback is used only after
+ * that real failure.
  */
-export async function runInWorker(type, payload, timeoutMs = 30000) {
-  const loader = getWorkerConstructor()
-  if (!loader) return { ok: false, source: 'main', error: 'worker-missing' }
+export async function runInWorker(type, payload, timeoutMs = 60000) {
+  let lastError = null
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    if (!workerState?.worker) {
+      try {
+        const worker = await createWorker()
+        if (!worker) return { ok: false, source: 'main', error: 'worker-missing' }
+        workerState = { worker }
+      } catch (error) {
+        lastError = error
+        if (attempt === 0) continue
+        return { ok: false, source: 'main', error: `worker-init: ${error.message}` }
+      }
+    }
 
-  let worker = workerState?.worker
-  if (!worker) {
+    const id = (requestCounter += 1)
     try {
-      const WorkerCtor = (await loader()).default ?? (await loader())
-      if (typeof WorkerCtor !== 'function') return { ok: false, source: 'main', error: 'worker-missing' }
-      worker = new WorkerCtor()
-      workerState = { worker }
-      worker.addEventListener('message', (event) => {
-        const data = event.data ?? {}
-        const entry = pending.get(data.id)
-        if (!entry) return
-        pending.delete(data.id)
-        clearTimeout(entry.timer)
-        if (data.type === 'error') entry.reject(new Error(data.payload?.message ?? 'worker error'))
-        else entry.resolve(data.payload)
+      const response = await new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          pending.delete(id)
+          reject(new Error('worker-timeout'))
+        }, timeoutMs)
+        pending.set(id, { resolve, reject, timer })
+        workerState.worker.postMessage({ id, type, payload })
       })
-      worker.addEventListener('error', (event) => {
-        for (const [, entry] of pending) {
-          clearTimeout(entry.timer)
-          entry.reject(new Error(event.message || 'worker crashed'))
-        }
-        pending.clear()
-        try {
-          worker.terminate()
-        } catch {
-          /* ignore */
-        }
-        workerState = null
-      })
+      return { ok: true, source: 'worker', payload: response }
     } catch (error) {
-      return { ok: false, source: 'main', error: `worker-init: ${error.message}` }
+      lastError = error
+      // A crashed worker needs a fresh instance: rebuild and retry once.
+      if (attempt === 0 && /worker crashed|init|load/i.test(error.message)) {
+        workerState = null
+        continue
+      }
+      break
     }
   }
-
-  const id = (requestCounter += 1)
-  try {
-    const response = await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        pending.delete(id)
-        reject(new Error('worker-timeout'))
-      }, timeoutMs)
-      pending.set(id, { resolve, reject, timer })
-      worker.postMessage({ id, type, payload })
-    })
-    return { ok: true, source: 'worker', payload: response }
-  } catch (error) {
-    return { ok: false, source: 'main', error: error.message }
-  }
+  return { ok: false, source: 'main', error: lastError?.message ?? 'worker failed' }
 }
 
 /** True when the worker module is part of the bundle. */

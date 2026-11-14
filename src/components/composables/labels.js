@@ -52,14 +52,21 @@ export function siteSourceLabel(t, te, site) {
   return te(key) ? t(key) : t('sites.source.unknown')
 }
 
-/** i18n key describing a data provenance value. */
-export function sourceLabelKey(source) {
+/**
+ * i18n key describing a data provenance value.
+ *
+ * `kind` (terrain | ephemeris | layers) selects a specific label that names the
+ * NASA source, e.g. "NASA dataset (JPL Horizons)".
+ */
+export function sourceLabelKey(source, kind = null) {
   switch (source) {
     case 'dataset':
     case 'lola':
-      return 'data.source.dataset'
     case 'service':
-      return 'data.source.service'
+      if (kind === 'terrain') return 'data.source.datasetTerrain'
+      if (kind === 'ephemeris') return 'data.source.datasetEphemeris'
+      if (kind === 'layers') return 'data.source.datasetLayers'
+      return 'data.source.dataset'
     case 'synthetic':
     case 'fallback':
       return 'data.source.synthetic'

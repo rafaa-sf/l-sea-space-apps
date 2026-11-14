@@ -37,7 +37,7 @@ const regionLabel = computed(
 <template>
   <PanelCard title-key="topo.title" :badge="`${craters.length}`">
     <p class="panel-hint">{{ t('topo.hint') }}</p>
-    <StatRow label-key="topo.source" :value="t(sourceLabelKey(state.data.terrainSource))" :mono="false" />
+    <StatRow label-key="topo.source" :value="t(sourceLabelKey(state.data.terrainSource, 'terrain'))" :mono="false" />
     <StatRow label-key="topo.region" :value="regionLabel" :mono="false" />
     <StatRow label-key="topo.resolution" :value="resolutionLabel" />
     <StatRow

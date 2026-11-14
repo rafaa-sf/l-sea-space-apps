@@ -17,18 +17,31 @@ const series = ref({ sun: [], earth: [], start: 0, span: 0, markerIndex: -1 })
 let refreshToken = 0
 
 const workerLabel = computed(() => {
-  if (!state.worker.available) return t('timeline.worker.mainThread')
-  if (state.worker.status === 'running') return t('timeline.worker.running')
-  if (state.worker.status === 'done') return t('timeline.worker.workerOk')
-  if (state.worker.status === 'error') return t('timeline.worker.workerError')
-  return t('timeline.worker.workerReady')
+  switch (workerSummary.value) {
+    case 'main-thread':
+      return t('timeline.worker.mainThread')
+    case 'running':
+      return t('timeline.worker.running')
+    case 'ok':
+      return t('timeline.worker.workerOk')
+    case 'error':
+      return t('timeline.worker.workerError')
+    default:
+      return t('timeline.worker.workerReady')
+  }
 })
 
 const workerTone = computed(() => {
-  if (!state.worker.available) return 'warn'
-  if (state.worker.status === 'error') return 'danger'
-  if (state.worker.status === 'done') return 'ok'
-  return 'default'
+  switch (workerSummary.value) {
+    case 'main-thread':
+      return 'warn'
+    case 'error':
+      return 'danger'
+    case 'ok':
+      return 'ok'
+    default:
+      return 'default'
+  }
 })
 
 const sunsetLabel = computed(() =>

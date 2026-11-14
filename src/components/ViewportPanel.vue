@@ -51,8 +51,8 @@ const fallbackReason = computed(() => {
   return note.value ? t('viewport.fallback.reason.error') : t('viewport.fallback.reason.auto')
 })
 
-const terrainBadge = computed(() => t(sourceLabelKey(state.data.terrainSource)))
-const ephemerisBadge = computed(() => t(sourceLabelKey(state.data.ephemerisSource)))
+const terrainBadge = computed(() => t(sourceLabelKey(state.data.terrainSource, 'terrain')))
+const ephemerisBadge = computed(() => t(sourceLabelKey(state.data.ephemerisSource, 'ephemeris')))
 
 function rendererOptions() {
   return {

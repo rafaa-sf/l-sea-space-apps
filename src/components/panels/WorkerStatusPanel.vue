@@ -8,17 +8,18 @@ import { useI18n } from 'vue-i18n'
 import PanelCard from '../ui/PanelCard.vue'
 import StatRow from '../ui/StatRow.vue'
 import { hasWorker } from '../composables/moduleBridge.js'
-import { state } from '../composables/useAppState.js'
+import { state, workerSummary } from '../composables/useAppState.js'
 import { formatDuration, formatUtc } from '../composables/format.js'
 
 const { t } = useI18n()
 
 const workerStatus = computed(() => {
-  if (!state.worker.available) return t('worker.unavailable')
-  switch (state.worker.status) {
+  switch (workerSummary.value) {
+    case 'main-thread':
+      return t('worker.unavailable')
     case 'running':
       return t('worker.running')
-    case 'done':
+    case 'ok':
       return t('worker.done')
     case 'error':
       return t('worker.error')
@@ -28,9 +29,9 @@ const workerStatus = computed(() => {
 })
 
 const workerTone = computed(() => {
-  if (!state.worker.available) return 'warn'
-  if (state.worker.status === 'error') return 'danger'
-  if (state.worker.status === 'done') return 'ok'
+  if (workerSummary.value === 'main-thread') return 'warn'
+  if (workerSummary.value === 'error') return 'danger'
+  if (workerSummary.value === 'ok') return 'ok'
   return 'default'
 })
 
@@ -61,7 +62,7 @@ const workerAvailable = computed(() => hasWorker() || state.worker.available)
     <StatRow label-key="worker.source" :value="state.worker.source === 'worker' ? t('autopilot.source.worker') : t('autopilot.source.main')" :mono="false" />
     <StatRow label-key="worker.lastRun" :value="lastRun" :mono="false" />
     <StatRow label-key="worker.duration" :value="duration" :mono="false" />
-    <p v-if="state.worker.error" class="panel-note panel-note--warn">{{ state.worker.error }}</p>
+    <p v-if="workerSummary === 'error' && state.worker.error" class="panel-note panel-note--warn">{{ state.worker.error }}</p>
     <p v-if="!workerAvailable" class="panel-note panel-note--warn">{{ t('worker.mainThreadNote') }}</p>
     <p class="panel-note">{{ t('worker.singleThreadNote') }}</p>
 

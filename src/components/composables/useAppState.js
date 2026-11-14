@@ -179,6 +179,22 @@ export const ephemerisRange = computed(() =>
   state.ephemeris ? { start: state.ephemeris.start, end: state.ephemeris.end } : null,
 )
 
+/**
+ * Single source of truth for the background-worker badge. Keeps the timeline
+ * pill and the worker panel consistent: a successful worker run always wins
+ * over a stale earlier failure, and an error is only reported when the worker
+ * itself is currently failing.
+ */
+export const workerSummary = computed(() => {
+  if (!state.worker.available) return 'main-thread'
+  if (state.autopilot.status === 'running' || state.worker.status === 'running') return 'running'
+  const workerSucceeded = state.autopilot.status === 'done' && state.autopilot.source === 'worker'
+  if (workerSucceeded) return 'ok'
+  if (state.worker.status === 'error') return 'error'
+  if (state.worker.status === 'done') return 'ok'
+  return 'ready'
+})
+
 let computeEngine = null
 let bootPromise = null
 let ephemerisToken = 0
@@ -872,6 +888,7 @@ export function useAppState() {
     compareSites,
     terrainRegion,
     ephemerisRange,
+    workerSummary,
     actions,
   }
 }

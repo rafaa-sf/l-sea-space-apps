@@ -15,7 +15,7 @@ const enabledCount = computed(() =>
   state.layers.filter((layer) => state.layerEnabled[layer.id]).length,
 )
 
-const overviewKey = computed(() => sourceLabelKey(state.data.layersSource))
+const overviewKey = computed(() => sourceLabelKey(state.data.layersSource, 'layers'))
 
 function toggle(layer) {
   actions.setLayerEnabled(layer.id, !state.layerEnabled[layer.id])
