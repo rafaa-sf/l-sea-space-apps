@@ -21,7 +21,7 @@ const { t } = useI18n()
       {{ labelKey ? t(labelKey) : label }}
       <abbr v-if="hint" class="stat-row__hint" :title="hint">?</abbr>
     </span>
-    <span class="stat-row__value" :class="{ 'is-mono': mono }">
+    <span class="stat-row__value" :class="{ 'is-mono': mono }" :title="unit ? `${value} ${unit}` : String(value)">
       {{ value }}<span v-if="unit" class="stat-row__unit"> {{ unit }}</span>
     </span>
   </div>

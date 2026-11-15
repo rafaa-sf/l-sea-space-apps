@@ -1,4 +1,14 @@
 export default {
+  shell: {
+    loading: 'Cargando consola de misión…',
+    loadErrorTitle: 'No se pudo cargar la consola de misión',
+    loadErrorBody: 'El código de la aplicación (chunk de JavaScript) no se pudo cargar. Revisa la conexión y reinténtalo.',
+    ephemerisError: 'Error en los datos de efemérides',
+    sitesError: 'Error en el catálogo de sitios',
+    terrainError: 'Error en los datos de terreno',
+    retry: 'Reintentar',
+    reload: 'Recargar',
+  },
   scrollRail: { label: 'Desplazamiento de la página', up: 'Subir', down: 'Bajar' },
   app: {
     productName: 'Navegador de sitios de aterrizaje lunares',
