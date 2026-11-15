@@ -220,7 +220,7 @@ shipped and validated.
 
 - **What it is:** NASA's Moon Trek portal for lunar data visualisation and mission
   planning.
-- **Real contribution:** 33 verified south-polar WMTS layers shown in the
+- **Real contribution:** 32 verified south-polar WMTS layers shown in the
   application, covering LOLA relief and slope masks/roughness, LROC NAC imagery down
   to 0.67 m/px and NAC slope, the PSR mosaic, Diviner temperature and rock abundance,
   illumination/Earth/sky visibility and Artemis III site mosaics, plus Moon Trek deep

@@ -100,7 +100,7 @@ details are in [data.md](data.md).
 | `public/data/pois.json` | Array of `Site` objects for the 10 curated south-pole POIs (`source: 'poi'`, plus `provenance`, `sourceUrl`, DEM-sampled `elevationM`) | `scripts/nasa/build-pois.mjs` |
 | `public/data/ephemeris/` | Per-site Sun/Earth az/el files + `index.json` + schema `README.md` | `scripts/nasa/fetch-horizons.mjs` |
 | `public/data/terrain/` | LOLA polar-stereographic int16 grids + `index.json` (see above) | `scripts/nasa/build-terrain.py` |
-| `public/data/layers.json` | 33 live-verified NASA Moon Trek WMTS layers (`type: 'wmts'`, tile URL template, zoom range, projection, attribution, verification record) | `scripts/nasa/build-layers.mjs` |
+| `public/data/layers.json` | 32 live-verified NASA Moon Trek WMTS layers (`type: 'wmts'`, tile URL template, zoom range, projection, attribution, verification record) | `scripts/nasa/build-layers.mjs` |
 | `public/data/ai-usage.md` | Same declaration as [ai-usage.md](ai-usage.md), served to the deployed app (the UI links to `/data/ai-usage.md`) | copied from docs |
 
 The static build copies `public/data/` to `dist/data/`, so the app fetches

@@ -141,12 +141,17 @@ export async function createMoonScene(canvas, options = {}) {
   camera.position.set(0, 28, 7)
 
   const controls = new OrbitControls(camera, canvas)
-  // Phones use the on-screen zoom bar; disable pinch/scroll zoom there so the
-  // gesture cannot fight the page scroll. Desktop keeps the normal controls.
-  const phoneLayout = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-    ? window.matchMedia('(max-width: 720px)').matches
-    : false
-  if (phoneLayout) controls.enableZoom = false
+  // Phones (portrait or landscape) use the on-screen zoom bar; disable pinch/
+  // scroll zoom there so the gesture cannot fight the page scroll. Desktop
+  // keeps the normal controls, including mouse-wheel zoom.
+  const phoneQuery = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(max-width: 720px), (pointer: coarse) and (max-width: 1024px) and (max-height: 500px) and (orientation: landscape)')
+    : null
+  const syncTouchZoom = () => {
+    if (phoneQuery) controls.enableZoom = !phoneQuery.matches
+  }
+  syncTouchZoom()
+  phoneQuery?.addEventListener?.('change', syncTouchZoom)
   // One-finger vertical swipes scroll the page on phones; two fingers still
   // rotate/zoom the map (OrbitControls defaults to touch-action: none).
   canvas.style.touchAction = 'pan-y'
@@ -269,9 +274,15 @@ export async function createMoonScene(canvas, options = {}) {
     const aspect = Math.max(0.2, camera.aspect || 1)
     const mapWidth = projection.widthM * projection.unitsPerMeter
     const mapHeight = projection.heightM * projection.unitsPerMeter
-    // Exact-fit perspective: the larger horizontal extent maps to the viewport
-    // height at the target plane, so the 3D scale matches the 2D map scale.
-    return Math.max(mapHeight / 2 / tanHalf, mapWidth / 2 / (tanHalf * aspect))
+    // Exact-fit perspective: on normal aspects the larger extent maps to the
+    // viewport height at the target plane, so the 3D scale matches the 2D map
+    // scale. Phone landscape is the exception: fit the width so the square DEM
+    // fills the full-width viewport instead of leaving black side bars.
+    const heightFit = mapHeight / 2 / tanHalf
+    const widthFit = mapWidth / 2 / (tanHalf * aspect)
+    const widePhone = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      && window.matchMedia('(pointer: coarse) and (max-width: 1024px) and (max-height: 500px) and (orientation: landscape)').matches
+    return widePhone && aspect >= 2 ? widthFit : Math.max(heightFit, widthFit)
   }
 
   /** Place the camera for the active view preset (tilted 3D or top-down 2D). */
@@ -1137,6 +1148,7 @@ export async function createMoonScene(canvas, options = {}) {
     canvas.removeEventListener('pointerdown', onPointerDown)
     canvas.removeEventListener('pointerup', onPointerUp)
     canvas.removeEventListener('pointermove', onPointerMove)
+    phoneQuery?.removeEventListener?.('change', syncTouchZoom)
     disposeObject(scene)
     scene.clear()
     controls.dispose()

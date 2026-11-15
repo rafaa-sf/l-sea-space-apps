@@ -103,7 +103,7 @@ Companion documents: [architecture.md](architecture.md) (contracts), [data.md](d
 
 ## 8. Moon Trek layers
 
-- **What.** 33 verified NASA Moon Trek south-polar raster layers draped in 3D
+- **What.** 32 verified NASA Moon Trek south-polar raster layers draped in 3D
   and 2D, with coverage and zoom information; link-type entries open on Moon
   Trek.
 - **How.** `public/data/layers.json`; `src/services/moontrek.js` builds tile/WMS
