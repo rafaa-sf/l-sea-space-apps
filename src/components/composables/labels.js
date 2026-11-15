@@ -15,7 +15,10 @@ export function siteDisplayName(t, te, site) {
   }
   if (site.nameKey && typeof te === 'function' && te(site.nameKey)) return t(site.nameKey)
   if (site.name) return site.name
-  if (site.source === 'custom' || site.source === 'pointer') {
+  if (site.source === 'pointer') {
+    return t('sites.pointerName', { lat: formatLat(site.lat), lon: formatLon(site.lon) })
+  }
+  if (site.source === 'custom') {
     return t('sites.customName', { lat: formatLat(site.lat), lon: formatLon(site.lon) })
   }
   return site.id || ''

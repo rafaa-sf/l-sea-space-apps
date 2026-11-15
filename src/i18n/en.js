@@ -241,6 +241,8 @@ export default {
     addCustom: 'Add site',
     pointerHint: 'Click the terrain in the viewport to capture a pointer position.',
     selectedHint: 'Selected site: {site}',
+    pointerName: 'Pointer site ({lat}, {lon})',
+    clearPointer: 'Clear pointer',
     customName: 'Custom site ({lat}, {lon})',
     empty: 'No sites match the search.',
     source: {

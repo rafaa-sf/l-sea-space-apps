@@ -3,7 +3,7 @@
  * Custom site tab: latitude/longitude entry, map-pointer capture and site
  * creation.
  */
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { actions, state } from '../composables/useAppState.js'
 import { formatLat, formatLon } from '../composables/format.js'
@@ -13,6 +13,7 @@ const { t } = useI18n()
 const latInput = ref('-89.5')
 const lonInput = ref('0')
 const formError = ref('')
+const pointerSite = computed(() => state.sites.find((site) => site.source === 'pointer') ?? null)
 
 watch(
   () => state.pointer,
@@ -32,6 +33,10 @@ function fillFromPointer() {
 function usePointerForCycles() {
   if (!state.pointer?.at) return
   actions.pinPointerSite({ lat: state.pointer.lat, lon: state.pointer.lon })
+}
+
+function clearPointer() {
+  actions.clearPointerSite()
 }
 
 function addCustomSite() {
@@ -92,6 +97,14 @@ function addCustomSite() {
         @click="usePointerForCycles"
       >
         {{ t('sites.cyclesOnPointer') }}
+      </button>
+      <button
+        type="button"
+        class="button button--quiet button--small"
+        :disabled="!pointerSite"
+        @click="clearPointer"
+      >
+        {{ t('sites.clearPointer') }}
       </button>
     </div>
   </div>

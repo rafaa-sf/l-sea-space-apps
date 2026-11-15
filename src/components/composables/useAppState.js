@@ -455,6 +455,20 @@ export function updateSite(id, patch) {
   if (state.autopilot.status === 'done') state.autopilot.status = 'stale'
 }
 
+/** Remove the transient pointer site and return to the previous curated site. */
+export function clearPointerSite() {
+  const pointerSite = state.sites.find((site) => site.source === 'pointer')
+  if (!pointerSite) return
+  state.sites = state.sites.filter((site) => site.source !== 'pointer')
+  state.data.sitesCount = state.sites.length
+  state.pointer = { ...state.pointer, at: null }
+  if (state.selectedSiteId === pointerSite.id) {
+    const fallback = state.sites.find((site) => site.source !== 'pointer') ?? state.sites[0] ?? null
+    if (fallback) selectSite(fallback.id)
+    else state.selectedSiteId = null
+  }
+}
+
 /** Store the last map-pointer coordinates (click on the viewport terrain). */
 export function setPointerLocation(coordinates) {
   const lat = Number(coordinates?.lat)
@@ -1290,6 +1304,7 @@ export const actions = {
   updateSite,
   setPointerLocation,
   pinPointerSite,
+  clearPointerSite,
   setTerrainRegion,
   toggleCompare,
   clearCompare,

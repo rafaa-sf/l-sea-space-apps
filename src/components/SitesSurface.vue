@@ -14,8 +14,11 @@ const { t } = useI18n()
 
 const activeTab = ref('sites')
 
+// The map pointer is a transient analysis site, not part of the curated set.
+const siteCount = computed(() => state.sites.filter((site) => site.source !== 'pointer').length)
+
 const tabs = computed(() => [
-  { id: 'sites', labelKey: 'tabs.sites', count: state.sites.length },
+  { id: 'sites', labelKey: 'tabs.sites', count: siteCount.value },
   { id: 'custom', labelKey: 'tabs.custom' },
   { id: 'compare', labelKey: 'tabs.compare', count: state.compareSiteIds.length },
 ])
@@ -29,7 +32,7 @@ function onCompareAdded() {
   <section class="surface app-rail app-rail--left" :aria-label="t('surfaces.sites')">
     <header class="surface__head">
       <h2 class="surface__title">{{ t('surfaces.sites') }}</h2>
-      <span class="surface__meta">{{ t('viewport.sites', { count: state.sites.length }) }}</span>
+      <span class="surface__meta">{{ t('viewport.sites', { count: siteCount }) }}</span>
     </header>
     <TabBar v-model="activeTab" :tabs="tabs" label-key="surfaces.sitesTabs" />
     <div class="surface__body">

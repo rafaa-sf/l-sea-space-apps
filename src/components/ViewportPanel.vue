@@ -32,6 +32,7 @@ let compute = null
 let recreateToken = 0
 let watchers = []
 let settleTimer = null
+let pointerTimer = null
 let stageObserver = null
 
 const labels = computed(() => ({
@@ -194,13 +195,34 @@ function updateScaleBar(info) {
   scaleInfo.value = { meters, px, label, metersPerPixel }
 }
 
+/** Coalesce rapid terrain clicks: the readout updates at once, the heavy
+ * site selection/analysis is debounced to the last clicked point. */
+function queuePointerPin(coordinates) {
+  actions.setPointerLocation(coordinates)
+  if (pointerTimer) clearTimeout(pointerTimer)
+  pointerTimer = setTimeout(() => {
+    pointerTimer = null
+    actions.pinPointerSite(coordinates)
+  }, 220)
+}
+
+function cancelPointerPin() {
+  if (pointerTimer) {
+    clearTimeout(pointerTimer)
+    pointerTimer = null
+  }
+}
+
 function rendererOptions() {
   return {
     labels: labels.value,
     sampleElevation: (lat, lon) => (compute && state.terrain ? compute.sampleElevation(state.terrain, lat, lon) : 0),
     terrainStats: (terrain) => (compute ? compute.terrainStats(terrain) : { minM: 0, maxM: 1 }),
-    onPickSite: (id) => actions.selectSite(id),
-    onPickLocation: (coordinates) => actions.pinPointerSite(coordinates),
+    onPickSite: (id) => {
+      cancelPointerPin()
+      actions.selectSite(id)
+    },
+    onPickLocation: queuePointerPin,
     onLayerStatus: (id, status) => {
       actions.setLayerStatus(id, status)
     },
@@ -469,12 +491,19 @@ onBeforeUnmount(() => {
   watchers = []
   if (stageObserver) stageObserver.disconnect()
   if (settleTimer) clearTimeout(settleTimer)
+  cancelPointerPin()
   destroyRenderer()
 })
 </script>
 
 <template>
-  <section class="viewport" :aria-label="t('viewport.regionLabel')" :data-markers-anchored="markersAnchored">
+  <section
+    class="viewport"
+    :class="{ 'is-initializing': initializing }"
+    :aria-label="t('viewport.regionLabel')"
+    :aria-busy="initializing"
+    :data-markers-anchored="markersAnchored"
+  >
     <div ref="stageRef" class="viewport__stage">
       <canvas
         :key="canvasKey"
