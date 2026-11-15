@@ -183,19 +183,7 @@ def add_notes(slide, text: str) -> None:
 
 
 def add_footer(slide, number: int) -> None:
-    # Keep the attribution legible where a full-bleed screenshot reaches the bottom.
-    band = slide.shapes.add_shape(
-        MSO_SHAPE.RECTANGLE, 0, Inches(6.98), W, Inches(0.52)
-    )
-    solid(band, BG)
-    add_line(slide, Inches(0.65), Inches(7.02), Inches(12.03))
-    add_text(
-        slide,
-        "L-SEA  ·  NASA Space Apps Challenge Málaga 2026  ·  Data: NASA LOLA (PDS)  ·  "
-        "JPL Horizons  ·  NASA Moon Trek  ·  LROC QuickMap",
-        Inches(0.65), Inches(7.1), Inches(11.3), Inches(0.25),
-        size=8.5, color=DIM,
-    )
+    # Minimal slide number only: the data attribution is repeated on the final slide.
     add_text(
         slide, f"{number} / 7", Inches(12.1), Inches(7.1), Inches(0.58), Inches(0.25),
         size=8.5, color=DIM, align=PP_ALIGN.RIGHT,
@@ -346,16 +334,10 @@ def main() -> None:
     add_text(slide, "Challenge 10  ·  CSA  ·  Lunar Landing Site Navigator",
              Inches(0.8), Inches(5.96), Inches(5.2), Inches(0.3),
              size=10.5, color=DIM)
-    add_text(slide, "Live app", Inches(0.8), Inches(6.22), Inches(5.2), Inches(0.2),
-             size=9, color=DIM)
-    add_text(slide, LIVE_URL, Inches(0.8), Inches(6.41), Inches(5.3), Inches(0.26),
-             size=11, color=ACCENT)
-    add_text(slide, REPO_URL, Inches(0.8), Inches(6.66), Inches(5.3), Inches(0.26),
-             size=9.5, color=DIM)
     add_notes(slide,
               "Cover. L-SEA — Lunar Landing Site Navigator. Team Rafael & Marcos, "
-              "NASA Space Apps Challenge Málaga 2026. Seven slides in English; live URL "
-              "and repository are on screen. No NASA or CSA logos are used as branding.")
+              "NASA Space Apps Challenge Málaga 2026. Seven slides in English. Live and "
+              "repository links are on the final slide to avoid repetition.")
     add_footer(slide, 1)
 
     # ---------------------------------------------------------------- slide 2
@@ -583,10 +565,9 @@ def main() -> None:
               color=PANEL_ALT)
     add_text(slide, "LIVE DEMO", Inches(0.88), Inches(6.34), Inches(1.4), Inches(0.3),
              size=10, color=OK, bold=True)
-    add_text(slide, LIVE_URL, Inches(2.25), Inches(6.3), Inches(7.4), Inches(0.35),
-             size=15, color=ACCENT, bold=True)
-    add_text(slide, "No install  ·  no login", Inches(10.1), Inches(6.37),
-             Inches(2.5), Inches(0.28), size=10.5, color=DIM)
+    add_text(slide, "No install  ·  no login  ·  links on the final slide",
+             Inches(2.25), Inches(6.37), Inches(9.6), Inches(0.3),
+             size=11, color=DIM)
     add_notes(slide,
               "Key demo moment: change the mission date by a few weeks, or switch an "
               "Apollo/Artemis preset, and show the sunlight margin and Earth visibility "
