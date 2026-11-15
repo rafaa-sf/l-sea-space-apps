@@ -356,12 +356,12 @@ def main() -> None:
          "Power, thermal and comms succeed or fail together.", OK),
         ("Terrain horizon",
          "Local ridges, not a flat horizon, set Sun and Earth access.", ACCENT),
-        ("Ellipse, not a point",
-         "A landing zone spans kilometres of unseen terrain.", WARN),
+        ("Area, not a point",
+         "A zone has size, slope and hazards; we fit an equivalent landing area.", WARN),
         ("Site and date",
          "Small changes flip sunlight and Earth contact for the mission.", PURPLE),
         ("Scattered evidence",
-         "NASA tools are deep, but built for analysis, not comparison.", DIM),
+         "QuickMap, Moon Trek and Horizons are deep, but built for analysis.", DIM),
     ]
     y = 1.55
     for label, detail, color in constraints:
@@ -601,15 +601,20 @@ def main() -> None:
              body_size=12.5)
     add_card(slide, Inches(6.72), Inches(3.85), Inches(5.95), Inches(2.1),
              "Reproducible by design",
-             "Deterministic scoring with documented weights, reasons and an input "
-             "signature; 275 tests in 19 files guard the contracts.", PURPLE,
+             "Deterministic scoring with documented weights and an input signature. The "
+             "weights/thresholds are design choices, not fitted; 275 tests in 19 files.",
+             PURPLE,
              title_size=16, body_size=12.5)
-    add_panel(slide, Inches(0.65), Inches(6.2), Inches(12.02), Inches(0.45),
+    add_panel(slide, Inches(0.65), Inches(6.18), Inches(12.02), Inches(0.78),
               color=PANEL_ALT)
-    add_text(slide, "No black box: every rank exposes weights, reasons, warnings and "
-                    "confidence.",
-             Inches(0.88), Inches(6.25), Inches(11.5), Inches(0.35),
-             size=12.5, color=ACCENT, bold=True)
+    add_text(slide, "Reference mission: 14 days · 120 W load · 40 kWh battery · "
+                    "10 continuous sun days · 2.4 m² / 28% panels. Presets change it.",
+             Inches(0.88), Inches(6.24), Inches(11.5), Inches(0.3),
+             size=10.8, color=ACCENT, bold=True)
+    add_text(slide, "No black box: ranks expose weights, reasons, warnings and the "
+                    "assumptions above.",
+             Inches(0.88), Inches(6.58), Inches(11.5), Inches(0.25),
+             size=10.2, color=DIM)
     add_notes(slide,
               "Differentiators: the terrain horizon is ray traced; the autopilot is "
               "feasibility-first; the earliest feasible date is searched, not guessed. "
@@ -654,28 +659,29 @@ def main() -> None:
     add_text(slide, "275 tests in 19 files, all passing",
              Inches(0.88), Inches(5.02), Inches(5.4), Inches(0.3), size=13, bold=True,
              color=OK)
-    add_text(slide, "Terrain validation: 2 regions + 4 presets, 0 failures",
-             Inches(0.88), Inches(5.38), Inches(5.4), Inches(0.25), size=10.3,
+    add_text(slide, "Terrain validation: 2 source regions + 4 derived presets, 0 failures",
+             Inches(0.88), Inches(5.35), Inches(5.4), Inches(0.25), size=9.6,
              color=TEXT)
-    add_text(slide, "Horizons spot-check: 480/480 samples, max 0.0000°",
-             Inches(0.88), Inches(5.68), Inches(5.4), Inches(0.25), size=10.3,
+    add_text(slide, "Horizons cross-check: 480/480 samples (same source; not independent accuracy)",
+             Inches(0.88), Inches(5.65), Inches(5.4), Inches(0.4), size=9.2,
              color=TEXT)
     add_text(slide, "Deterministic core shared by UI, worker and tests.",
-             Inches(0.88), Inches(5.98), Inches(5.4), Inches(0.25), size=9.5, color=DIM)
+             Inches(0.88), Inches(6.13), Inches(5.4), Inches(0.22), size=9.2, color=DIM)
 
     add_panel(slide, Inches(6.7), Inches(4.5), Inches(5.95), Inches(2.25))
     add_text(slide, "Honest limits", Inches(6.93), Inches(4.65), Inches(5.4), Inches(0.3),
              size=14, bold=True, color=WARN)
     add_bullets(slide, [
-        "Two-month ephemeris window: 2026-11-01 → 2026-12-31.",
-        "DEM resolution: 74 m/px high detail; 297–594 m/px wide-area grids.",
-        "Heuristic crater detection feeds hazards; large complex craters can be missed.",
-        "Prototype for planning and education — not flight certification.",
-    ], Inches(6.93), Inches(5.04), Inches(5.45), Inches(1.2), size=10.3, space=4,
-        line_spacing=1.0)
-    add_text(slide, "The app repeats these limits in its Assumptions & limits panel.",
-             Inches(6.93), Inches(6.33), Inches(5.45), Inches(0.25),
-             size=8.8, color=DIM)
+        "Two-month window (2026-11-01 → 2026-12-31); “feasible” dates can precede today.",
+        "DEM resolution 74 m/px high detail; 297–594 m/px wide-area.",
+        "Sun/Earth use the nearest curated ephemeris site (up to ~100 km away).",
+        "Heuristic crater detector can miss large complex craters.",
+        "Planning prototype, not flight certification.",
+    ], Inches(6.93), Inches(5.02), Inches(5.45), Inches(1.32), size=9.2, space=2,
+        line_spacing=0.98)
+    add_text(slide, "All limits repeat in the app's Assumptions & limits panel and the JSON brief.",
+             Inches(6.93), Inches(6.42), Inches(5.45), Inches(0.22),
+             size=8.0, color=DIM)
     add_notes(slide,
               "NASA data: LOLA terrain, Horizons Sun/Earth, Moon Trek's 33 verified layers "
               "and QuickMap links. Quality: 275 tests in 19 files, terrain validation with "
@@ -691,8 +697,7 @@ def main() -> None:
     add_text(slide, "Open source, free for mission planning and education",
              Inches(0.65), Inches(0.45), Inches(12.0), Inches(0.6),
              size=32, bold=True)
-    add_text(slide, "Open source under MIT: free public demo, free SaaS or self-host, "
-                    "free teaching materials.",
+    add_text(slide, "Open source under MIT: free public demo, free self-host, free teaching materials.",
              Inches(0.65), Inches(1.08), Inches(9.8), Inches(0.35),
              size=13.5, color=DIM)
 
@@ -712,16 +717,16 @@ def main() -> None:
         "Code, scripts, tests, docs and this deck: MIT, © 2026 L-SEA Team.",
         "Use, modify, redistribute and self-host; keep the copyright and permission notice.",
         "NASA data keeps its own public-domain and attribution terms.",
-    ], Inches(0.9), Inches(2.62), Inches(6.55), Inches(0.8), size=11, space=3,
-        line_spacing=1.0)
+        "AI coding assistant used; declared in docs/ai-usage.md.",
+    ], Inches(0.9), Inches(2.60), Inches(6.55), Inches(0.88), size=9.8, space=1,
+        line_spacing=0.98)
 
     add_panel(slide, Inches(0.65), Inches(3.63), Inches(7.1), Inches(1.62))
     add_text(slide, "Free to use, host and teach", Inches(0.9), Inches(3.79),
              Inches(6.6), Inches(0.3), size=14.5, bold=True, color=ACCENT)
     add_bullets(slide, [
         "Free public demo: no install, no login and no payment.",
-        "Free SaaS or self-host: deploy the static build under MIT; no paid edition, no "
-        "locked features.",
+        "Free self-host: deploy the static build under MIT; no paid edition or locked features.",
         "Free educational materials: the deck and workshop kit are MIT, reusable with "
         "attribution.",
     ], Inches(0.9), Inches(4.18), Inches(6.55), Inches(0.95), size=11, space=3,
@@ -767,7 +772,7 @@ def main() -> None:
     add_notes(slide,
               "Close: L-SEA is open source under the MIT license and free to use. The code, "
               "scripts, tests, documentation and deck are MIT; the public demo needs no "
-              "install, login or payment; anyone can deploy it as a SaaS or self-host it "
+              "install, login or payment; anyone can self-host it "
               "under the same terms, with no paid edition or locked features; and the "
               "educational materials and workshop kit are free to reuse with attribution. "
               "The impact is faster, defensible site and date screening for planners, plus a "
