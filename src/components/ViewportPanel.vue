@@ -645,27 +645,32 @@ onBeforeUnmount(() => {
         {{ t('viewport.sitesOutside', { count: sitesOutsideCount }) }}
       </p>
 
-      <div v-if="elevationStats" class="map-legend" data-testid="elevation-legend" :aria-label="t('viewport.elevationLegend')">
-        <span class="map-legend__title">{{ t('viewport.elevationLegend') }}</span>
-        <span class="map-legend__body">
-          <span class="map-legend__bar" :style="{ background: legendGradient }" aria-hidden="true" />
-          <span class="map-legend__ticks">
-            <span>{{ elevationMaxLabel }}</span>
-            <span>{{ elevationMinLabel }}</span>
+      <div class="map-legend-stack">
+        <div v-if="elevationStats" class="map-legend" data-testid="elevation-legend" :aria-label="t('viewport.elevationLegend')">
+          <span class="map-legend__title">{{ t('viewport.elevationLegend') }}</span>
+          <span class="map-legend__body">
+            <span class="map-legend__bar" :style="{ background: legendGradient }" aria-hidden="true" />
+            <span class="map-legend__ticks">
+              <span>{{ elevationMaxLabel }}</span>
+              <span>{{ elevationMinLabel }}</span>
+            </span>
           </span>
-        </span>
-        <span v-if="altitudeEntries.length" class="map-legend__altitudes" data-testid="map-altitude">
-          <span class="map-legend__altitudes-title">{{ t('viewport.altitudeTitle') }}</span>
-          <span
-            v-for="entry in altitudeEntries"
-            :key="entry.id"
-            class="map-legend__altitude"
-          >
-            <span class="map-legend__altitude-dot" :style="{ background: entry.color }" aria-hidden="true" />
-            <span class="map-legend__altitude-name" :title="entry.label">{{ entry.name }}</span>
-            <span class="map-legend__altitude-value">{{ formatNumber(entry.elevationM, 0) }} m</span>
+        </div>
+        <div
+          v-if="altitudeEntries.length"
+          class="map-altitude"
+          data-testid="map-altitude"
+          role="status"
+          aria-live="polite"
+          :aria-label="t('viewport.altitudeTitle')"
+        >
+          <span class="map-altitude__title">{{ t('viewport.altitudeTitle') }}</span>
+          <span v-for="entry in altitudeEntries" :key="entry.id" class="map-altitude__row">
+            <span class="map-altitude__dot" :style="{ background: entry.color }" aria-hidden="true" />
+            <span class="map-altitude__name" :title="entry.label">{{ entry.name }}</span>
+            <span class="map-altitude__value">{{ formatNumber(entry.elevationM, 0) }} m</span>
           </span>
-        </span>
+        </div>
       </div>
 
       <div v-if="scaleInfo" class="map-scale" :aria-label="t('viewport.scaleBar')" data-testid="scale-bar">
