@@ -8,6 +8,12 @@ const { t } = useI18n()
 
 <template>
   <footer class="app-footer">
+    <a class="app-footer__home" href="#/">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M19 12H5M11 6l-6 6 6 6" />
+      </svg>
+      {{ t('landing.backToProject') }}
+    </a>
     <span class="app-footer__label">{{ t('footer.data') }}</span>
     <a :href="DATA_SOURCES.horizons.url" target="_blank" rel="noopener noreferrer">{{ DATA_SOURCES.horizons.label }}</a>
     <a :href="DATA_SOURCES.lola.url" target="_blank" rel="noopener noreferrer">{{ t('footer.lola') }}</a>

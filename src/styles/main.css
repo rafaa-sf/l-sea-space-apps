@@ -2520,6 +2520,36 @@ body.is-resizing-panes * {
   overflow: hidden;
 }
 
+.app-footer__home {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  color: var(--color-text-dim);
+  text-decoration: none;
+}
+
+.app-footer__home svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.app-footer__home:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.app-footer__home:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 .app-footer__label {
   font-size: 12px;
   letter-spacing: 0.08em;
