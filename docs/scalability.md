@@ -134,9 +134,10 @@ and validation claims must be bounded and disclosed.
 - **Contract-first parallel work:** the architecture contract lets coder, UI, data and
   commercial workstreams run in parallel with low merge friction.
 - **Conventions and CI:** Conventional Commits, short-lived branches, English-only
-  repository and automated checks. Current state: the application suite passes (226
+  repository and automated checks. Current state: the application suite passes (227
   tests in 15 files) plus 8 MCP tests, and CI is green; the remaining scale gap is
-  accuracy validation against reference ephemerides and expanded end-to-end coverage.
+  a full accuracy-validation campaign against reference ephemerides (the sampled
+  `npm run verify:horizons` spot-check passes) and expanded end-to-end coverage.
 - **Two machines to many:** the repository already models a primary and commercial
   split; adding reviewer roles and branch protection is the natural next step.
 
@@ -148,7 +149,7 @@ and validation claims must be bounded and disclosed.
 | Static hosting, no server | No live Horizons, no heavy server compute | Pre-computed datasets; worker-side compute; dev proxy for validation |
 | DEM accuracy and resolution | Horizon errors at fine scales | State resolution and tolerance; validate against Horizons; ship native-resolution tiles where needed |
 | Ephemeris scope | Wrong conclusions outside covered epochs | Generate wider epochs; show "within validated range" in the UI |
-| Accuracy not yet validated against Horizons | Accuracy claims unproven | Keep the test suite green; add Horizons-reference validation next |
+| Accuracy only sampled against Horizons | Sampled check passes; a full campaign is unproven | Keep `npm run verify:horizons` green; extend it to a non-sampled campaign |
 | Brand and licensing | Submission rejection | Attribution footer; no NASA or CSA logos as own branding |
 | Scope creep | Hackathon deadline | Stage-0 scope discipline: comparison, Sun/Earth, power and communications, fallback |
 

@@ -44,7 +44,7 @@ flight-dynamics tool.
 
 ## 3. Automated tests
 
-`npm test` (Vitest): **15 test files, 226 tests, all passing**.
+`npm test` (Vitest): **15 test files, 227 tests, all passing**.
 
 | File | Tests |
 | --- | --- |
@@ -56,14 +56,14 @@ flight-dynamics tool.
 | `src/core/comms.test.js` | 10 |
 | `src/core/cycles.test.js` | 13 |
 | `src/core/dateSearch.test.js` | 10 |
-| `src/core/zones.test.js` | 22 |
+| `src/core/zones.test.js` | 23 |
 | `src/core/landingMetrics.test.js` | 32 |
 | `src/core/missionPresets.test.js` | 3 |
 | `src/render/geo.test.js` | 8 |
 | `src/services/services.test.js` | 28 |
 | `src/components/composables/format.test.js` | 14 |
 | `src/components/composables/playbackClock.test.js` | 6 |
-| **Total** | **226** |
+| **Total** | **227** |
 
 `npm --prefix mcp/miro test`: **8 tests, 8 passing** (mocked HTTP, no token or network).
 
@@ -77,6 +77,20 @@ UI is covered by the live end-to-end check in section 6.
 CI runs the same commands on Node 24 for both packages and verifies the build output
 contains `dist/index.html`, `dist/assets`, the three JSON datasets and
 `dist/data/ai-usage.md`.
+
+### 3.1 Live ephemeris spot-check (`npm run verify:horizons`)
+
+`npm run verify:horizons` (`scripts/nasa/verify-ephemeris.mjs`) re-queries live JPL
+Horizons with the same observer setup and query parameters as the generator, then
+compares 24 evenly spread shipped timestamps per site for the Sun and the Earth
+against fresh API rows. It reports matched and missing samples plus maximum and mean
+angular deviations (azimuth shortest arc, elevation).
+
+Live run on 2026-11-15: **exit 0, 20/20 site/body checks, 480 samples, 0 missing,
+max |Δaz| = max |Δel| = 0.0000°**, inside the default tolerances (azimuth 0.05°,
+elevation 0.02°). Both sides use the same query and 3-decimal rounding, so this is a
+sampled snapshot spot-check, not a full independent accuracy campaign. The script
+needs network access to the JPL API and is deliberately **not** part of `npm test`.
 
 ## 4. Data integrity results
 
@@ -253,9 +267,12 @@ in the repository history (commit `263d724`).
 
 ## 9. Known gaps and limitations
 
-- **Accuracy validation.** Computed horizons and illumination have not yet been
-  compared against live JPL Horizons reference values; this is the next validation
-  step and is not claimed anywhere as verified.
+- **Accuracy validation.** Computed Sun and Earth positions are spot-checked against
+  live JPL Horizons for a sampled set of shipped timestamps (section 3.1: 20/20
+  site/body checks, 480 samples, maximum deviation 0.0000° on 2026-11-15, inside the
+  documented tolerances); a full, independent accuracy campaign (all shipped
+  timestamps, both bodies, documented tolerances) is the next validation step and is
+  not claimed.
 - **Usability testing.** No formal usability session with mission planners or educators
   has been performed.
 - **UI test coverage.** The UI is covered by the live end-to-end check rather than by

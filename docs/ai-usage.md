@@ -119,7 +119,7 @@ opened the issues/pull requests and reported the results to the human team.
   verified with live tile requests and CORS checks before being written to
   `public/data/layers.json` (see `docs/data.md`).
 - The application builds successfully (`npm run build`) and its unit/contract
-  suites pass (Vitest: **226 tests** in 15 files at the time of writing, plus
+  suites pass (Vitest: **227 tests** in 15 files at the time of writing, plus
   8 MCP checks in CI).
 - Responsive layout and no-WebGL fallback checks are documented in
   [`docs/qa.md`](qa.md); the QA test bench ships under `qa/` and records the
@@ -208,8 +208,22 @@ small, reviewed commits:
 | `1fe9e44` | Data services retry loads that failed transiently instead of caching the failure |
 | `5a1a587` | Reachable terrain-outside warning, real minimum Sun elevation, mission-preset tests |
 | `151550b` | UX pass 1: locale-aware EN/ES date and number formatting, a `--color-text-muted` token, no font size below 12 px, and comparator preset sync |
+| `8259160` | Playback speed selector: 5, 20 or 60 mission minutes per tick instead of a fixed 20 |
+| `c3caa89` | Humanised error feedback: localized EN/ES copy for every `reportError` scope, a ToolsDrawer Tab focus trap and splitter pointercancel/unmount cleanup |
+| `27891fb` | Visible "Assumptions & limits" panel in Diagnostics (EN/ES) |
+| `b56b865` | Independent ephemeris validation script (`npm run verify:horizons`) against live JPL Horizons |
 
-The application suite is now **226 tests in 15 files** (plus 8 MCP checks), and CI
+The remaining post-audit P0 work shipped in `8259160`, `c3caa89` and `27891fb`:
+the playback speed selector, localized error copy for every `reportError` scope (raw
+details only in the console and title), the ToolsDrawer Tab focus trap, splitter
+cleanup and the "Assumptions & limits" panel. The independent validation script
+re-queries live JPL Horizons with the generator's observer setup and compares 24
+evenly spread shipped timestamps per site for Sun and Earth: the 2026-11-15 run
+exited 0 with 20/20 site/body checks, 480/480 samples matched and
+max |Δaz| = max |Δel| = 0.0000° inside the documented tolerances (azimuth 0.05°,
+elevation 0.02°). It is a sampled snapshot spot-check, not a full accuracy campaign.
+
+The application suite is now **227 tests in 15 files** (plus 8 MCP checks), and CI
 and the GitHub Pages deployment stayed green after each commit.
 
 *Event rules reference: AI is allowed at NASA Space Apps; the team must declare the

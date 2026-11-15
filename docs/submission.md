@@ -5,9 +5,9 @@ links and evidence the team submits. Everything below is in English, as required
 
 > **Status (2026-11-15):** application implemented, tested, merged on `main` and
 > deployed. Live application: <https://rafaa-sf.github.io/l-sea-space-apps>. Automated tests:
-> 226 application tests in 15 files plus 8 MCP tests, all passing; CI green; production
-> build green. The only outstanding item before **Submit for Judging** is the
-> **Project Demo link**.
+> 227 application tests in 15 files plus 8 MCP tests, all passing; CI green; production
+> build green. The only outstanding item before **Submit for Judging** is inserting the
+> published **Project Demo link** in the Project page.
 
 ## 1. Project identity
 
@@ -38,7 +38,7 @@ links and evidence the team submits. Everything below is in English, as required
 > for machines without WebGL. The prototype is implemented and merged on `main`: a
 > mission-control interface, a terrain and horizon engine, ephemeris-driven Sun and
 > Earth visibility, power and communications metrics, a site comparator, autopilot
-> scoring, JSON export and a no-WebGL 2D fallback; 226 app tests in 15 files plus
+> scoring, JSON export and a no-WebGL 2D fallback; 227 app tests in 15 files plus
 > 8 MCP tests pass and CI is green.
 
 Word count: 200 (limit 50-200). Re-count after any edit with `wc -w`.
@@ -77,7 +77,7 @@ exported as a JSON mission brief with links back to NASA tools.
 | Domain core | Plain JavaScript ES modules: terrain, horizon and ray tracing, ephemeris, power, communications, autopilot |
 | Compute | Single Web Worker for horizon and scoring work, keeping the UI responsive |
 | Build | Vite static build (`dist/`), deployed on GitHub Pages |
-| Tests | Vitest: 226 application tests in 15 files plus 8 MCP tests |
+| Tests | Vitest: 227 application tests in 15 files plus 8 MCP tests |
 | Data | Pre-computed NASA datasets: LOLA terrain, JPL Horizons ephemerides, Moon Trek layer catalogue |
 
 Method in one pass over a scenario:
@@ -121,22 +121,28 @@ Method in one pass over a scenario:
 - Real NASA datasets shipped and consumed by the application: 10 curated POIs, 10
   JPL Horizons ephemeris files (2,928 samples each), two LOLA source polar DEM regions (plus four derived DEM area presets) and 21
   verified Moon Trek WMTS layers.
-- Automated test suite: 226 application tests in 15 files plus 8 MCP tests, all
+- Automated test suite: 227 application tests in 15 files plus 8 MCP tests, all
   passing; CI green; production build green.
 - Live deployment on GitHub Pages with post-deploy verification (entry point, favicon, NASA
   data files, terrain binary, SPA rewrite, cache headers) and an interactive live
   end-to-end check (worker, site selection, comparator, 2D fallback, autopilot,
   JSON brief export) recorded in [qa.md](qa.md).
+- Sampled ephemeris spot-check against live JPL Horizons (`npm run verify:horizons`,
+  2026-11-15): 20/20 site/body checks, 480 samples, 0 missing, max |Δaz| = max |Δel| =
+  0.0000° inside the documented tolerances; a reference spot-check, not a full
+  campaign.
 
-**Remaining before submission:** the public Project Demo link (slides or video); see
-[demo.md](demo.md).
+**Remaining before submission:** insert the published Project Demo link
+(<https://rafaa-sf.github.io/l-sea-space-apps/demo/L-SEA-Project-Demo.pdf>) in the Project page; see [demo.md](demo.md).
 
 ### 3.5 Limitations (stated up front)
 
 - **Validation status.** The application is implemented and passes its automated and
-  live end-to-end checks. Horizon and illumination results have not yet been compared
-  against live JPL Horizons reference values, and no formal usability testing has been
-  performed.
+  live end-to-end checks. Horizon and illumination results were spot-checked against
+  live JPL Horizons on 2026-11-15 (`npm run verify:horizons`: 20/20 site/body checks,
+  480 samples, 0 missing, max |Δaz| = max |Δel| = 0.0000° inside the documented
+  tolerances of 0.05° and 0.02°); this is a sampled reference spot-check, not a
+  certified accuracy campaign, and no formal usability testing has been performed.
 - **Static deployment.** There is no server runtime, so there are no live NASA API
   calls: ephemerides are pre-computed, and JPL Horizons cannot be queried from the
   browser in production because it does not send CORS headers.
@@ -154,8 +160,8 @@ Method in one pass over a scenario:
   power and communications models are simplified engineering estimates.
 - **Automated tests.** The unit and contract suites cover the core geometry, terrain,
   ephemeris, power, communications, autopilot and service adapters; the UI is covered
-  by the live end-to-end check rather than by component-level tests, and accuracy
-  against live Horizons is not yet asserted.
+  by the live end-to-end check rather than by component-level tests, and the sampled
+  Horizons spot-check is a script outside the unit suite.
 - **No commercial validation.** No customer interviews, pricing evidence or
   market-size figures are claimed anywhere in this submission; the commercial framing
   is explicitly a set of hypotheses (see [scalability.md](scalability.md)).
@@ -266,15 +272,15 @@ source rules):
 
 | Requirement | Status | Artifact |
 | --- | --- | --- |
-| Project name and 50-200 word summary | Done | Section 2 (194 words) |
-| Project Demo: one public link, at most 7 slides including cover or at most 30 seconds of video | **Pending** | [demo.md](demo.md); the link is the only outstanding item |
+| Project name and 50-200 word summary | Done | Section 2 (200 words) |
+| Project Demo: one public link, at most 7 slides including cover or at most 30 seconds of video | Done | [https://rafaa-sf.github.io/l-sea-space-apps/demo/L-SEA-Project-Demo.pdf](https://rafaa-sf.github.io/l-sea-space-apps/demo/L-SEA-Project-Demo.pdf) (7 slides, English; see [demo.md](demo.md)) |
 | Final Project: public link to the project, repository or site | Done | Live application and repository links in section 1 |
 | Detailed description: what it does, how it works, benefits, method, status and limitations | Done | Section 3 |
 | NASA Data: resources, links and their real contribution | Done | Section 4 and [data.md](data.md) |
 | Other data and references | Done | Section 5 |
 | AI / SI use declaration | Done | Section 6 and [ai-usage.md](ai-usage.md) |
 | Language: page, slides and written materials in English | Done | This document set |
-| Public access: links open without login, password or permission | Done for the app; demo link pending | Live application verified from the deployed build |
+| Public access: links open without login, password or permission | Done for the app; the demo PDF ships with the same Pages deployment | Live application verified from the deployed build; the demo PDF is served from `public/demo/` |
 | Review and acceptance: correct team, checkboxes, Submit for Judging confirmation | Pending platform action | Submit for Judging |
 
 ## 8. Submission steps
@@ -294,4 +300,4 @@ source rules):
 | Live application | <https://rafaa-sf.github.io/l-sea-space-apps> |
 | Repository | <https://github.com/rafaa-sf/l-sea-space-apps> |
 | Documentation | <https://github.com/rafaa-sf/l-sea-space-apps/tree/main/docs> |
-| Project Demo | Pending: single public link, at most 7 slides or a 30-second video |
+| Project Demo | <https://rafaa-sf.github.io/l-sea-space-apps/demo/L-SEA-Project-Demo.pdf> (7 slides, English) |
