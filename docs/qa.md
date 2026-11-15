@@ -4,8 +4,9 @@ Test strategy and executed results for L-SEA Space Apps. The application is a st
 Vite build; the QA covers the build and deployment surface, the shipped NASA datasets,
 the domain logic and services, the browser experience and the live deployment.
 
-Executed and re-run on 2026-11-14 at the release commit on `main`. All results below
-are executed commands or recorded observations, not estimates.
+Executed and re-run on 2026-11-14 at the release commit on `main`; the automated
+test counts and the suite status were refreshed on 2026-11-15 at `151550b`. All
+results below are executed commands or recorded observations, not estimates.
 
 ## 1. Approach and scope
 
@@ -43,26 +44,35 @@ flight-dynamics tool.
 
 ## 3. Automated tests
 
-`npm test` (Vitest): **7 test files, 104 tests, all passing** in 403 ms.
+`npm test` (Vitest): **15 test files, 226 tests, all passing**.
 
 | File | Tests |
 | --- | --- |
-| `src/core/engine.test.js` | 14 |
-| `src/core/terrain.test.js` | 14 |
-| `src/core/ephemeris.test.js` | 17 |
-| `src/core/autopilot.test.js` | 18 |
+| `src/core/engine.test.js` | 15 |
+| `src/core/terrain.test.js` | 18 |
+| `src/core/ephemeris.test.js` | 20 |
+| `src/core/autopilot.test.js` | 19 |
 | `src/core/power.test.js` | 8 |
 | `src/core/comms.test.js` | 10 |
-| `src/services/services.test.js` | 23 |
+| `src/core/cycles.test.js` | 13 |
+| `src/core/dateSearch.test.js` | 10 |
+| `src/core/zones.test.js` | 22 |
+| `src/core/landingMetrics.test.js` | 32 |
+| `src/core/missionPresets.test.js` | 3 |
+| `src/render/geo.test.js` | 8 |
+| `src/services/services.test.js` | 28 |
+| `src/components/composables/format.test.js` | 14 |
+| `src/components/composables/playbackClock.test.js` | 6 |
+| **Total** | **226** |
 
 `npm --prefix mcp/miro test`: **8 tests, 8 passing** (mocked HTTP, no token or network).
 
 Coverage focus: polar-stereographic transforms and bilinear sampling, horizon and ray
 tracing with curvature, ephemeris interpolation and set-event detection, power and
 communications arithmetic and windows, autopilot determinism and monotonic scoring,
-service contracts for sites, ephemeris, terrain, layers and the JSON brief. UI
-component tests are not part of the suite; the UI is covered by the live end-to-end
-check in section 6.
+service contracts for sites, ephemeris, terrain, layers and the JSON brief. Locale
+and label formatting and the playback clock have dedicated unit tests; the rendered
+UI is covered by the live end-to-end check in section 6.
 
 CI runs the same commands on Node 24 for both packages and verifies the build output
 contains `dist/index.html`, `dist/assets`, the three JSON datasets and

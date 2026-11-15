@@ -110,12 +110,17 @@ only for development. Data endpoints, provenance, licensing and known limitation
 ### Terrain grid (LOLA DEM, polar stereographic)
 
 The real LOLA polar DEMs are stored in **polar stereographic projection**, not as
-a regular lat/lon grid. Two regions are shipped under `public/data/terrain/`:
+a regular lat/lon grid. Six regions are shipped under `public/data/terrain/`: two
+base production DEMs and four custom-extent crops.
 
 | Region | Grid | Pixel size | Coverage | Role |
 | --- | --- | --- | --- | --- |
 | `south-pole-875s-20m` | 2048 × 2048 | 74.06 m | 87.5S–90S (±75,840 m) | High-resolution (default) |
 | `south-pole-80s-80m` | 1024 × 1024 | 593.75 m | 80S–90S (±304,000 m) | Wide area for outer POIs |
+| `south-pole-100km-1024px` | 1024 × 1024 | 97.66 m | ±50,000 m | Custom crop (100 km) |
+| `south-pole-200km-1024px` | 1024 × 1024 | 195.31 m | ±100,000 m | Custom crop (200 km) |
+| `south-pole-300km-1024px` | 1024 × 1024 | 292.97 m | ±150,000 m | Custom crop (300 km) |
+| `south-pole-400km-1024px` | 1024 × 1024 | 390.63 m | ±200,000 m | Custom crop (400 km) |
 
 `public/data/terrain/index.json` lists the available regions. Each region has a
 `.bin` (int16 little-endian, row-major, elevation in metres relative to
@@ -130,8 +135,11 @@ grid:        col = (x - minX) / pixelSizeM; row = (maxY - y) / pixelSizeM
 ```
 
 Row 0 is the `maxY` (north) edge; column 0 is the `minX` (west) edge. `y` grows
-toward longitude 0°. The loader picks the widest region that contains the site
-(high-resolution first), and samples bilinearly.
+toward longitude 0°. `selectRegionForBounds` in `src/services/lola.js` prefers the
+highest-resolution region that contains the whole requested area (with a one-pixel
+tolerance) and samples bilinearly; when none covers the box it falls back to the
+highest-resolution region available (the 875s grid, ±75.84 km), while custom crops
+span up to 400 km across (±200 km).
 
 ## Core interfaces (coder)
 

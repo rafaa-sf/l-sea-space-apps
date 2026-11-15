@@ -29,14 +29,21 @@ This document is the shared contract for both machines:
 | 03 | **Hierarchy and patterns** — the eye goes first to what matters; the same elements repeat on every screen; one primary button | One primary action per screen; consistent components | PASS Implemented | `CR-04` — single primary action per surface |
 | 04 | **Readability** — readable by size and by words | Web body **16 px**, secondary **never below 12 px**; max 3 type families | PASS Implemented | `CR-01` — minimum 12 px, body 16 px |
 | 05 | **Contrast and colour** — light difference text/background; never colour as the only signal | Text **4.5:1**; large text, icons and borders **3:1**; verified with WebAIM Contrast Checker or grayscale | PASS Implemented | `CR-03` — all measured pairs pass |
-| 06 | **Tap/click targets** — the whole button responds, not only its text/icon | iOS 44×44 pt · Android 48×48 dp · Web **44×44 px (minimum 24)** · 8 px separation · no hover on mobile | PASS Implemented | `CR-02` — 24 px minimum, 44 px on phones |
+| 06 | **Tap/click targets** — the whole button responds, not only its text/icon | iOS 44×44 pt · Android 48×48 dp · Web **44×44 px (minimum 24)** · 8 px separation · no hover on mobile | PARTIAL Partial | `CR-02` — 24 px minimum, 44 px on phones; the 2026-11-14 matrix evidence was not fully re-run with the new type scale |
 | 07 | **System response** — what happens after each action, during waits, and on errors/empty screens | Every step responds and says how it is going; no technical error without what to do next | PASS Implemented | `CR-06` — plain-language errors with next action |
+
+> **Post-audit UX pass (2026-11-15, commit `151550b`):** locale-aware EN/ES date and
+> number formatting, a dedicated `--color-text-muted` token, a 12 px minimum font
+> size, and a comparator preset select synced to application state with numeric
+> guards that render `—` when a value is missing.
 
 The product already meets the guide's **purpose, flow skeleton, component
 consistency, colour-not-as-only-signal, loading/empty states and accessibility
 infrastructure** (semantic landmarks, `:focus-visible`, `prefers-reduced-motion`,
-`aria-live`, `role="alert"`). The gaps are concentrated in **type scale, touch
-targets, contrast of one button style and technical error copy**.
+`aria-live`, `role="alert"`). The gaps found in the initial audit were concentrated
+in **type scale, touch targets, contrast of one button style and technical error
+copy**; all six changes were implemented (section 6), with the target-size evidence
+still partial (requirement 06).
 
 ---
 
@@ -62,7 +69,9 @@ landing is the documented entry point (`README.md` → *Entry points*).
 
 ---
 
-### 02 · Main flow — PARTIAL partial
+### 02 · Main flow — PASS after CR-05
+
+**Status after `CR-05`:** the landing page carries a three-step guide and the console shows a first-run hint; the measurements below date from the initial audit.
 
 **Guide asks:** the path to the most important thing the product offers. Every
 step leads to the next until the flow can be completed. Bad: a screen with no
@@ -83,14 +92,16 @@ one-line contextual hint on first entry to the console (`CR-05`).
 
 ---
 
-### 03 · Hierarchy and patterns — PARTIAL partial
+### 03 · Hierarchy and patterns — PASS after CR-04
+
+**Status after `CR-04`:** each surface has one primary action and the custom-site submit is secondary; the measurements below date from the initial audit.
 
 **Guide asks:** order the screen so the eye goes first to what matters, and repeat
 the same elements; **one primary button**; bad: buttons without hierarchy or a
 different design on each screen.
 
 **Product:** a component system is in place: `PanelCard`, `StatRow`, `TabBar`,
-`Sparkline`, `ResizeHandle`, and the 13 panels share the same header/section
+`Sparkline`, `ResizeHandle`, and the 14 panels share the same header/section
 structure. The landing has exactly one primary CTA.
 
 **Gap:** the console can show **two primary buttons at once** (header "Export JSON
@@ -102,7 +113,9 @@ secondary (`CR-04`).
 
 ---
 
-### 04 · Readability — FAIL gap
+### 04 · Readability — PASS after CR-01
+
+**Status after `CR-01` (2026-11-14, extended 2026-11-15):** every font-size declaration in `src/styles/main.css` is at least 12 px (declared sizes are 12, 12.5, 14 and 16 px, with body text at 16 px). The measurements below date from the initial audit.
 
 **Guide asks:** text readable by its size and by its words. Minimum values (the
 reference to meet): **web body 16 px**, secondary text **never below 12 px**,
@@ -122,7 +135,9 @@ keeping the two families (`CR-01`). Re-run the device matrix and landing checks.
 
 ---
 
-### 05 · Contrast and colour — FAIL gap
+### 05 · Contrast and colour — PASS after CR-03
+
+**Status after `CR-03`:** the faint token is `#808b9e` (5.54:1), the primary button label is dark on the accent (5.80:1) and control borders are `#556176` (3.04:1); all pairs meet the minimum (section 6). The table below is the initial audit.
 
 **Guide asks:** enough light difference between text and background; never use
 colour as the only signal. Minimum values: text **4.5:1**, large text/icons/borders
@@ -153,7 +168,9 @@ series have legends. Verify once in grayscale.
 
 ---
 
-### 06 · Tap/click targets — FAIL gap
+### 06 · Tap/click targets — PARTIAL after CR-02
+
+**Status after `CR-02`:** every control is at least 24 px and phone buttons are 44 px; the re-check passed on 16/16 device boxes (section 6). The full 104-run matrix was not re-run with the new type scale, so the evidence remains partial. The measurements below date from the initial audit.
 
 **Guide asks:** the responding area is the whole button, not just the text/icon.
 Minimum values: iOS **44×44 pt**, Android **48×48 dp**, web **44×44 px (minimum
@@ -172,7 +189,9 @@ matrix; the `@ui/interactive-targets` check must reach a pass.
 
 ---
 
-### 07 · System response — PARTIAL partial
+### 07 · System response — PASS after CR-06
+
+**Status after `CR-06`:** worker and export errors map to plain-language copy with a next action, with the raw detail kept in the diagnostics panel (section 6). The gap below is the initial audit.
 
 **Guide asks:** what happens after each action, during waits, and on errors and
 empty screens. Good: every step responds and says how it is going. Bad: technical
@@ -263,7 +282,7 @@ deployment configuration, or more than five files.
 
 ---
 
-## 7. Implementation status (2026-11-14)
+## 6. Implementation status (2026-11-14)
 
 The fixes were implemented after explicit permission, in six logical commits on
 `feature/ux-compliance`:
@@ -283,11 +302,16 @@ Additional layout fixes required by the larger type scale and targets:
 - the timeline event chips shrink and wrap on narrow screens;
 - the landing inline links are 24 px targets.
 
+A post-audit UX pass (2026-11-15, `151550b`) added locale-aware EN/ES date and
+number formatting, a dedicated `--color-text-muted` token, a 12 px minimum font
+size, and a comparator preset select synced to application state; the formatter
+and playback-clock unit tests cover the formatting and timing changes.
+
 **Verification evidence**
 
 | Check | Result |
 | --- | --- |
-| `npm test` | 157/157 tests passing |
+| `npm test` | 226/226 tests passing |
 | `npm run build` | green |
 | Device matrix — tool `#/tool`, English, **all 51 boxes + 2 no-WebGL probes** (implementation time) | **53/53 pass**, all 7 `@ui/*` checks (no horizontal overflow, no console errors, boxes in viewport, panels rendered, **targets ≥ 24 px**, **fonts ≥ 12 px**) |
 | **Re-check on merged `develop`** (2026-11-14) — tool, 7 device boxes × EN/ES (desktop, tablet, 390/360/320/280 px phones) | **16/16 pass**, all 7 `@ui/*` checks |
@@ -299,7 +323,7 @@ Additional layout fixes required by the larger type scale and targets:
 
 `CR-07` (a review with the event UX stand) remains optional and external.
 
-## 6. Evidence sources
+## 7. Evidence sources
 
 - UX support guide — `resources_orig/[UX] NASA Space Apps Challenge Málaga/Guía
   de apoyo · UX.pdf` (4 pages, 7 requirements).

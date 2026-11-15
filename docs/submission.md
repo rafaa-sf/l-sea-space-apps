@@ -3,9 +3,9 @@
 Content and checklist for the official NASA Space Apps **Project page**, plus the
 links and evidence the team submits. Everything below is in English, as required.
 
-> **Status (2026-11-14):** application implemented, tested, merged on `main` and
+> **Status (2026-11-15):** application implemented, tested, merged on `main` and
 > deployed. Live application: <https://rafaa-sf.github.io/l-sea-space-apps>. Automated tests:
-> 104 application tests in 7 files plus 8 MCP tests, all passing; CI green; production
+> 226 application tests in 15 files plus 8 MCP tests, all passing; CI green; production
 > build green. The only outstanding item before **Submit for Judging** is the
 > **Project Demo link**.
 
@@ -38,10 +38,10 @@ links and evidence the team submits. Everything below is in English, as required
 > for machines without WebGL. The prototype is implemented and merged on `main`: a
 > mission-control interface, a terrain and horizon engine, ephemeris-driven Sun and
 > Earth visibility, power and communications metrics, a site comparator, autopilot
-> scoring, JSON export and a no-WebGL 2D fallback; 104 app tests plus 8 MCP tests pass
-> and CI is green.
+> scoring, JSON export and a no-WebGL 2D fallback; 226 app tests in 15 files plus
+> 8 MCP tests pass and CI is green.
 
-Word count: 197 (limit 50-200). Re-count after any edit with `wc -w`.
+Word count: 200 (limit 50-200). Re-count after any edit with `wc -w`.
 
 ## 3. Detailed description
 
@@ -72,12 +72,12 @@ exported as a JSON mission brief with links back to NASA tools.
 
 | Layer | Technology and method |
 | --- | --- |
-| UI | Vue 3 (Composition API), mission-control shell with 11 feature panels, English and Spanish |
+| UI | Vue 3 (Composition API), mission-control shell with 14 panel components on tabbed Sites, Analysis and Tools surfaces, English and Spanish |
 | 3D view | Three.js scene, with a Canvas 2D fallback when WebGL is unavailable |
 | Domain core | Plain JavaScript ES modules: terrain, horizon and ray tracing, ephemeris, power, communications, autopilot |
 | Compute | Single Web Worker for horizon and scoring work, keeping the UI responsive |
 | Build | Vite static build (`dist/`), deployed on GitHub Pages |
-| Tests | Vitest: 104 application tests in 7 files plus 8 MCP tests |
+| Tests | Vitest: 226 application tests in 15 files plus 8 MCP tests |
 | Data | Pre-computed NASA datasets: LOLA terrain, JPL Horizons ephemerides, Moon Trek layer catalogue |
 
 Method in one pass over a scenario:
@@ -110,18 +110,18 @@ Method in one pass over a scenario:
 - **Traceable output.** The JSON brief carries the inputs and scenarios used and
   links back to QuickMap and Moon Trek for verification.
 
-### 3.4 Development status (2026-11-14)
+### 3.4 Development status (2026-11-15)
 
 **Built, merged on `main` and deployed:**
 
-- Vue 3, Vite and Three.js application with the mission-control interface, 11 feature
-  panels and English plus Spanish message catalogues.
+- Vue 3, Vite and Three.js application with the mission-control interface, 14 panel
+  components on tabbed surfaces, and English plus Spanish message catalogues.
 - Domain core, services, Web Worker, Three.js renderer and no-WebGL 2D fallback
   implemented and unit-tested.
 - Real NASA datasets shipped and consumed by the application: 10 curated POIs, 10
   JPL Horizons ephemeris files (2,928 samples each), two LOLA source polar DEM regions (plus four derived DEM area presets) and 21
   verified Moon Trek WMTS layers.
-- Automated test suite: 190 application tests in 12 files plus 8 MCP tests, all
+- Automated test suite: 226 application tests in 15 files plus 8 MCP tests, all
   passing; CI green; production build green.
 - Live deployment on GitHub Pages with post-deploy verification (entry point, favicon, NASA
   data files, terrain binary, SPA rewrite, cache headers) and an interactive live

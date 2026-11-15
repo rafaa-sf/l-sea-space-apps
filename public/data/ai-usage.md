@@ -119,7 +119,7 @@ opened the issues/pull requests and reported the results to the human team.
   verified with live tile requests and CORS checks before being written to
   `public/data/layers.json` (see `docs/data.md`).
 - The application builds successfully (`npm run build`) and its unit/contract
-  suites pass (Vitest: **157 tests** in 11 files at the time of writing, plus
+  suites pass (Vitest: **226 tests** in 15 files at the time of writing, plus
   8 MCP checks in CI).
 - Responsive layout and no-WebGL fallback checks are documented in
   [`docs/qa.md`](https://github.com/rafaa-sf/l-sea-space-apps/blob/main/docs/qa.md); the QA test bench ships under `qa/` and records the
@@ -182,6 +182,35 @@ compliance), #12 (playback clock and Sun/Earth line of sight), #13
 (data/documentation calibration), #14 (UX evidence refresh) and #15 (compass
 removal). PRs #10, #12 and #13 were merged into `develop`; #14 and #15 were open
 at the time of writing.
+
+## 10. Post-audit hardening round (15 November 2026)
+
+After the release deployment, a read-only audit of the live application, the
+repository, the data services and the interface was run. The shipped benches
+(`qa/logic/logic-mc.mjs`, `qa/playback/playback-sim.mjs`,
+`qa/autopilot/autopilot-mc.mjs`) were re-run against the fixed core on
+2026-11-15 (seed `20261114`): the Monte Carlo logic bench's quick profile
+passed 1,993 of 2,000 cases with 0 failures and 7 horizon-monotonicity warnings
+(communication checks skipped), the playback simulator passed all 5,000
+sequences with 0 failures and none of its 12 targeted templates failing, and
+the autopilot Monte Carlo passed 11 need profiles × 3 dates with 0 failures and
+determinism intact, plus a 150-case random sweep with 0 failures. (The full
+2026-11-14 digest in `qa/REPORT.md` covers the 20,000-trial profile, so it
+should not be confused with these shorter re-runs.) The findings were fixed in
+small, reviewed commits:
+
+| Commit | Change |
+| --- | --- |
+| `012d495` | Escape the whitespace regex in the end-to-end date-row extraction (issue #22) |
+| `0c6388f` | Date search evaluates every candidate mission start instead of silently truncating |
+| `34de002` | Storage service reads the in-memory fallback after a failed write |
+| `ee7dc34` | Ephemeris honours the dataset orbit period and guards malformed variant dates |
+| `1fe9e44` | Data services retry loads that failed transiently instead of caching the failure |
+| `5a1a587` | Reachable terrain-outside warning, real minimum Sun elevation, mission-preset tests |
+| `151550b` | UX pass 1: locale-aware EN/ES date and number formatting, a `--color-text-muted` token, no font size below 12 px, and comparator preset sync |
+
+The application suite is now **226 tests in 15 files** (plus 8 MCP checks), and CI
+and the GitHub Pages deployment stayed green after each commit.
 
 *Event rules reference: AI is allowed at NASA Space Apps; the team must declare the
 tools and how they were incorporated (see `docs/challenge.md`).*
