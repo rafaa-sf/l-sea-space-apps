@@ -9,7 +9,7 @@ import { actions, MAX_COMPARE, selectedSite, state } from '../composables/useApp
 import { siteDisplayName } from '../composables/labels.js'
 import { formatLat, formatLon } from '../composables/format.js'
 
-const emit = defineEmits(['compare-added'])
+const emit = defineEmits(['open-compare'])
 const { t, te } = useI18n()
 
 const search = ref('')
@@ -37,11 +37,16 @@ function selectSite(id) {
   actions.selectSite(id)
 }
 
-function toggleCompare(id) {
-  const wasCompared = isCompared(id)
+function onCompareChange(id, event) {
+  // The 4th rapid click must not leave a checked box that the store rejected.
+  if (!isCompared(id) && compareCount.value >= MAX_COMPARE) {
+    event.target.checked = false
+    return
+  }
   actions.toggleCompare(id)
-  if (!wasCompared) emit('compare-added')
 }
+
+const canOpenCompare = computed(() => compareCount.value >= 2)
 </script>
 
 <template>
@@ -62,25 +67,43 @@ function toggleCompare(id) {
           <span class="site-item__name">{{ siteDisplayName(t, te, site) }}</span>
           <span class="site-item__meta">{{ formatLat(site.lat) }} {{ formatLon(site.lon) }}</span>
         </button>
-        <button
-          type="button"
+        <label
           class="site-item__compare"
-          :class="{ 'is-active': isCompared(site.id) }"
-          :disabled="!canCompare(site.id)"
-          :aria-pressed="isCompared(site.id)"
-          :aria-label="isCompared(site.id) ? t('sites.removeFromCompare', { site: siteDisplayName(t, te, site) }) : t('sites.addToCompare', { site: siteDisplayName(t, te, site) })"
-          :title="canCompare(site.id) ? t('sites.compareAction') : t('sites.compareFull')"
-          @click="toggleCompare(site.id)"
+          :class="{ 'is-active': isCompared(site.id), 'is-disabled': !canCompare(site.id) }"
+          :title="isCompared(site.id) ? t('sites.removeFromCompare', { site: siteDisplayName(t, te, site) }) : canCompare(site.id) ? t('sites.addToCompare', { site: siteDisplayName(t, te, site) }) : t('sites.compareFull')"
         >
-          {{ isCompared(site.id) ? t('sites.compareActive') : t('sites.compareButton') }}
-        </button>
+          <input
+            type="checkbox"
+            class="site-item__compare-input"
+            :checked="isCompared(site.id)"
+            :disabled="!canCompare(site.id)"
+            :aria-label="isCompared(site.id) ? t('sites.removeFromCompare', { site: siteDisplayName(t, te, site) }) : t('sites.addToCompare', { site: siteDisplayName(t, te, site) })"
+            @change="onCompareChange(site.id, $event)"
+          />
+          <span class="site-item__compare-box" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10" /></svg>
+          </span>
+          <span class="site-item__compare-label" aria-hidden="true">{{ t('sites.compareButton') }}</span>
+        </label>
       </li>
     </ul>
 
     <p v-if="filteredSites.length === 0" class="empty">{{ t('sites.empty') }}</p>
 
+    <div v-if="compareCount > 0" class="button-row site-list__compare">
+      <button
+        type="button"
+        class="button button--primary button--small"
+        :disabled="!canOpenCompare"
+        :title="canOpenCompare ? t('sites.compareSelectedHint') : t('sites.compareSelectedHint')"
+        @click="emit('open-compare')"
+      >
+        {{ t('sites.compareSelected', { count: compareCount }) }}
+      </button>
+    </div>
     <p v-if="compareCount >= MAX_COMPARE" class="plain-panel__foot">{{ t('comparator.maxReached', { max: MAX_COMPARE }) }}</p>
     <p v-else class="plain-panel__foot">{{ t('sites.compareCount', { count: compareCount, max: MAX_COMPARE }) }}</p>
+    <p v-if="compareCount > 0 && !canOpenCompare" class="plain-panel__foot">{{ t('sites.compareSelectedHint') }}</p>
     <p v-if="selectedSite" class="plain-panel__foot">{{ t('sites.selectedHint', { site: siteDisplayName(t, te, selectedSite) }) }}</p>
   </div>
 </template>

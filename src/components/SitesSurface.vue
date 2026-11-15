@@ -23,7 +23,7 @@ const tabs = computed(() => [
   { id: 'compare', labelKey: 'tabs.compare', count: state.compareSiteIds.length },
 ])
 
-function onCompareAdded() {
+function onOpenCompare() {
   activeTab.value = 'compare'
 }
 </script>
@@ -37,7 +37,7 @@ function onCompareAdded() {
     <TabBar v-model="activeTab" :tabs="tabs" label-key="surfaces.sitesTabs" />
     <div class="surface__body">
       <div v-show="activeTab === 'sites'" role="tabpanel" :aria-label="t('tabs.sites')">
-        <SitesPanel @compare-added="onCompareAdded" />
+        <SitesPanel @open-compare="onOpenCompare" />
       </div>
       <div v-show="activeTab === 'custom'" role="tabpanel" :aria-label="t('tabs.custom')">
         <CustomSitePanel />

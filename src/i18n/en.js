@@ -227,6 +227,8 @@ export default {
     searchPlaceholder: 'Search POIs or coordinates',
     listLabel: 'Point of interest list',
     compareHint: 'Add sites to compare them in the comparator panel',
+    compareSelected: 'Compare selected ({count})',
+    compareSelectedHint: 'Select at least two sites to compare.',
     compareCount: 'Compare: {count}/{max}',
     compareAction: 'Add to comparator',
     compareFull: 'Comparator is full',
