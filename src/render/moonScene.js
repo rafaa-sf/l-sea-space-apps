@@ -139,6 +139,9 @@ export async function createMoonScene(canvas, options = {}) {
   camera.position.set(0, 28, 7)
 
   const controls = new OrbitControls(camera, canvas)
+  // One-finger vertical swipes scroll the page on phones; two fingers still
+  // rotate/zoom the map (OrbitControls defaults to touch-action: none).
+  canvas.style.touchAction = 'pan-y'
   controls.enableDamping = true
   controls.dampingFactor = 0.075
   controls.minDistance = 4
