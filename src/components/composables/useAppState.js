@@ -394,7 +394,7 @@ export async function selectSite(id) {
     // ephemeris (real Sun/Earth directions) while the horizon profile is still
     // computed at the custom coordinates themselves.
     let ephemerisSite = site
-    if (site.source === 'custom') {
+    if (site.source === 'custom' || site.source === 'pointer') {
       const nearest = nearestCuratedSite(state.sites, site.lat, site.lon)
       if (nearest) {
         site.ephemerisSiteId = nearest.id
@@ -403,7 +403,7 @@ export async function selectSite(id) {
     }
     const result = await loadEphemeris(ephemerisSite)
     if (token !== ephemerisToken) return
-    if (site.source === 'custom' && result.source === 'synthetic') site.ephemerisSiteId = null
+    if ((site.source === 'custom' || site.source === 'pointer') && result.source === 'synthetic') site.ephemerisSiteId = null
     state.ephemeris = result.dataset ? markRaw(result.dataset) : null
     state.data.ephemerisSource = result.source
     state.data.ephemerisOrigin = site.ephemerisSiteId ? `nearest:${site.ephemerisSiteId}` : result.origin ?? null
@@ -465,6 +465,26 @@ export function setPointerLocation(coordinates) {
   const lon = Number(coordinates?.lon)
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return
   state.pointer = { lat, lon, at: new Date().toISOString() }
+}
+
+/**
+ * Pin the map pointer: create (or move) a single transient pointer site at the
+ * clicked coordinates, select it and analyse it. The marker and the Sun/Earth
+ * arrows then follow that exact point; the site list keeps only one pointer.
+ */
+export async function pinPointerSite(coordinates) {
+  const lat = Number(coordinates?.lat)
+  const lon = Number(coordinates?.lon)
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null
+  const site = createCustomSite({ lat, lon })
+  site.id = `pointer-${site.id.replace(/^custom-/, '')}`
+  site.source = 'pointer'
+  site.name = null
+  state.pointer = { lat, lon, at: new Date().toISOString() }
+  state.sites = [...state.sites.filter((entry) => entry.source !== 'pointer'), site]
+  state.data.sitesCount = state.sites.length
+  await selectSite(site.id)
+  return site
 }
 
 /**
@@ -870,7 +890,7 @@ export async function runLandingZones() {
     : null
   const payload = {
     terrain,
-    sites: state.sites.map((site) => ({ ...site })),
+    sites: state.sites.filter((site) => site.source !== 'pointer').map((site) => ({ ...site })),
     mission: autopilotMission,
     maxZones: 8,
     options: landingZoneDetectionOptions(state.mission),
@@ -911,7 +931,7 @@ export async function runLandingZones() {
       const result = api.rankLandingZones({
         terrain: state.terrain,
         ephemeris: state.ephemeris,
-        sites: state.sites,
+        sites: state.sites.filter((site) => site.source !== 'pointer'),
         mission: autopilotMission,
         options: {
           ...landingZoneDetectionOptions(state.mission),
@@ -1029,7 +1049,7 @@ export async function runAutopilot() {
       const result = await runInWorker(
         'autopilot',
         {
-          sites: state.sites.map((site) => ({ ...site })),
+          sites: state.sites.filter((site) => site.source !== 'pointer').map((site) => ({ ...site })),
           mission: autopilotMission,
           region: terrainRegion.value ? { ...terrainRegion.value } : null,
           terrain,
@@ -1059,7 +1079,7 @@ export async function runAutopilot() {
     }
     if (!scores) {
       const localScores = compute.rankSites({
-        sites: state.sites,
+        sites: state.sites.filter((site) => site.source !== 'pointer'),
         terrain: state.terrain,
         ephemeris: state.ephemeris,
         mission: autopilotMission,
@@ -1180,7 +1200,7 @@ export async function runExport() {
       cycles = null
     }
     const result = await exportBrief({
-      sites: state.sites,
+      sites: state.sites.filter((site) => site.source !== 'pointer'),
       selectedSite: selectedSite.value,
       mission: state.mission,
       analysis: analysisSnapshot(),
@@ -1275,6 +1295,7 @@ export const actions = {
   addCustomSite,
   updateSite,
   setPointerLocation,
+  pinPointerSite,
   setTerrainRegion,
   toggleCompare,
   clearCompare,
