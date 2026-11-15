@@ -236,6 +236,8 @@ export default {
     lat: 'Latitude (°)',
     lon: 'Longitude (°)',
     usePointer: 'Use map pointer',
+    cyclesOnPointer: 'Use pointer for the 2-week cycles',
+    cyclesOnPointerHint: 'Selects the pointer coordinates as the analysis site so the sunlight and Earth-link bands are computed for that point (real ephemeris from the nearest curated site).',
     addCustom: 'Add site',
     pointerHint: 'Click the terrain in the viewport to capture a pointer position.',
     selectedHint: 'Selected site: {site}',
