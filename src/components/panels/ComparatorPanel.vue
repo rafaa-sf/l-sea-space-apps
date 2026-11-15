@@ -5,18 +5,23 @@
  */
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { actions, DEFAULT_MISSION, MAX_COMPARE, compareSites, selectedSite, state } from '../composables/useAppState.js'
+import StatRow from '../ui/StatRow.vue'
+import { actions, DEFAULT_MISSION, MAX_COMPARE, compareSites, isLandingZoneSite, selectedSite, state } from '../composables/useAppState.js'
 import { siteDisplayName } from '../composables/labels.js'
 import { MISSION_PRESETS, getMissionPreset } from '../../core/missionPresets.js'
 import { formatAngle, formatLat, formatNumber } from '../composables/format.js'
 
 const { t, te } = useI18n()
 
+// Zone-derived rows (transient `zone-<id>` sites) carry the equivalent-circle
+// perimeter of the landing-zone area, not a mission requirement: editing it
+// never persists, so it is rendered as a read-only readout (same treatment as
+// the Position tab).
 const rows = computed(() => {
   const list = []
-  if (selectedSite.value) list.push({ ...selectedSite.value, role: 'selected' })
+  if (selectedSite.value) list.push({ ...selectedSite.value, role: 'selected', zoneDerived: isLandingZoneSite(selectedSite.value) })
   for (const site of compareSites.value) {
-    if (site.id !== selectedSite.value?.id) list.push({ ...site, role: 'compare' })
+    if (site.id !== selectedSite.value?.id) list.push({ ...site, role: 'compare', zoneDerived: isLandingZoneSite(site) })
   }
   return list
 })
@@ -137,8 +142,13 @@ function rankText(value) {
               {{ t('common.remove') }}
             </button>
           </div>
+          <StatRow
+            v-if="row.zoneDerived"
+            label-key="coords.equivalentPerimeter"
+            :value="formatNumber(row.perimeterM, 0)"
+          />
           <div class="field-row">
-            <label class="field">
+            <label v-if="!row.zoneDerived" class="field">
               <span class="field__label">{{ t('comparator.perimeter') }}</span>
               <input
                 class="input"
@@ -161,6 +171,7 @@ function rankText(value) {
               />
             </label>
           </div>
+          <p v-if="row.zoneDerived" class="panel-note">{{ t('coords.equivalentPerimeterHint') }}</p>
           <div class="compare-detail__metrics">
             <span v-if="scoreOf(row.id) && Number.isFinite(scoreOf(row.id).slopeDeg)">{{ t('comparator.slope') }} {{ formatAngle(scoreOf(row.id).slopeDeg, 1) }}</span>
             <span v-else>{{ t('comparator.slope') }} —</span>
