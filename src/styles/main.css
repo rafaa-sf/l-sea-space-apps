@@ -198,9 +198,9 @@ a:hover {
 }
 
 .center-map {
-  /* The map gives up a few pixels when the timeline needs them, so the center
-     stack never overflows short desktop viewports (e.g. 1440x900). */
-  flex: 0 1 auto;
+  /* The splitter owns the map height; the timeline minimum is matched in
+     App.vue so the flex child never has to shrink unpredictably. */
+  flex: 0 0 auto;
   width: 100%;
   height: var(--viewport-height, 520px);
   min-width: 0;
@@ -218,7 +218,7 @@ a:hover {
 
 .center-stack > .timeline {
   flex: 0 0 auto;
-  height: auto;
+  height: var(--timeline-height, auto);
   min-height: 132px;
   max-height: none;
 }
@@ -2468,6 +2468,15 @@ body.is-resizing-panes * {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  list-style-type: none;
+}
+
+.rank-list > .rank-item {
+  list-style: none;
+  list-style-type: none;
 }
 
 .rank-item {

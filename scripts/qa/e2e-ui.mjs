@@ -439,6 +439,16 @@ await sleep(800)
 text = await bodyText()
 report.ranking = await evaluate(`document.querySelector('[data-testid="landing-zone-row"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? 'MISSING'`)
 report.zoneRows = await evaluate(`document.querySelectorAll('[data-testid="landing-zone-row"]').length`)
+report.rankMarkers = await evaluate(`(() => {
+  const lists = [...document.querySelectorAll('.rank-list')];
+  return lists.map((list) => ({
+    tag: list.tagName,
+    listStyle: getComputedStyle(list).listStyleType,
+    paddingLeft: getComputedStyle(list).paddingLeft,
+    firstRow: (list.querySelector('.rank-item')?.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 24),
+  }));
+})()`)
+
 report.zoneFirst = await evaluate(`document.querySelector('[data-testid="landing-zone-row"]')?.textContent ?? null`)
 report.zoneClick = await evaluate(`(() => { const row=document.querySelector('[data-testid="landing-zone-row"]'); const el=row?.querySelector('button'); if(!el) return false; el.click(); return true; })()`)
 let zoneSelected = false
@@ -719,9 +729,14 @@ for (const [width, height] of [[1440, 1000], [1200, 1000], [1024, 900], [900, 90
   report.timelineResponsive[width] = await evaluate(`(() => {
     const band = document.querySelector('.timeline-cycles');
     const timeline = document.querySelector('.timeline');
-    if (!band || !timeline) return { visible: false, fits: false, overflowX: true };
+    const stack = document.querySelector('.center-stack');
+    const footer = document.querySelector('.app-footer');
+    if (!band || !timeline) return { visible: false, fits: false, overflowX: true, withinStack: false, footerClear: false, bodyFit: false };
     const bandRect = band.getBoundingClientRect();
     const timelineRect = timeline.getBoundingClientRect();
+    const stackRect = stack?.getBoundingClientRect();
+    const footerRect = footer?.getBoundingClientRect();
+    const bodyBridge = document.documentElement.scrollHeight - document.documentElement.clientHeight;
     return {
       visible: bandRect.height > 10,
       fits: bandRect.top >= timelineRect.top - 1 && bandRect.bottom <= timelineRect.bottom + 1 && (() => {
@@ -731,6 +746,9 @@ for (const [width, height] of [[1440, 1000], [1200, 1000], [1024, 900], [900, 90
         return statusRect.top >= timelineRect.top - 1 && statusRect.bottom <= timelineRect.bottom + 1;
       })(),
       overflowX: document.documentElement.scrollWidth > window.innerWidth,
+      withinStack: Boolean(stackRect) && timelineRect.bottom <= stackRect.bottom + 1,
+      footerClear: Boolean(footerRect) && timelineRect.bottom <= footerRect.top + 1,
+      bodyFit: window.innerWidth <= 1024 || bodyBridge <= 1,
       timelineHeight: Math.round(timelineRect.height),
       bandHeight: Math.round(bandRect.height),
     };
@@ -983,6 +1001,8 @@ const failed =
   !(report.zoneRows >= 1) ||
   !/km/.test(report.zoneFirst ?? '') || !/slope/i.test(report.zoneFirst ?? '') ||
   !report.zoneClick || !report.zoneSelected ||
+  !Array.isArray(report.rankMarkers) || report.rankMarkers.length < 1 ||
+  report.rankMarkers.some((list) => list.tag !== 'OL' || list.listStyle !== 'none' || list.paddingLeft !== '0px' || /^\d+[.)]/.test(list.firstRow)) ||
   !/Landing zone/i.test(report.zoneHeader ?? '') ||
   !/\bW\b/.test(report.zoneMetricsText ?? '') || !/Wh/.test(report.zoneMetricsText ?? '') ||
   !/°C/.test(report.zoneMetricsText ?? '') || !/%/.test(report.zoneMetricsText ?? '') ||
@@ -1015,7 +1035,7 @@ const failed =
   !report.timelineCycles.fits || !report.timelineCyclesSeekChanged ||
   !report.timelineCyclesRelayChanged || !report.timelineCyclesA11y ||
   !report.timelineCyclesTitleEN ||
-  !Object.values(report.timelineResponsive ?? {}).every((entry) => entry.visible && entry.fits && !entry.overflowX) ||
+  !Object.values(report.timelineResponsive ?? {}).every((entry) => entry.visible && entry.fits && !entry.overflowX && entry.withinStack && entry.footerClear && entry.bodyFit) ||
   !report.rtgSourceChanged || !report.rtgPowerSet ||
   !report.rtgFeasible || !report.rtgNote ||
   !report.rtgInsufficient || !report.rtgViolationText || !report.rtgRestored ||

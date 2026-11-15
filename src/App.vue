@@ -60,7 +60,7 @@ function readStoredWidth(side) {
 const MAP_RATIO_KEY = 'lsea.layout.mapRatio'
 const MAP_RATIO_MIN = 0.55
 const MAP_RATIO_MAX = 1
-const MAP_RATIO_DEFAULT = 0.85
+const MAP_RATIO_DEFAULT = 0.78
 
 function readStoredRatio() {
   try {
@@ -84,7 +84,12 @@ const mapSide = ref(480)
 const viewportHeightPx = ref(480)
 const timelineHeightPx = ref(72)
 const centerRef = ref(null)
+const timelineRef = ref(null)
+const timelineContentMin = ref(132)
 let centerObserver = null
+let timelineObserver = null
+let timelineElement = null
+let timelineCheckRaf = null
 
 function saveWidths() {
   try {
@@ -107,12 +112,35 @@ function computeMapSide() {
   // Timeline stays compact by default (64px) and can grow when the user drags
   // the vertical split downwards; the viewport always fills the remainder, so
   // there is no dead space below the timeline.
-  const timelineMax = Math.max(64, usable - 220)
-  const timelineHeight = Math.round(Math.min(timelineMax, Math.max(64, usable * (1 - share))))
+  // The timeline must keep room for its mission-cycle band (#33); this minimum
+  // must match `.center-stack > .timeline { min-height }` in main.css so the
+  // map height never gets absorbed by a taller-than-planned timeline.
+  const timelineMin = 132
+  const timelineMax = Math.max(timelineMin, usable - 220)
+  const target = Math.min(timelineMax, Math.max(timelineMin, usable * (1 - share)))
+  // The rendered timeline can grow beyond the target when its compact cycle
+  // band wraps. Use the measured content minimum so the map + timeline always
+  // fill the centre column exactly and never overlap the footer.
+  const timelineHeight = Math.round(Math.max(target, timelineContentMin.value))
   const viewportHeight = Math.round(usable - timelineHeight)
   mapSide.value = viewportHeight
   viewportHeightPx.value = viewportHeight
   timelineHeightPx.value = timelineHeight
+}
+
+function checkTimelineContent() {
+  timelineCheckRaf = null
+  if (!timelineElement) return
+  const needed = timelineElement.scrollHeight
+  if (needed > timelineElement.clientHeight + 1 && needed > timelineContentMin.value) {
+    timelineContentMin.value = needed
+    computeMapSide()
+  }
+}
+
+function scheduleTimelineCheck() {
+  if (timelineCheckRaf !== null) return
+  timelineCheckRaf = requestAnimationFrame(checkTimelineContent)
 }
 
 function updateMapRatio(value) {
@@ -247,8 +275,17 @@ watch(
 onMounted(() => {
   clampLayout()
   computeMapSide()
-  centerObserver = new ResizeObserver(() => computeMapSide())
+  centerObserver = new ResizeObserver(() => {
+    computeMapSide()
+    scheduleTimelineCheck()
+  })
   if (centerRef.value) centerObserver.observe(centerRef.value)
+  timelineElement = timelineRef.value?.$el ?? null
+  if (timelineElement) {
+    timelineObserver = new ResizeObserver(() => scheduleTimelineCheck())
+    timelineObserver.observe(timelineElement)
+    scheduleTimelineCheck()
+  }
   window.addEventListener('resize', onWindowResize)
   actions
     .boot()
@@ -264,6 +301,8 @@ onBeforeUnmount(() => {
   if (persistTimer) clearTimeout(persistTimer)
   if (resizeRaf !== null) cancelAnimationFrame(resizeRaf)
   if (centerObserver) centerObserver.disconnect()
+  if (timelineObserver) timelineObserver.disconnect()
+  if (timelineCheckRaf !== null) cancelAnimationFrame(timelineCheckRaf)
   window.removeEventListener('resize', onWindowResize)
   document.body.classList.remove('is-resizing-panes')
 })
@@ -307,7 +346,7 @@ onBeforeUnmount(() => {
             @update:ratio="updateMapRatio"
             @commit="saveWidths"
           />
-          <TimelineBar />
+          <TimelineBar ref="timelineRef" />
         </div>
       </section>
       <ResizeHandle
