@@ -17,27 +17,18 @@ communication windows derived from real NASA data.
 
 ![L-SEA application overview](docs/screenshots/app-3d.png)
 
-## Overview
+## What it does
 
 Landing on the Moon's south pole means trading sunlight for power, Earth
-visibility for communications, and terrain that hides the horizon. Mission
-planners face these trade-offs whenever a launch date or landing site changes,
-but the data lives in specialist tools such as JPL Horizons, Moon Trek and LROC
-QuickMap.
+visibility for communications, and terrain that hides the horizon. The data lives
+in specialist tools such as JPL Horizons, Moon Trek and LROC QuickMap; L-SEA turns
+it into a single comparison workflow. At the pole the terrain, not the ephemeris
+alone, decides whether the Sun or the Earth is visible, so the tool ray-traces the
+local horizon from real LOLA elevation data before estimating power, links and
+mission feasibility.
 
-L-SEA turns that data into a single comparison workflow:
-
-- 10 curated south-pole sites (nine Artemis III candidate regions plus
-  Shackleton crater rim), custom coordinates, or a map pointer.
-- Real LOLA terrain rendered in 3D, with a top-down 2D view of the same scene and
-  an automatic Canvas 2D fallback when WebGL is unavailable or the 3D scene fails
-  to start.
-- Sun and Earth positions from pre-computed JPL Horizons ephemerides.
-- A ray-traced terrain horizon with lunar curvature, sunset and Earthset
-  countdowns, power estimates and communication windows.
-- Mission autopilot ranking, orbital-variation views and a JSON mission brief
-  export with NASA source links.
-- English and Spanish interface.
+The canonical feature reference — what each feature does, which modules implement
+it and why the design was chosen — is **[docs/features.md](docs/features.md)**.
 
 ## Entry points
 
@@ -48,9 +39,10 @@ L-SEA turns that data into a single comparison workflow:
 
 ## Documentation
 
-Full grouped index: **[docs/README.md](docs/README.md)**.
+Full grouped index: **[docs/README.md](docs/README.md)**. Feature reference:
+**[docs/features.md](docs/features.md)**.
 
-- **Project and challenge:** [challenge](docs/challenge.md) · [architecture](docs/architecture.md) · [NASA data](docs/data.md) · [AI use declaration](docs/ai-usage.md)
+- **Project and challenge:** [features](docs/features.md) · [challenge](docs/challenge.md) · [architecture](docs/architecture.md) · [NASA data](docs/data.md) · [AI use declaration](docs/ai-usage.md)
 - **Product, impact and submission:** [submission](docs/submission.md) · [demo](docs/demo.md) · [impact and scalability](docs/scalability.md) · [commercial case](docs/commercial.md)
 - **Quality and operations:** [QA and test bench](docs/qa.md) · [UX compliance](docs/ux-compliance.md) · [deployment](docs/deployment.md) · [contributing](docs/contributing.md) · [security](docs/security.md) · [decisions](docs/decisions.md) · [Miro integration](docs/miro.md)
 - **Reproducible test bench:** [qa/README.md](qa/README.md) · [qa/REPORT.md](qa/REPORT.md)
@@ -72,13 +64,13 @@ The data pipeline, verification evidence and attribution are documented in
 Vue 3 and Vite for the interface, Three.js for the 3D viewport, plain
 JavaScript for the framework-agnostic domain core, a single Web Worker for
 background scoring, Vitest for tests and GitHub Actions for continuous
-integration. The production build is fully static and is deployed on GitHub Pages; the earlier Vercel hosting was migrated away (history in `docs/deployment.md` and the decision log).
+integration. The production build is fully static and is deployed on GitHub Pages; the earlier Vercel hosting was migrated away (history in [`docs/deployment.md`](docs/deployment.md) and the decision log).
 
 ## Repository layout
 
 ```text
 src/
-  core/        Frame-independent domain logic (terrain, horizon, ephemeris, power, comms, autopilot)
+  core/        Frame-independent domain logic (terrain, horizon, ephemeris, power, comms, autopilot, zones)
   services/    Data adapters (NASA datasets, Moon Trek, export, storage, worker client)
   workers/     Background compute worker
   components/  Vue interface (panels, primitives, composables)
@@ -109,28 +101,19 @@ The Miro MCP server is a separate package: `npm --prefix mcp/miro ci` and
 Production is deployed on **GitHub Pages** at
 <https://rafaa-sf.github.io/l-sea-space-apps/>. The Pages workflow builds and
 publishes every push to `main`. The earlier Vercel deployment was disconnected and its
-configuration removed; the migration is documented in `docs/deployment.md` and
-`docs/decisions.md`. Deployment details, verification steps and rollback are in
-[`docs/deployment.md`](docs/deployment.md).
+configuration removed; the migration is documented in [`docs/deployment.md`](docs/deployment.md)
+and [`docs/decisions.md`](docs/decisions.md).
 
 ## Quality and verification
 
-The application ships with an automated test bench under [`qa/`](qa/README.md):
-
-- **Unit and contract tests** — Vitest suites for the scientific core and the
-  data services (`npm test`).
-- **Monte Carlo logic bench** — seeded randomised site/date/mission scenarios
-  over the real core with 13 invariants (no `NaN`, bounds, coordinate
-  round-trip, horizon consistency, visibility, set events, windows, power,
-  comms, scoring, ranking, cache neutrality). A 20,000-case run found one real
-  terrain-boundary defect, fixed in #6 with a regression test.
-- **Device/resolution matrix** — headless Chrome emulation of 51 viewports
-  (desktop, laptop, tablet, mobile, foldable and TV; portrait and landscape) in
+- **Unit and contract tests** — 238 Vitest tests in 16 files for the scientific
+  core and the data services (`npm test`), plus 8 tests for the Miro MCP package.
+- **Monte Carlo logic bench** — seeded randomised site/date/mission scenarios over
+  the real core with 13 invariants. A 20,000-case run found one real
+  terrain-boundary defect, fixed with a regression test.
+- **Device/resolution matrix** — headless Chrome emulation of 51 viewports in
   English and Spanish, plus the no-WebGL fallback, measuring layout boxes,
   overflow, console errors, control sizes and font sizes.
-- **Tagged, filterable results** — every case carries tags (`@inv/*`, `@ui/*`,
-  `@device/*`, `@res/*`, `@status/*`) and the results are aggregated into a
-  self-contained, offline HTML report.
 - **Reproduce** — commands, tag taxonomy and the executed runs are documented in
   [`qa/README.md`](qa/README.md) and [`qa/REPORT.md`](qa/REPORT.md); the test
   strategy is in [`docs/qa.md`](docs/qa.md).
@@ -138,6 +121,16 @@ The application ships with an automated test bench under [`qa/`](qa/README.md):
 Production verification: <https://rafaa-sf.github.io/l-sea-space-apps> returns HTTP 200,
 serves the pre-computed NASA datasets and the AI-use declaration at
 `/data/ai-usage.md`.
+
+## Limits
+
+The tool is a decision aid, not a flight-dynamics tool. It models a spherical
+Moon, uses the shipped LOLA grids (74 m to 594 m per pixel) and the pre-computed
+ephemeris window 2026-11-01 to 2026-12-31, treats relay communications as a
+documented coverage fraction rather than an orbit propagation, and simplifies
+power and thermal behaviour. The full scope, assumptions and non-goals are listed
+in [docs/features.md](docs/features.md#20-assumptions-and-limits) and
+[docs/architecture.md](docs/architecture.md).
 
 ## AI usage
 

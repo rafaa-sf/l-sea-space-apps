@@ -486,26 +486,12 @@ answered with `{ zones, meta }`:
 - i18n catalogues in `src/i18n/en.js` and `src/i18n/es.js`; every visible string
   must exist in both languages.
 
-## Feature map
+## Feature reference
 
-| # | Feature | Modules |
-| --- | --- | --- |
-| 1 | Site selection (CSA Moon Explorer style POIs) | services/sites, components |
-| 2 | Custom coordinates or pointer; LOLA altitude; Horizons bodies | engine/terrain, ephemeris |
-| 3 | Site comparator (Horizons + LOLA, perimeter, mast) | autopilot, components |
-| 4 | Dates and times | ephemeris |
-| 5 | Sun/Earth vs horizon, ray tracing and curvature (`engine.js`) | engine |
-| 6 | Time remaining until Sunset/Earthset | ephemeris |
-| 7 | Power and communications | power, comms |
-| 8 | Layers (Moon Trek) | moontrek |
-| 9 | Real topography and craters (LOLA DEM, PDS) | terrain, lola |
-| 10 | Autopilot algorithm (flat landing zones from the LOLA DEM, mission characteristics, power, relay, sun days) | autopilot, zones, zoneAutopilot |
-| 11 | Background worker (single CPU thread) | workers |
-| 12 | Adapter for PCs without WebGL | render/fallback2d |
-| 13 | Orbital variation | ephemeris |
-| 16 | Weekly sunlight and link/relay cycles | cycles |
-| 14 | English/Spanish UI | i18n |
-| 15 | JSON brief export (QuickMap, Moon Trek) | export |
+The user-facing feature map, including the modules and functions behind each
+feature and the rationale for the design, is **[features.md](features.md)**. This
+document stays the technical contract: stack, runtime constraints, domain model,
+datasets, terrain grids and the core/worker/render interfaces.
 
 ## Testing and conventions
 

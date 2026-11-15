@@ -7,48 +7,57 @@ Live application: <https://rafaa-sf.github.io/l-sea-space-apps/>
 
 This index is the entry point when browsing the `docs/` directory. Every
 document is written in English and kept in sync with the implementation.
+Start with [features.md](features.md) for what the product does and why; the
+tables below reach the specialist document for each topic and name its
+intended audience.
+
+## Features
+
+| Document | What it covers | Audience |
+| --- | --- | --- |
+| [features.md](features.md) | Canonical feature reference: what each feature does, the modules and functions behind it, and the rationale for the design choices | Everyone |
 
 ## Project and challenge
 
-| Document | What it covers |
-| --- | --- |
-| [challenge.md](challenge.md) | Official 2026 challenge statement, event rules, shared resources and NASA data links |
-| [architecture.md](architecture.md) | Technical architecture, runtime constraints, domain model, module contracts and feature map |
-| [data.md](data.md) | NASA endpoints, CORS evidence, dataset provenance, LOLA download record, licensing and official-source verification |
-| [ai-usage.md](ai-usage.md) | AI use declaration required by the challenge: tools, agent teams, human responsibilities |
+| Document | What it covers | Audience |
+| --- | --- | --- |
+| [challenge.md](challenge.md) | Official 2026 challenge statement, event rules, shared resources and NASA data links | Reviewers |
+| [architecture.md](architecture.md) | Technical architecture, runtime constraints, domain model, module contracts, terrain grids and interface contracts (feature reference in [features.md](features.md)) | Contributors |
+| [data.md](data.md) | NASA endpoints, CORS evidence, dataset provenance, LOLA download record, licensing and official-source verification | Reviewers, contributors |
+| [ai-usage.md](ai-usage.md) | AI use declaration required by the challenge: tools, agent teams, human responsibilities | Reviewers |
 
 ## Product, impact and submission
 
-| Document | What it covers |
-| --- | --- |
-| [mission-presets.md](mission-presets.md) | Historical mission profile presets for the site comparator, with sources and modelling assumptions |
-| [submission.md](submission.md) | Project page content, submission checklist and link inventory |
-| [demo.md](demo.md) | Project Demo format, seven-slide plan, 30-second video script and evidence values |
-| [scalability.md](scalability.md) | Impact assessment and scalability analysis: beneficiaries, measurable impact, growth, scale limits and roadmap |
-| [commercial.md](commercial.md) | Business case, market, business model and judging-criteria mapping |
+| Document | What it covers | Audience |
+| --- | --- | --- |
+| [mission-presets.md](mission-presets.md) | Historical mission profile presets for the site comparator, with sources and modelling assumptions | Reviewers, tool users |
+| [submission.md](submission.md) | Project page content, submission checklist and link inventory | Reviewers |
+| [demo.md](demo.md) | Project Demo format, seven-slide plan, 30-second video script and evidence values | Reviewers |
+| [scalability.md](scalability.md) | Impact assessment and scalability analysis: beneficiaries, measurable impact, growth, scale limits and roadmap | Reviewers |
+| [commercial.md](commercial.md) | Business case, market, business model and judging-criteria mapping | Reviewers |
 
 ## Quality and operations
 
-| Document | What it covers |
-| --- | --- |
-| [qa.md](qa.md) | Test strategy and executed QA evidence (unit, contract, Monte Carlo bench, device matrix, live checks) |
-| [ux-compliance.md](ux-compliance.md) | Compliance with the Málaga 2026 UX support guide: 7 requirements, measured audit, gaps and change-control process |
-| [deployment.md](deployment.md) | GitHub Pages deployment, verification checklist and rollback |
-| [contributing.md](contributing.md) | Language, commit and branch conventions plus the two-machine collaboration protocol |
-| [security.md](security.md) | Secrets policy, protected files and repository safety |
-| [decisions.md](decisions.md) | Decision log for architecture, data, tooling and process |
-| [miro.md](miro.md) | Miro MCP server setup, authentication and tool list |
+| Document | What it covers | Audience |
+| --- | --- | --- |
+| [qa.md](qa.md) | Test strategy and executed QA evidence (unit, contract, Monte Carlo bench, device matrix, live checks) | QA, reviewers |
+| [ux-compliance.md](ux-compliance.md) | Compliance with the Málaga 2026 UX support guide: 7 requirements, measured audit, gaps and change-control process | QA, contributors |
+| [deployment.md](deployment.md) | GitHub Pages deployment, verification checklist and rollback | Operators |
+| [contributing.md](contributing.md) | Language, commit and branch conventions plus the two-machine collaboration protocol | Contributors |
+| [security.md](security.md) | Secrets policy, protected files and repository safety | Contributors |
+| [decisions.md](decisions.md) | Decision log for architecture, data, tooling and process | Contributors |
+| [miro.md](miro.md) | Miro MCP server setup, authentication and tool list | Contributors |
 
 ## Reproducible test bench
 
 The `qa/` directory contains the runnable test bench referenced by the QA
 documentation:
 
-| Document | What it covers |
-| --- | --- |
-| [qa/README.md](../qa/README.md) | Monte Carlo logic bench and device/resolution matrix: how to run, contracts and layout |
-| [qa/SPEC.md](../qa/SPEC.md) | Test-bench contract: scenarios, invariants, UI checks and tagging |
-| [qa/REPORT.md](../qa/REPORT.md) | Executed runs, numbers, findings and reproduction |
+| Document | What it covers | Audience |
+| --- | --- | --- |
+| [qa/README.md](../qa/README.md) | Monte Carlo logic bench and device/resolution matrix: how to run, contracts and layout | QA |
+| [qa/SPEC.md](../qa/SPEC.md) | Test-bench contract: scenarios, invariants, UI checks and tagging | QA |
+| [qa/REPORT.md](../qa/REPORT.md) | Executed runs, numbers, findings and reproduction | QA, reviewers |
 
 ## Screenshots
 
