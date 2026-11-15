@@ -31,7 +31,7 @@ function fillFromPointer() {
 
 function usePointerForCycles() {
   if (!state.pointer?.at) return
-  actions.addCustomSite({ lat: state.pointer.lat, lon: state.pointer.lon })
+  actions.pinPointerSite({ lat: state.pointer.lat, lon: state.pointer.lon })
 }
 
 function addCustomSite() {

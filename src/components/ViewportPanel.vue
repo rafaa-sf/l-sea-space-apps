@@ -200,7 +200,7 @@ function rendererOptions() {
     sampleElevation: (lat, lon) => (compute && state.terrain ? compute.sampleElevation(state.terrain, lat, lon) : 0),
     terrainStats: (terrain) => (compute ? compute.terrainStats(terrain) : { minM: 0, maxM: 1 }),
     onPickSite: (id) => actions.selectSite(id),
-    onPickLocation: (coordinates) => actions.setPointerLocation(coordinates),
+    onPickLocation: (coordinates) => actions.pinPointerSite(coordinates),
     onLayerStatus: (id, status) => {
       actions.setLayerStatus(id, status)
     },
