@@ -24,6 +24,7 @@ import {
   terrainColor,
 } from './geo.js'
 import { intersectBounds, loadMoonTrekMosaic, parseLayerBounds } from './moontrekTiles.js'
+import { markerOpacity } from './markerOpacity.js'
 
 const COLOR_SPACE = 0x05070c
 const COLOR_SELECTED = 0x6ee7ff
@@ -57,7 +58,7 @@ function disposeObject(object) {
 }
 
 /** Camera-facing inverted-cone marker with the tip anchored at the bottom. */
-function createConeMarkerSprite(THREE, color) {
+function createConeMarkerSprite(THREE, color, opacity = 1) {
   const canvas = document.createElement('canvas')
   canvas.width = 128
   canvas.height = 160
@@ -79,8 +80,9 @@ function createConeMarkerSprite(THREE, color) {
   context.stroke()
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
-  const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false })
+  const material = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity, depthWrite: false, depthTest: false })
   const sprite = new THREE.Sprite(material)
+  sprite.renderOrder = 30 // keep the pin above terrain and tile layers
   sprite.center.set(0.5, 0) // anchor the tip, not the middle
   sprite.scale.set(0.62, 0.78, 1)
   return sprite
@@ -180,6 +182,8 @@ export async function createMoonScene(canvas, options = {}) {
 
   const pickables = []
   const surfaceRaycaster = new THREE.Raycaster()
+  let enabledLayerCount = 0
+  let selectedMarker = null
 
   const sunArrow = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), 4, COLOR_SUN, 1.1, 0.55)
   const earthArrow = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), 3.4, COLOR_EARTH, 0.9, 0.45)
@@ -682,6 +686,7 @@ export async function createMoonScene(canvas, options = {}) {
   }
 
   function clearSites() {
+    selectedMarker = null
     disposeObject(markerGroup)
     markerGroup.clear()
     const terrainIndex = pickables.findIndex((entry) => entry.userData.pickTerrain)
@@ -702,11 +707,12 @@ export async function createMoonScene(canvas, options = {}) {
         // Camera-facing inverted cone: the tip touches the sampled/raycast
         // terrain surface exactly, and the shape stays readable from above.
         const surface = siteSurfacePoint(site)
-        const marker = createConeMarkerSprite(THREE, color)
+        const marker = createConeMarkerSprite(THREE, color, markerOpacity(enabledLayerCount > 0))
         marker.position.set(surface.x, surface.y + CONE_TIP_EPSILON, surface.z)
         marker.userData.pickSiteId = site.id
         markerGroup.add(marker)
         pickables.push(marker)
+        selectedMarker = marker
       } else {
         const radius = 0.09
         const geometry = new THREE.OctahedronGeometry(radius, 0)
@@ -954,6 +960,10 @@ export async function createMoonScene(canvas, options = {}) {
   }
 
   function setLayers(layers = [], enabledIds = []) {
+    enabledLayerCount = Array.isArray(enabledIds) ? enabledIds.length : 0
+    if (selectedMarker?.material) {
+      selectedMarker.material.opacity = markerOpacity(enabledLayerCount > 0)
+    }
     const token = (layerToken += 1)
     clearOverlays()
     if (!terrainGeometry || !projection) return
