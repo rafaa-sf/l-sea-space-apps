@@ -40,6 +40,12 @@ function clearPointer() {
 }
 
 function addCustomSite() {
+  // Reject empty fields explicitly: Number('') is 0 and would silently create
+  // a site at (0, 0) (audit BH-13).
+  if (String(latInput.value).trim() === '' || String(lonInput.value).trim() === '') {
+    formError.value = t('sites.errors.required')
+    return
+  }
   const lat = Number(latInput.value)
   const lon = Number(lonInput.value)
   if (!Number.isFinite(lat) || lat < -90 || lat > 90) {

@@ -261,6 +261,7 @@ export default {
       unknown: 'Unknown',
     },
     errors: {
+      required: 'Enter both latitude and longitude.',
       latRange: 'Latitude must be between −90° and +90°.',
       lonRange: 'Longitude must be between −360° and +360°.',
     },
@@ -284,6 +285,10 @@ export default {
     terrainSource: 'Terrain source',
     siteSource: 'Site source',
     syntheticRegion: 'Synthetic terrain (fallback)',
+    outsideDem: 'This site is outside the loaded LOLA DEM coverage: horizon, power and communications metrics are unavailable.',
+    analysisUnavailable: 'Analysis is unavailable for this site with the loaded data.',
+    ephemerisClamped: 'The requested time is outside the precomputed ephemeris window ({start} – {end}); the clock was clamped to {clampedTo}.',
+    ephemerisClampedWindow: 'The requested time is outside the precomputed ephemeris window ({start} – {end}); derived Sun/Earth values are clamped.',
   },
   comparator: {
     title: 'Comparator',

@@ -180,6 +180,10 @@ export const state = reactive({
   analysis: {
     ready: false,
     stale: false,
+    unavailable: false,
+    coverageReason: null,
+    coverage: null,
+    timeWarning: null,
     updatedAt: null,
     sun: { az: 0, el: 0 },
     earth: { az: 0, el: 0 },
@@ -409,7 +413,17 @@ export async function selectSite(id) {
       const end = toTimestamp(result.dataset.end)
       const current = toTimestamp(state.time)
       if (Number.isFinite(start) && Number.isFinite(end) && (current < start || current > end)) {
-        state.time = new Date(Math.min(Math.max(current, start), end)).toISOString()
+        const clamped = Math.min(Math.max(current, start), end)
+        state.time = new Date(clamped).toISOString()
+        state.analysis.timeWarning = {
+          code: 'ephemeris-window-clamped',
+          requested: new Date(current).toISOString(),
+          start: new Date(start).toISOString(),
+          end: new Date(end).toISOString(),
+          clampedTo: new Date(clamped).toISOString(),
+        }
+      } else {
+        state.analysis.timeWarning = null
       }
     }
   } catch (error) {
@@ -426,11 +440,76 @@ export async function selectSite(id) {
   }
 }
 
+/**
+ * Validate/normalise custom site coordinates (audit BH-05/BH-13).
+ * Rejects empty, non-finite, out-of-range values; normalises longitude to
+ * [-180, 180).
+ *
+ * @param {{lat?: unknown, lon?: unknown}} coordinates
+ * @returns {{lat: number, lon: number}|null}
+ */
+export function normalizeCustomCoordinates(coordinates) {
+  const latRaw = coordinates?.lat
+  const lonRaw = coordinates?.lon
+  if (latRaw == null || lonRaw == null) return null
+  if (typeof latRaw === 'string' && latRaw.trim() === '') return null
+  if (typeof lonRaw === 'string' && lonRaw.trim() === '') return null
+  const lat = Number(latRaw)
+  const lon = Number(lonRaw)
+  if (!Number.isFinite(lat) || lat < -90 || lat > 90) return null
+  if (!Number.isFinite(lon) || lon < -360 || lon > 360) return null
+  const normalizedLon = ((((lon + 180) % 360) + 360) % 360) - 180
+  return { lat, lon: normalizedLon === -180 ? 180 : normalizedLon }
+}
+
+/** Mission copy with an explicit startTime, so every analysis call uses the
+ * selected date instead of the ephemeris dataset start (audit BH-07). */
+export function missionAtStart(mission, startTime) {
+  const startMs = toTimestamp(startTime)
+  if (!Number.isFinite(startMs)) return { ...mission }
+  return { ...mission, startTime: new Date(startMs).toISOString() }
+}
+
+/** Surface distance from the south pole in km; finite at both poles (BH-05). */
+export function distanceFromSouthPoleKm(latDeg) {
+  const lat = Number(latDeg)
+  if (!Number.isFinite(lat) || lat < -90 || lat > 90) return null
+  const radiusM = 1737400
+  return (radiusM * ((90 + lat) * Math.PI)) / 180 / 1000
+}
+
+/** True when the selected site is inside the loaded DEM coverage (audit BH-04). */
+export function siteCoverage(site, terrain = state.terrain) {
+  if (!site || !terrain) return { covered: false, reason: 'no-terrain' }
+  if (Number.isFinite(Number(terrain.minX)) && Number.isFinite(Number(terrain.maxX))) {
+    const point = lonLatToPlanarMeters(site.lat, site.lon, terrain.datum ?? 1737400)
+    const eps = 1e-6
+    const covered =
+      point.x >= Number(terrain.minX) - eps &&
+      point.x <= Number(terrain.maxX) + eps &&
+      point.y >= Number(terrain.minY) - eps &&
+      point.y <= Number(terrain.maxY) + eps
+    return {
+      covered,
+      reason: covered ? null : 'site-outside-dem',
+      point,
+      bounds: { minX: terrain.minX, maxX: terrain.maxX, minY: terrain.minY, maxY: terrain.maxY },
+    }
+  }
+  if (Number.isFinite(Number(terrain.lat0)) && Number.isFinite(Number(terrain.lat1))) {
+    const covered =
+      site.lat >= Math.min(terrain.lat0, terrain.lat1) &&
+      site.lat <= Math.max(terrain.lat0, terrain.lat1)
+    return { covered, reason: covered ? null : 'site-outside-dem' }
+  }
+  return { covered: true, reason: null }
+}
+
 /** Create a custom site from map coordinates and select it. */
 export function addCustomSite(coordinates) {
-  const lat = Number(coordinates?.lat)
-  const lon = Number(coordinates?.lon)
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null
+  const validated = normalizeCustomCoordinates(coordinates)
+  if (!validated) return null
+  const { lat, lon } = validated
   const site = createCustomSite({ lat, lon })
   const duplicate = state.sites.find(
     (entry) => entry.source === 'custom' && Math.abs(entry.lat - site.lat) < 0.002 && Math.abs(entry.lon - site.lon) < 0.002,
@@ -584,6 +663,22 @@ export function setTime(value) {
   // advancing the clock while the transport button already shows "play".
   if (state.playback.playing) stopPlayback()
   state.time = new Date(ms).toISOString()
+  const range = ephemerisRange.value
+  if (range) {
+    const start = toTimestamp(range.start)
+    const end = toTimestamp(range.end)
+    if (Number.isFinite(start) && Number.isFinite(end) && (ms < start || ms > end)) {
+      state.analysis.timeWarning = {
+        code: 'ephemeris-window-clamped',
+        requested: new Date(ms).toISOString(),
+        start: new Date(start).toISOString(),
+        end: new Date(end).toISOString(),
+        clampedTo: null,
+      }
+    } else {
+      state.analysis.timeWarning = null
+    }
+  }
 }
 
 export function shiftTime(minutes) {
@@ -704,6 +799,22 @@ async function runInstantAnalysis() {
   if (!site || !state.terrain) return
   const token = (instantToken += 1)
   const compute = await ensureCompute()
+  const coverage = siteCoverage(site)
+  if (!coverage.covered) {
+    if (token !== instantToken) return
+    Object.assign(state.analysis, {
+      ready: false,
+      stale: false,
+      unavailable: true,
+      coverageReason: coverage.reason,
+      coverage,
+      updatedAt: new Date().toISOString(),
+      ray: null,
+      siteElevationM: null,
+      slope: { slopeDeg: null, aspectDeg: null },
+    })
+    return
+  }
   try {
     const ephemeris = state.ephemeris
     const sample = ephemeris
@@ -720,6 +831,9 @@ async function runInstantAnalysis() {
     Object.assign(state.analysis, {
       ready: true,
       stale: false,
+      unavailable: false,
+      coverageReason: null,
+      coverage,
       updatedAt: new Date().toISOString(),
       sun: sample.sun,
       earth: sample.earth,
@@ -765,19 +879,39 @@ function normalizePowerResult(power, mission) {
 async function runMissionAnalysis() {
   const site = selectedSite.value
   if (!site || !state.terrain || !state.ephemeris) return
+  const coverage = siteCoverage(site)
   const compute = await ensureCompute()
   state.loading.analysis = true
+  if (!coverage.covered) {
+    // No fake NASA metrics outside the DEM: mark the analysis unavailable and
+    // clear any previous power/comm numbers so the brief can flag it (BH-04).
+    Object.assign(state.analysis, {
+      ready: false,
+      stale: false,
+      unavailable: true,
+      coverageReason: coverage.reason,
+      coverage,
+      power: null,
+      commWindows: [],
+      commBudget: null,
+      sunSet: null,
+      earthSet: null,
+    })
+    state.loading.analysis = false
+    return
+  }
   try {
     const missionStart = state.time
     const missionEnd = new Date(
       toTimestamp(missionStart) + state.mission.missionDays * 24 * 3600 * 1000,
     ).toISOString()
+    const analysisMission = missionAtStart(state.mission, missionStart)
     const power = normalizePowerResult(
-      compute.solarPowerEstimate(site, state.terrain, state.ephemeris, state.mission),
-      state.mission,
+      compute.solarPowerEstimate(site, state.terrain, state.ephemeris, analysisMission),
+      analysisMission,
     )
-    const windows = compute.commWindows(site, state.terrain, state.ephemeris, state.mission, missionStart, missionEnd)
-    const budget = compute.dataBudget(windows, state.mission)
+    const windows = compute.commWindows(site, state.terrain, state.ephemeris, analysisMission, missionStart, missionEnd)
+    const budget = compute.dataBudget(windows, analysisMission)
     const sunSet = compute.nextSetEvent(state.ephemeris, site, state.terrain, 'sun', missionStart)
     const earthSet = compute.nextSetEvent(state.ephemeris, site, state.terrain, 'earth', missionStart)
     Object.assign(state.analysis, {
@@ -786,6 +920,10 @@ async function runMissionAnalysis() {
       commBudget: budget,
       sunSet: sunSet ?? null,
       earthSet: earthSet ?? null,
+      ready: true,
+      unavailable: false,
+      coverageReason: null,
+      coverage,
     })
   } catch (error) {
     reportError('mission-analysis', error)
@@ -1132,6 +1270,11 @@ export async function runAutopilot() {
 export function analysisSnapshot() {
   return {
     time: state.time,
+    ready: state.analysis.ready,
+    unavailable: state.analysis.unavailable,
+    coverageReason: state.analysis.coverageReason,
+    coverage: state.analysis.coverage ?? null,
+    timeWarning: state.analysis.timeWarning ?? null,
     site: selectedSite.value,
     terrain: {
       source: state.data.terrainSource,
@@ -1173,7 +1316,17 @@ export async function runExport() {
     try {
       const compute = await ensureCompute()
       const site = selectedSite.value
-      if (compute && typeof compute.missionCycles === 'function' && site && state.terrain && state.ephemeris) {
+      // Do not compute NASA-derived cycle numbers for a site outside the DEM
+      // coverage (BH-04); the brief marks the analysis incomplete instead.
+      const coverage = site ? siteCoverage(site) : null
+      if (
+        compute &&
+        typeof compute.missionCycles === 'function' &&
+        site &&
+        state.terrain &&
+        state.ephemeris &&
+        coverage?.covered !== false
+      ) {
         const startTime = state.mission.startTime ?? state.time
         const raw = compute.missionCycles({
           terrain: state.terrain,

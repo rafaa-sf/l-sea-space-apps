@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_MISSION,
   MISSION_PERIMETER_BOUNDS,
+  distanceFromSouthPoleKm,
   isLandingZoneSite,
   landingZoneDetectionOptions,
+  missionAtStart,
+  normalizeCustomCoordinates,
   sanitizeStoredMission,
+  siteCoverage,
 } from './useAppState.js'
 
 /**
@@ -78,5 +82,54 @@ describe('landing-zone derived site', () => {
     expect(isLandingZoneSite({ id: 'custom-1', source: 'custom', perimeterM: 200 })).toBe(false)
     expect(isLandingZoneSite(null)).toBe(false)
     expect(isLandingZoneSite(undefined)).toBe(false)
+  })
+})
+
+
+describe('task-59 correctness guards', () => {
+  it('rejects empty or out-of-range custom coordinates (BH-13/BH-05)', () => {
+    expect(normalizeCustomCoordinates({ lat: '', lon: '0' })).toBeNull()
+    expect(normalizeCustomCoordinates({ lat: '0', lon: '' })).toBeNull()
+    expect(normalizeCustomCoordinates({ lat: null, lon: 0 })).toBeNull()
+    expect(normalizeCustomCoordinates({ lat: Number.NaN, lon: 0 })).toBeNull()
+    expect(normalizeCustomCoordinates({ lat: 91, lon: 0 })).toBeNull()
+    expect(normalizeCustomCoordinates({ lat: -91, lon: 0 })).toBeNull()
+    expect(normalizeCustomCoordinates({ lat: -89.5, lon: 361 })).toBeNull()
+    expect(normalizeCustomCoordinates({ lat: -89.5, lon: 200 })).toEqual({ lat: -89.5, lon: -160 })
+    expect(normalizeCustomCoordinates({ lat: ' -89.5 ', lon: '0' })).toEqual({ lat: -89.5, lon: 0 })
+  })
+
+  it('pins the selected date into the mission passed to analysis (BH-07)', () => {
+    const start = '2026-12-01T18:00:00.000Z'
+    const mission = missionAtStart({ missionDays: 14, powerNeedW: 120 }, start)
+    expect(mission.startTime).toBe(start)
+    expect(mission.missionDays).toBe(14)
+    expect(missionAtStart({ missionDays: 2 }, 'not-a-date').startTime).toBeUndefined()
+  })
+
+  it('marks a site outside the DEM as uncovered (BH-04)', () => {
+    const terrain = {
+      minX: -304000,
+      maxX: 304000,
+      minY: -304000,
+      maxY: 304000,
+      datum: 1737400,
+      width: 2048,
+      height: 2048,
+    }
+    expect(siteCoverage({ lat: -89.5, lon: 0 }, terrain).covered).toBe(true)
+    const outside = siteCoverage({ lat: -70, lon: 0 }, terrain)
+    expect(outside.covered).toBe(false)
+    expect(outside.reason).toBe('site-outside-dem')
+    expect(siteCoverage({ lat: -89.5, lon: 0 }, null).reason).toBe('no-terrain')
+  })
+
+  it('computes a finite distance from the pole at both poles (BH-05)', () => {
+    expect(distanceFromSouthPoleKm(-90)).toBeCloseTo(0, 3)
+    const north = distanceFromSouthPoleKm(90)
+    expect(Number.isFinite(north)).toBe(true)
+    expect(north).toBeGreaterThan(5000)
+    expect(distanceFromSouthPoleKm(91)).toBeNull()
+    expect(distanceFromSouthPoleKm(Number.NaN)).toBeNull()
   })
 })

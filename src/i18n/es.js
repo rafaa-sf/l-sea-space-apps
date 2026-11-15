@@ -261,6 +261,7 @@ export default {
       unknown: 'Desconocido',
     },
     errors: {
+      required: 'Introduce la latitud y la longitud.',
       latRange: 'La latitud debe estar entre −90° y +90°.',
       lonRange: 'La longitud debe estar entre −360° y +360°.',
     },
@@ -284,6 +285,10 @@ export default {
     terrainSource: 'Fuente del terreno',
     siteSource: 'Fuente del sitio',
     syntheticRegion: 'Terreno sintético (alternativo)',
+    outsideDem: 'Este sitio está fuera de la cobertura del MDE LOLA cargado: el horizonte, la potencia y las comunicaciones no están disponibles.',
+    analysisUnavailable: 'El análisis no está disponible para este sitio con los datos cargados.',
+    ephemerisClamped: 'La hora solicitada está fuera de la ventana de efemérides precalculada ({start} – {end}); el reloj se ajustó a {clampedTo}.',
+    ephemerisClampedWindow: 'La hora solicitada está fuera de la ventana de efemérides precalculada ({start} – {end}); los valores derivados de Sol/Tierra quedan acotados.',
   },
   comparator: {
     title: 'Comparador',

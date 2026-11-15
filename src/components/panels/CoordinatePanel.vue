@@ -7,7 +7,13 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import PanelCard from '../ui/PanelCard.vue'
 import StatRow from '../ui/StatRow.vue'
-import { actions, isLandingZoneSite, selectedSite, state } from '../composables/useAppState.js'
+import {
+  actions,
+  distanceFromSouthPoleKm,
+  isLandingZoneSite,
+  selectedSite,
+  state,
+} from '../composables/useAppState.js'
 import { siteDisplayName, siteSourceLabel, sourceLabelKey } from '../composables/labels.js'
 import { formatAngle, formatLat, formatLon, formatMeters } from '../composables/format.js'
 
@@ -19,12 +25,29 @@ const elevation = computed(() => {
   return state.analysis.siteElevationM ?? selectedSite.value.elevationM ?? null
 })
 
-const distanceFromPoleKm = computed(() => {
-  if (!selectedSite.value) return null
-  const radius = 1737400
-  const latRad = (selectedSite.value.lat * Math.PI) / 180
-  const rho = 2 * radius * Math.tan(Math.PI / 4 + latRad / 2)
-  return rho / 1000
+const distanceFromPoleKm = computed(() =>
+  selectedSite.value ? distanceFromSouthPoleKm(selectedSite.value.lat) : null,
+)
+
+/** Analysis coverage/time warning shown instead of fabricated numbers (BH-04/BH-06). */
+const analysisWarning = computed(() => {
+  if (state.analysis.unavailable) {
+    if (state.analysis.coverageReason === 'site-outside-dem') {
+      return t('coords.outsideDem')
+    }
+    return t('coords.analysisUnavailable')
+  }
+  const warning = state.analysis.timeWarning
+  if (warning?.code === 'ephemeris-window-clamped') {
+    return warning.clampedTo
+      ? t('coords.ephemerisClamped', {
+          start: warning.start,
+          end: warning.end,
+          clampedTo: warning.clampedTo,
+        })
+      : t('coords.ephemerisClampedWindow', { start: warning.start, end: warning.end })
+  }
+  return null
 })
 
 const regionLabel = computed(() => {
@@ -63,6 +86,9 @@ const mast = computed({
     <p v-if="!selectedSite" class="empty">{{ t('coords.noSite') }}</p>
     <template v-else>
       <p class="panel-site-name">{{ siteDisplayName(t, te, selectedSite) }}</p>
+      <p v-if="analysisWarning" class="panel-note panel-note--warn" data-testid="coverage-warning">
+        {{ analysisWarning }}
+      </p>
       <StatRow label-key="coords.lat" :value="formatLat(selectedSite.lat)" />
       <StatRow label-key="coords.lon" :value="formatLon(selectedSite.lon)" />
       <StatRow

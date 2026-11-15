@@ -27,6 +27,10 @@ import {
   MOON_TREK_URL,
 } from './moontrek.js'
 import { buildBrief, briefToJson, briefFilename, downloadBrief, briefSummaryText, BRIEF_SCHEMA } from './export.js'
+import { MOON_RADIUS_M } from '../core/geometry.js'
+import { createProjectedTerrain } from '../core/terrain.js'
+import { normalizeEphemerisDataset } from '../core/ephemeris.js'
+import { solarPowerEstimate } from '../core/power.js'
 import {
   readStorage,
   writeStorage,
@@ -292,6 +296,114 @@ describe('export service', () => {
     const text = briefSummaryText(brief)
     expect(text).toContain('mission brief')
     expect(text).toContain('Connecting Ridge')
+  })
+})
+
+
+describe('brief analysis completeness (task-59 BH-08)', () => {
+  const readyAnalysis = {
+    ready: true,
+    unavailable: false,
+    coverageReason: null,
+    timeWarning: null,
+    power: { averageW: 100 },
+  }
+
+  it('marks a ready analysis as complete with no extra limitation', () => {
+    const brief = buildBrief({
+      sites: [],
+      mission: { missionDays: 14, powerNeedW: 120 },
+      computation: { analysis: readyAnalysis },
+    })
+    expect(brief.analysisComplete).toBe(true)
+    expect(brief.analysisIncomplete).toBe(false)
+    expect(brief.analysisLimitations).toEqual([])
+    expect(brief.limitations).not.toEqual(
+      expect.arrayContaining([expect.stringContaining('no analysis snapshot')]),
+    )
+  })
+
+  it('marks a missing analysis as incomplete and adds explicit limitations', () => {
+    const brief = buildBrief({ sites: [], mission: {}, computation: { analysis: null } })
+    expect(brief.analysisComplete).toBe(false)
+    expect(brief.analysisIncomplete).toBe(true)
+    expect(brief.analysisLimitations.join(' ')).toMatch(/no analysis snapshot/i)
+    expect(brief.limitations.join(' ')).toMatch(/Analysis incomplete/i)
+  })
+
+  it('surfaces coverage and out-of-window warnings in the brief', () => {
+    const brief = buildBrief({
+      sites: [],
+      mission: {},
+      computation: {
+        analysis: {
+          ready: false,
+          unavailable: true,
+          coverageReason: 'site-outside-dem',
+          timeWarning: {
+            code: 'ephemeris-window-clamped',
+            start: '2026-11-01T00:00:00.000Z',
+            end: '2026-12-31T23:30:00.000Z',
+            clampedTo: '2026-11-01T00:00:00.000Z',
+          },
+        },
+      },
+    })
+    expect(brief.analysisIncomplete).toBe(true)
+    expect(brief.analysisLimitations.join(' ')).toMatch(/outside the loaded LOLA DEM/i)
+    expect(brief.analysisLimitations.join(' ')).toMatch(/outside the precomputed ephemeris window/i)
+  })
+})
+
+describe('solar power uses the selected mission date (task-59 BH-07)', () => {
+  function makeTerrain() {
+    const width = 64
+    const height = 64
+    const bounds = 3200
+    return createProjectedTerrain(
+      {
+        id: 'bh07',
+        referenceRadiusM: MOON_RADIUS_M,
+        width,
+        height,
+        pixelSizeM: (2 * bounds) / width,
+        minX: -bounds,
+        maxX: bounds,
+        minY: -bounds,
+        maxY: bounds,
+        dtype: 'float32',
+      },
+      new Float32Array(width * height),
+    )
+  }
+
+  it('produces different power for a sunlit and a shadowed start date', () => {
+    const start = Date.parse('2026-11-01T00:00:00Z')
+    const samples = []
+    for (let index = 0; index <= 48 * 2; index += 1) {
+      const hour = index * 0.5
+      samples.push({
+        time: new Date(start + index * 30 * 60 * 1000).toISOString(),
+        sun: { az: 270, el: hour < 24 ? 2 : -2 },
+        earth: { az: 90, el: 2 },
+      })
+    }
+    const ephemeris = normalizeEphemerisDataset({ siteId: 'bh07-ephemeris', samples })
+    const terrain = makeTerrain()
+    const site = { lat: -90, lon: 0, elevationM: 0 }
+    const day0 = solarPowerEstimate(site, terrain, ephemeris, {
+      missionDays: 1,
+      powerNeedW: 120,
+      startTime: new Date(start).toISOString(),
+    })
+    const day1 = solarPowerEstimate(site, terrain, ephemeris, {
+      missionDays: 1,
+      powerNeedW: 120,
+      startTime: new Date(start + 24 * 3600 * 1000).toISOString(),
+    })
+    expect(day0.averageW).toBeGreaterThan(0)
+    expect(day1.averageW).toBe(0)
+    expect(day0.averageW).toBeGreaterThan(day1.averageW)
   })
 })
 
