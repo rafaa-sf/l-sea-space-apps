@@ -52,6 +52,7 @@ export const DEFAULT_MISSION = Object.freeze({
   landingEllipseRadiusM: 500,
   craterHazardMinDiameterM: 500,
   craterHazardReachM: 5000,
+  avoidCraters: false,
   scienceReachM: 5000,
   dataNeedMb: 1200,
   dateSearchEnabled: true,
@@ -122,6 +123,20 @@ export function sanitizeStoredMission(stored) {
 
 function loadStoredMission() {
   return sanitizeStoredMission(readStorage(STORAGE_MISSION))
+}
+
+/**
+ * Landing-zone detection options derived from the mission.
+ *
+ * The mission owns the user's crater-avoidance preference; both the worker
+ * payload and the main-thread fallback pass it through unchanged (detection
+ * defaults to off when the mission does not set it).
+ *
+ * @param {Object|null} [mission]
+ * @returns {{avoidCraters: boolean}}
+ */
+export function landingZoneDetectionOptions(mission) {
+  return { avoidCraters: mission?.avoidCraters === true }
 }
 
 export const state = reactive({
@@ -845,6 +860,7 @@ export async function runLandingZones() {
     sites: state.sites.map((site) => ({ ...site })),
     mission: autopilotMission,
     maxZones: 8,
+    options: landingZoneDetectionOptions(state.mission),
     searchDates: state.mission.dateSearchEnabled !== false,
     dateSearch: {
       enabled: state.mission.dateSearchEnabled !== false,
@@ -885,6 +901,7 @@ export async function runLandingZones() {
         sites: state.sites,
         mission: autopilotMission,
         options: {
+          ...landingZoneDetectionOptions(state.mission),
           maxZones: 8,
           searchDates: state.mission.dateSearchEnabled !== false,
           dateSearch: {

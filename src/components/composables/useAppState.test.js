@@ -3,6 +3,7 @@ import {
   DEFAULT_MISSION,
   MISSION_PERIMETER_BOUNDS,
   isLandingZoneSite,
+  landingZoneDetectionOptions,
   sanitizeStoredMission,
 } from './useAppState.js'
 
@@ -43,6 +44,26 @@ describe('stored mission sanitisation', () => {
   it('ignores non-numeric values for the remaining numeric inputs', () => {
     expect(sanitizeStoredMission({ powerNeedW: 'abc' }).powerNeedW).toBe(DEFAULT_MISSION.powerNeedW)
     expect(sanitizeStoredMission({ missionDays: 'abc' }).missionDays).toBe(DEFAULT_MISSION.missionDays)
+  })
+
+  it('keeps the stored crater-avoidance flag and defaults it to false', () => {
+    expect(DEFAULT_MISSION.avoidCraters).toBe(false)
+    expect(sanitizeStoredMission({ avoidCraters: true }).avoidCraters).toBe(true)
+    expect(sanitizeStoredMission({ avoidCraters: false }).avoidCraters).toBe(false)
+    expect(sanitizeStoredMission({}).avoidCraters).toBe(false)
+    expect(sanitizeStoredMission({ avoidCraters: undefined }).avoidCraters).toBe(false)
+    expect(sanitizeStoredMission({ avoidCraters: null }).avoidCraters).toBe(false)
+  })
+})
+
+describe('landing-zone detection options', () => {
+  it('forwards only a real mission crater-avoidance flag', () => {
+    expect(landingZoneDetectionOptions({ avoidCraters: true })).toEqual({ avoidCraters: true })
+    expect(landingZoneDetectionOptions({ avoidCraters: false })).toEqual({ avoidCraters: false })
+    expect(landingZoneDetectionOptions({})).toEqual({ avoidCraters: false })
+    expect(landingZoneDetectionOptions(undefined)).toEqual({ avoidCraters: false })
+    expect(landingZoneDetectionOptions(null)).toEqual({ avoidCraters: false })
+    expect(landingZoneDetectionOptions({ avoidCraters: 'yes' })).toEqual({ avoidCraters: false })
   })
 })
 

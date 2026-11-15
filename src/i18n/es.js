@@ -648,6 +648,8 @@ export default {
     feasible: 'VIABLE',
     notFeasible: 'NO VIABLE',
     noFeasibleZone: 'No hay ninguna zona de aterrizaje plenamente viable para este perfil de misión — las zonas ordenadas son condicionales y requieren cambios de misión.',
+    avoidCraters: 'Evitar cráteres',
+    avoidCratersHint: 'Solo conserva zonas planas cuyas celdas quedan fuera de los cráteres detectados. Las huellas de los cráteres son aproximadas, así que revisa el sitio antes de dar por buena la zona.',
     feasibleCount: '{count} de {total} zonas viables',
     dataBudgetOfNeed: '{value}× de lo necesario',
     violations: {

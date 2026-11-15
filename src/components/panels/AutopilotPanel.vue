@@ -678,6 +678,16 @@ const ranking = computed(() => state.scores)
       }) }}
     </p>
 
+    <label class="field field--inline" :title="t('autopilot.avoidCratersHint')">
+      <input
+        type="checkbox"
+        data-testid="ap-avoid-craters"
+        :checked="state.mission.avoidCraters === true"
+        @change="actions.updateMission({ avoidCraters: $event.target.checked })"
+      />
+      <span>{{ t('autopilot.avoidCraters') }}</span>
+    </label>
+
     <p v-if="noFeasibleZone" class="feasibility-alert" role="status">
       {{ t('autopilot.noFeasibleZone') }}
     </p>
