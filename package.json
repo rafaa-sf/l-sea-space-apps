@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview --host",
     "test": "vitest run",
-    "data:lola": "node scripts/nasa/download-lola.mjs"
+    "data:lola": "node scripts/nasa/download-lola.mjs",
+    "verify:horizons": "node scripts/nasa/verify-ephemeris.mjs"
   },
   "dependencies": {
     "three": "^0.187.0",
