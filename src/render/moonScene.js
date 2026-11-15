@@ -496,7 +496,10 @@ export async function createMoonScene(canvas, options = {}) {
    * the 3D depth.
    */
   function buildTerrainGeometry() {
-    const maxVertices = options.maxVertices ?? 90000
+    // The initial 2048 px wide-area DEM gets a much denser mesh than the old
+    // 1024 px default (300k vertices ≈ 512x512 on a 2048² source, ~4x denser
+    // than the previous 90k cap). Callers can override maxVertices.
+    const maxVertices = options.maxVertices ?? 300000
     const step = Math.max(1, Math.ceil(Math.sqrt((planarView.cols * planarView.rows) / maxVertices)))
     const cols = Math.floor((planarView.cols - 1) / step) + 1
     const rows = Math.floor((planarView.rows - 1) / step) + 1
@@ -651,7 +654,9 @@ export async function createMoonScene(canvas, options = {}) {
         y: terrainNormals[offset + 1],
         z: terrainNormals[offset + 2],
       }
-      const shade = hillshadeShade(normal, sun, visible, { ambient: 0.3, diffuse: 1.35, flatShade: 0.4 })
+      // Sharper but still clamped cartographic hillshade: lower ambient and a
+      // stronger diffuse term increase relief contrast without blowing highlights.
+      const shade = hillshadeShade(normal, sun, visible, { ambient: 0.24, diffuse: 1.55, flatShade: 0.18 })
       colors[offset] = sRGBToLinear(Math.min(1, terrainTints[offset] * shade))
       colors[offset + 1] = sRGBToLinear(Math.min(1, terrainTints[offset + 1] * shade))
       colors[offset + 2] = sRGBToLinear(Math.min(1, terrainTints[offset + 2] * shade))
@@ -673,7 +678,7 @@ export async function createMoonScene(canvas, options = {}) {
     if (!terrain || !terrain.data) return
     lastTerrain = terrain
     terrainStats = options.terrainStats?.(terrain) ?? { minM: 0, maxM: 1 }
-    planarView = createPlanarTerrain(terrain, { maxSamples: options.maxVertices ?? 90000 })
+    planarView = createPlanarTerrain(terrain, { maxSamples: options.maxVertices ?? 300000 })
     if (!planarView) return
     projection = createRectMap(planarView, {
       mapSize: options.mapSize ?? 20,

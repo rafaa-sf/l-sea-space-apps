@@ -248,8 +248,10 @@ function terrainUrl(file) {
  *
  * Preferred order:
  *  1. `src/services/lola.js` (coder's loader) when present.
- *  2. `public/data/terrain/index.json` + a region `.bin`. The wide-area region
- *     is preferred because the POI list spans the whole south-pole cap; the
+ *  2. `public/data/terrain/index.json` + a region `.bin`. The WIDEST wide-area
+ *     region is preferred (the 608 km @ 2048 px grid when present) because the
+ *     POI list spans the whole south-pole cap and the sharper grid gives a
+ *     denser initial mesh; ties in extent prefer the higher pixel count. The
  *     default high-resolution region is used when no wide region exists.
  *  3. Synthetic terrain, only as an explicit error path (reported in the UI).
  */
@@ -273,9 +275,28 @@ export async function loadTerrain(options = {}) {
   const regions = Array.isArray(index?.regions) ? index.regions : []
   lastTerrainRegions = regions
   const explicitRegion = Boolean(options.regionId)
+  // Initial view: the widest wide-area region (608 km), preferring the denser
+  // 2048 px variant when several regions share the same extent.
+  const regionExtentM = (entry) => {
+    const bounds = entry?.boundsM
+    if (bounds && Number.isFinite(Number(bounds.minX)) && Number.isFinite(Number(bounds.maxX))) {
+      return Math.max(
+        Number(bounds.maxX) - Number(bounds.minX),
+        Number(bounds.maxY) - Number(bounds.minY),
+      )
+    }
+    return Number(entry?.width ?? 0) * Number(entry?.pixelSizeM ?? 0)
+  }
+  const widestWideArea = regions
+    .filter((entry) => entry.role === 'wide-area')
+    .sort(
+      (a, b) =>
+        regionExtentM(b) - regionExtentM(a) ||
+        Number(b.width ?? 0) - Number(a.width ?? 0),
+    )[0]
   const preferred =
     (options.regionId ? regions.find((entry) => entry.id === options.regionId) : null) ??
-    regions.find((entry) => entry.role === 'wide-area') ??
+    widestWideArea ??
     regions.find((entry) => entry.id === index?.defaultRegionId) ??
     regions[0] ??
     null
