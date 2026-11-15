@@ -25,6 +25,7 @@ const initializing = ref(true)
 const webgl = ref(state.system.webgl)
 const note = ref(null)
 const scaleInfo = ref(null)
+const zoomRatio = ref(0.5)
 
 let api = null
 let compute = null
@@ -415,6 +416,7 @@ async function createRenderer() {
   }
 
   api = created
+  syncZoom()
   mode.value = created.kind
   actions.setRenderer(created.kind)
   if (created.kind === '3d') applyViewPreset()
@@ -423,6 +425,24 @@ async function createRenderer() {
 }
 
 /** Apply the selected view mode to the live 3D scene (camera only, no rebuild). */
+function syncZoom() {
+  if (!api || typeof api.getZoom !== 'function') return
+  const value = Number(api.getZoom())
+  if (Number.isFinite(value)) zoomRatio.value = Math.min(1, Math.max(0, value))
+}
+
+function zoomStep(delta) {
+  if (!api || typeof api.zoomBy !== 'function') return
+  api.zoomBy(delta)
+  syncZoom()
+}
+
+function onZoomInput(event) {
+  const value = Number(event.target.value) / 100
+  zoomRatio.value = Number.isFinite(value) ? value : 0.5
+  if (api && typeof api.setZoom === 'function') api.setZoom(zoomRatio.value)
+}
+
 function applyViewPreset() {
   const preset = state.system.viewMode === '2d' ? 'top' : 'perspective'
   if (api?.setViewPreset) {
@@ -650,6 +670,37 @@ onBeforeUnmount(() => {
           <span class="map-altitude__name" :title="entry.label">{{ entry.name }}</span>
           <span class="map-altitude__value">{{ formatNumber(entry.elevationM, 0) }} m</span>
         </span>
+      </div>
+
+      <div class="zoom-bar" role="group" :aria-label="t('viewport.zoomLevel')" data-testid="zoom-bar">
+        <button
+          type="button"
+          class="zoom-bar__button"
+          :aria-label="t('viewport.zoomOut')"
+          :title="t('viewport.zoomOut')"
+          @click="zoomStep(-0.1)"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /></svg>
+        </button>
+        <input
+          class="zoom-bar__range"
+          type="range"
+          min="0"
+          max="100"
+          step="1"
+          :value="Math.round(zoomRatio * 100)"
+          :aria-label="t('viewport.zoomLevel')"
+          @input="onZoomInput"
+        />
+        <button
+          type="button"
+          class="zoom-bar__button"
+          :aria-label="t('viewport.zoomIn')"
+          :title="t('viewport.zoomIn')"
+          @click="zoomStep(0.1)"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        </button>
       </div>
 
       <div v-if="scaleInfo" class="map-scale" :aria-label="t('viewport.scaleBar')" data-testid="scale-bar">

@@ -190,6 +190,9 @@ export default {
  
     altitudeTitle: 'Point altitude',
     selectedAltitude: 'Selected point',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    zoomLevel: 'Zoom level',
     scaleBar: 'Scale bar',
     metersPerPixel: '1 px = {value} m',
     canvasTitle: 'Click a marker to select a site. Click the terrain to capture coordinates.',

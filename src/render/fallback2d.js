@@ -552,6 +552,22 @@ export function createFallback2D(canvas, options = {}) {
     canvas.style.cursor = findMarker(pointerPosition(event)) ? 'pointer' : 'crosshair'
   }
 
+  function getZoom() {
+    return Math.min(1, Math.max(0, (zoom - 0.55) / (2.6 - 0.55)))
+  }
+
+  function setZoom(ratio) {
+    const clamped = Math.min(1, Math.max(0, Number(ratio) || 0))
+    zoom = 0.55 + clamped * (2.6 - 0.55)
+    updateMapRect()
+    notifyView(true)
+    requestDraw()
+  }
+
+  function zoomBy(step) {
+    setZoom(getZoom() + Number(step || 0))
+  }
+
   function resetView() {
     zoom = 1
     updateMapRect()

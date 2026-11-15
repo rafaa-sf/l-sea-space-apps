@@ -2993,6 +2993,10 @@ body.is-resizing-panes * {
   }
 }
 
+.zoom-bar {
+  display: none;
+}
+
 .scroll-rail {
   display: none;
 }
@@ -3007,6 +3011,59 @@ body.is-resizing-panes * {
   /* Keep the 3D map from filling the whole phone screen so the page can scroll. */
   .center-map {
     height: clamp(240px, 58dvh, 430px);
+  }
+
+  .zoom-bar {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    bottom: auto;
+    z-index: 4;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 999px;
+    background: rgba(13, 16, 22, 0.86);
+    backdrop-filter: blur(6px);
+    touch-action: none;
+  }
+
+  .zoom-bar__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--color-text-dim);
+    cursor: pointer;
+  }
+
+  .zoom-bar__button:hover:not(:disabled) {
+    color: var(--color-text);
+    background: var(--color-surface-2);
+  }
+
+  .zoom-bar__button svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+
+  .zoom-bar__range {
+    width: 108px;
+    height: 24px;
+    margin: 0;
+    accent-color: var(--color-accent);
   }
 
   /* Slim gutter for the compact scroll rail (kept minimal so the layout does
