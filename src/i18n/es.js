@@ -227,6 +227,8 @@ export default {
     searchPlaceholder: 'Buscar PDI o coordenadas',
     listLabel: 'Lista de puntos de interés',
     compareHint: 'Añade sitios para compararlos en el panel comparador',
+    compareSelected: 'Comparar seleccionados ({count})',
+    compareSelectedHint: 'Selecciona al menos dos sitios para comparar.',
     compareCount: 'Comparar: {count}/{max}',
     compareAction: 'Añadir al comparador',
     compareFull: 'El comparador está completo',
