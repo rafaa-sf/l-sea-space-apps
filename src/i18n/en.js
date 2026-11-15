@@ -186,6 +186,8 @@ export default {
     },
     pointer: 'Pointer: {lat} {lon}',
  
+    altitudeTitle: 'Point altitude',
+    selectedAltitude: 'Selected point',
     elevationLegend: 'Elevation',
     scaleBar: 'Scale bar',
     metersPerPixel: '1 px = {value} m',
