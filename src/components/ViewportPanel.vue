@@ -676,11 +676,11 @@ onBeforeUnmount(() => {
         <button
           type="button"
           class="zoom-bar__button"
-          :aria-label="t('viewport.zoomOut')"
-          :title="t('viewport.zoomOut')"
-          @click="zoomStep(-0.1)"
+          :aria-label="t('viewport.zoomIn')"
+          :title="t('viewport.zoomIn')"
+          @click="zoomStep(0.1)"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
         </button>
         <input
           class="zoom-bar__range"
@@ -695,11 +695,11 @@ onBeforeUnmount(() => {
         <button
           type="button"
           class="zoom-bar__button"
-          :aria-label="t('viewport.zoomIn')"
-          :title="t('viewport.zoomIn')"
-          @click="zoomStep(0.1)"
+          :aria-label="t('viewport.zoomOut')"
+          :title="t('viewport.zoomOut')"
+          @click="zoomStep(-0.1)"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /></svg>
         </button>
       </div>
 
