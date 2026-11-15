@@ -23,12 +23,12 @@ import { commsModelFromMission } from './comms.js'
 import { normalizeMission } from './autopilot.js'
 import { computeThermalMetrics, evaluateZoneFeasibility } from './landingMetrics.js'
 
-/** Default date-search options. */
+/** Default date-search options (`maxCandidates: null` means "no cap"). */
 export const DEFAULT_DATE_SEARCH_OPTIONS = Object.freeze({
   enabled: true,
   stepHours: 12,
   evaluationStepSeconds: 1800,
-  maxCandidates: 140,
+  maxCandidates: null,
   profileStepDeg: 2,
 })
 
@@ -47,7 +47,7 @@ export function normalizeDateSearchOptions(options = {}) {
     enabled: merged.enabled !== false,
     stepHours: clamp(Number(merged.stepHours) || 12, 1, 72),
     evaluationStepSeconds: clamp(Number(merged.evaluationStepSeconds) || 1800, 300, 3600),
-    maxCandidates: Math.max(1, Math.round(Number(merged.maxCandidates) || 140)),
+    maxCandidates: merged.maxCandidates == null ? Infinity : Math.max(1, Math.round(Number(merged.maxCandidates) || 1)),
     profileStepDeg: clamp(Number(merged.profileStepDeg) || 2, 0.5, 5),
   }
 }
@@ -58,7 +58,7 @@ export function normalizeDateSearchOptions(options = {}) {
  * @param {Object} dataset Normalized ephemeris dataset.
  * @param {Object} mission Normalized mission profile.
  * @param {Object} options Normalized date-search options.
- * @returns {{startMs: number, endMs: number, latestStartMs: number, missionDays: number, coverageDays: number, clipped: boolean, stepMs: number, candidatesMs: number[]}}
+ * @returns {{startMs: number, endMs: number, latestStartMs: number, missionDays: number, coverageDays: number, clipped: boolean, stepMs: number, candidatesMs: number[], naturalCandidates: number, truncated: boolean}}
  */
 export function getDateSearchWindow(dataset, mission, options) {
   const opts = normalizeDateSearchOptions(options)
@@ -68,9 +68,11 @@ export function getDateSearchWindow(dataset, mission, options) {
   const durationMs = missionDays * MS_PER_DAY
   const startMs = dataset.startMs
   const latestStartMs = Math.max(startMs, dataset.endMs - durationMs)
+  const naturalCandidates = Math.floor((latestStartMs - startMs) / stepMs) + 1
+  const totalCandidates = Math.max(1, Math.min(naturalCandidates, opts.maxCandidates))
   const candidatesMs = []
-  for (let timestampMs = startMs; timestampMs <= latestStartMs + 1 && candidatesMs.length < opts.maxCandidates; timestampMs += stepMs) {
-    candidatesMs.push(Math.round(timestampMs))
+  for (let index = 0; index < totalCandidates; index += 1) {
+    candidatesMs.push(Math.round(startMs + index * stepMs))
   }
   return {
     startMs,
@@ -81,6 +83,8 @@ export function getDateSearchWindow(dataset, mission, options) {
     clipped: Number(mission.missionDays) > coverageDays,
     stepMs,
     candidatesMs,
+    naturalCandidates,
+    truncated: candidatesMs.length < naturalCandidates,
   }
 }
 
@@ -282,6 +286,9 @@ export function searchFeasibleDate({ terrain, zone, ephemeris, mission, options 
   const searchWindow = getDateSearchWindow(dataset, normalizedMission, opts)
   const warnings = []
   if (searchWindow.clipped) warnings.push('mission-longer-than-ephemeris: mission window clipped to the available coverage')
+  if (searchWindow.truncated) {
+    warnings.push(`candidate-limit-truncated: only ${searchWindow.candidatesMs.length} of ${searchWindow.naturalCandidates} candidate starts were searched; results may miss a feasible date`)
+  }
   const profile = options?.profile ?? (terrain ? horizonProfile(terrain, zone, { stepDeg: opts.profileStepDeg }) : null)
   let searched = 0
   for (const candidateMs of searchWindow.candidatesMs) {

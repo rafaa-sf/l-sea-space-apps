@@ -3,7 +3,12 @@ import { MOON_RADIUS_M } from './geometry.js'
 import { createProjectedTerrain } from './terrain.js'
 import { normalizeEphemerisDataset } from './ephemeris.js'
 import { rankLandingZones } from './zoneAutopilot.js'
-import { getDateSearchWindow, normalizeDateSearchOptions, searchFeasibleDate } from './dateSearch.js'
+import {
+  DEFAULT_DATE_SEARCH_OPTIONS,
+  getDateSearchWindow,
+  normalizeDateSearchOptions,
+  searchFeasibleDate,
+} from './dateSearch.js'
 
 const START = Date.parse('2026-11-01T00:00:00Z')
 const HOUR = 3600 * 1000
@@ -58,6 +63,49 @@ describe('date search window', () => {
     const longMission = getDateSearchWindow(dataset, { missionDays: 30 }, normalizeDateSearchOptions({}))
     expect(longMission.clipped).toBe(true)
     expect(longMission.candidatesMs.length).toBe(1)
+    expect(longMission.naturalCandidates).toBe(1)
+    expect(longMission.truncated).toBe(false)
+  })
+
+  it('defaults to no candidate cap and still honours an explicit cap', () => {
+    expect(DEFAULT_DATE_SEARCH_OPTIONS.maxCandidates).toBeNull()
+    expect(normalizeDateSearchOptions({}).maxCandidates).toBe(Infinity)
+    expect(normalizeDateSearchOptions({ maxCandidates: null }).maxCandidates).toBe(Infinity)
+    expect(normalizeDateSearchOptions({ maxCandidates: 10.4 }).maxCandidates).toBe(10)
+    expect(normalizeDateSearchOptions({ maxCandidates: 0 }).maxCandidates).toBe(1)
+  })
+
+  it('searches every natural candidate start when no cap is configured', () => {
+    const dataset = makeEphemeris(() => ({ az: 270, el: 2 }), 61 * 24)
+    const window = getDateSearchWindow(dataset, { missionDays: 14 }, normalizeDateSearchOptions({ stepHours: 6 }))
+    expect(window.naturalCandidates).toBe(189)
+    expect(window.candidatesMs.length).toBe(189)
+    expect(window.truncated).toBe(false)
+    const stepMs = 6 * HOUR
+    const lastCandidate = window.candidatesMs.at(-1)
+    expect(lastCandidate).toBeLessThanOrEqual(window.latestStartMs)
+    expect(window.latestStartMs - lastCandidate).toBeLessThan(stepMs)
+  })
+
+  it('reports candidate truncation through searchFeasibleDate warnings', () => {
+    const dataset = makeEphemeris(() => ({ az: 270, el: -3 }), 61 * 24)
+    const options = { stepHours: 6, evaluationStepSeconds: 3600, maxCandidates: 10 }
+    const window = getDateSearchWindow(dataset, { missionDays: 14 }, normalizeDateSearchOptions(options))
+    expect(window.naturalCandidates).toBe(189)
+    expect(window.candidatesMs.length).toBe(10)
+    expect(window.truncated).toBe(true)
+    const result = searchFeasibleDate({
+      terrain: makeTerrain(),
+      zone: { id: 'z', name: 'Z', lat: -90, lon: 0, elevationM: 0 },
+      ephemeris: dataset,
+      mission: { missionDays: 14, sunDaysNeeded: 10, powerNeedW: 5000, batteryCapacityWh: 1000, startTime: new Date(START).toISOString() },
+      options,
+    })
+    expect(result.hasFeasibleDate).toBe(false)
+    expect(result.feasibleDatesSearched).toBe(10)
+    expect(result.warnings).toContain(
+      'candidate-limit-truncated: only 10 of 189 candidate starts were searched; results may miss a feasible date',
+    )
   })
 })
 
