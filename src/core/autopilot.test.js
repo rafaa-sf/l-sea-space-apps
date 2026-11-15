@@ -226,6 +226,17 @@ describe('scoreSite', () => {
     expect(score.confidence).toBeLessThan(1)
   })
 
+  it('reports a site outside the DEM coverage as terrainOutside', () => {
+    const outsideSite = { id: 'outside', name: 'Outside', lat: -88, lon: 0, elevationM: 0, perimeterM: 200, mastM: 10 }
+    const score = scoreSite({ site: outsideSite, terrain, ephemeris, mission: MISSION })
+    const codes = score.warnings.map((warning) => warning.code)
+    expect(codes).toContain('data.terrainOutside')
+    expect(codes).not.toContain('data.terrainMissing')
+    // Outside coverage degrades exactly like missing terrain: scoring is unchanged.
+    const withoutTerrain = scoreSite({ site: outsideSite, terrain: null, ephemeris, mission: MISSION })
+    expect(score.score).toBe(withoutTerrain.score)
+  })
+
   it('flags a shared ephemeris approximation', () => {
     const score = scoreSite({ site: SITE_B, terrain, ephemeris, mission: MISSION })
     expect(score.warnings.map((warning) => warning.code)).toContain('data.sharedEphemeris')

@@ -17,6 +17,7 @@ import {
   horizonAngle,
   horizonProfile,
   horizonAngleAt,
+  clearHorizonCache,
   evaluateBodyVisibility,
   isSunVisible,
   isEarthVisible,
@@ -143,6 +144,16 @@ describe('horizon profiles', () => {
     const first = horizonProfile(terrain, SITE, { stepDeg: 4 })
     const second = horizonProfile(terrain, SITE, { stepDeg: 4 })
     expect(second).toBe(first)
+  })
+
+  it('replaces the cache when clearHorizonCache is called', () => {
+    const terrain = createSyntheticTerrain({ width: 48, height: 48 })
+    const first = horizonProfile(terrain, SITE, { stepDeg: 4 })
+    expect(horizonProfile(terrain, SITE, { stepDeg: 4 })).toBe(first)
+    clearHorizonCache()
+    const rebuilt = horizonProfile(terrain, SITE, { stepDeg: 4 })
+    expect(rebuilt).not.toBe(first)
+    expect(Array.from(rebuilt.angles)).toEqual(Array.from(first.angles))
   })
 })
 

@@ -43,7 +43,7 @@ import {
 export const DEFAULT_MAX_DISTANCE_M = 350000
 
 /** Horizon profile cache keyed by terrain object, then by site/options signature. */
-const horizonProfileCache = new WeakMap()
+let horizonProfileCache = new WeakMap()
 
 /**
  * Geometric state of a site used by the horizon scanner.
@@ -236,13 +236,13 @@ export function horizonAngleAt(profile, azimuthDeg) {
  * Drop cached horizon profiles.
  *
  * The cache is a WeakMap keyed by terrain objects, so entries disappear with the
- * terrain. This helper exists for API symmetry/test isolation; it resets the
- * module-level cache map itself.
+ * terrain. This helper also replaces the module-level cache map itself, which is
+ * useful after swapping the DEM and for test isolation.
  *
  * @returns {void}
  */
 export function clearHorizonCache() {
-  // Replacing is not possible for a WeakMap binding; provided for API symmetry.
+  horizonProfileCache = new WeakMap()
 }
 
 /**

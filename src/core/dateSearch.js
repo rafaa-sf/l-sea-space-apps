@@ -98,7 +98,7 @@ export function getDateSearchWindow(dataset, mission, options) {
  * model; this fast path is only a screening filter.
  *
  * @param {{terrain: Object|null, site: Object, ephemeris: Object, mission: Object, startMs: number, profile: Object|null, options?: Object}} input
- * @returns {{feasible: boolean, feasibility: Object, window: Object}}
+ * @returns {{feasible: boolean, feasibility: Object, illumination: Object, window: Object}}
  */
 export function evaluateDateCandidate({ terrain, site, ephemeris, mission, startMs, profile, options } = {}) {
   const dataset = normalizeEphemerisDataset(ephemeris)
@@ -123,6 +123,7 @@ export function evaluateDateCandidate({ terrain, site, ephemeris, mission, start
   let maxPowerW = 0
   let energyWh = 0
   let sumSunElevation = 0
+  let minSunElevation = Infinity
   let countSunElevation = 0
   let sumSunlitElevation = 0
   let countSunlitElevation = 0
@@ -135,6 +136,7 @@ export function evaluateDateCandidate({ terrain, site, ephemeris, mission, start
     samples += 1
     if (sample.sun && Number.isFinite(sample.sun.el)) {
       sumSunElevation += sample.sun.el
+      minSunElevation = Math.min(minSunElevation, sample.sun.el)
       countSunElevation += 1
     }
     if (earthVisible) earthVisibleSamples += 1
@@ -170,7 +172,7 @@ export function evaluateDateCandidate({ terrain, site, ephemeris, mission, start
     eclipseCount,
     eclipseHours,
     totalEclipseHours: eclipseHours,
-    sunElevationMinDeg: countSunElevation > 0 ? null : null,
+    sunElevationMinDeg: countSunElevation > 0 ? minSunElevation : null,
     sunElevationMaxDeg: null,
     sunElevationMeanWindowDeg: countSunElevation > 0 ? sumSunElevation / countSunElevation : null,
     sunElevationMeanSunlitDeg: countSunlitElevation > 0 ? sumSunlitElevation / countSunlitElevation : null,
@@ -270,7 +272,7 @@ export function evaluateDateCandidate({ terrain, site, ephemeris, mission, start
     ephemerisAvailable: true,
     terrainAvailable: Boolean(terrain),
   })
-  return { feasible: feasibility.feasible, feasibility, window }
+  return { feasible: feasibility.feasible, feasibility, illumination, window }
 }
 
 /**

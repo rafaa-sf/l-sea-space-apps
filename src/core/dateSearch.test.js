@@ -5,6 +5,7 @@ import { normalizeEphemerisDataset } from './ephemeris.js'
 import { rankLandingZones } from './zoneAutopilot.js'
 import {
   DEFAULT_DATE_SEARCH_OPTIONS,
+  evaluateDateCandidate,
   getDateSearchWindow,
   normalizeDateSearchOptions,
   searchFeasibleDate,
@@ -183,5 +184,26 @@ describe('rankLandingZones date search', () => {
     expect(result.hasFeasibleDate).toBe(true)
     expect(result.feasibleDateMs).toBeGreaterThan(START)
     expect(result.feasibleDatesSearched).toBeGreaterThan(1)
+  })
+})
+
+describe('date candidate illumination', () => {
+  it('reports the minimum Sun elevation seen in the window', () => {
+    const { illumination } = evaluateDateCandidate({
+      terrain: makeTerrain(),
+      site: { lat: -90, lon: 0, elevationM: 0 },
+      ephemeris: makeEphemeris((hour) => ({ az: 180, el: 2 + Math.sin(hour / 4) })),
+      mission: {
+        missionDays: 1,
+        sunDaysNeeded: 0,
+        powerNeedW: 120,
+        startTime: new Date(START).toISOString(),
+      },
+      startMs: START,
+      profile: null,
+      options: { evaluationStepSeconds: 1800 },
+    })
+    expect(Number.isFinite(illumination.sunElevationMinDeg)).toBe(true)
+    expect(illumination.sunElevationMinDeg).toBeLessThanOrEqual(illumination.sunElevationMeanWindowDeg)
   })
 })

@@ -371,15 +371,15 @@ export function scoreSite({ site, terrain, ephemeris, mission } = {}) {
   const terrainGrid = resolvedTerrain.outside ? null : resolvedTerrain.terrain
 
   const warnings = []
-  if (!terrainGrid) {
-    warnings.push({
-      code: 'data.terrainMissing',
-      text: 'No DEM covers this site; terrain-dependent metrics are unavailable.',
-    })
-  } else if (resolvedTerrain.outside) {
+  if (resolvedTerrain.outside) {
     warnings.push({
       code: 'data.terrainOutside',
       text: 'The site is outside the coverage of the available DEM; horizon results are unreliable.',
+    })
+  } else if (!resolvedTerrain.terrain) {
+    warnings.push({
+      code: 'data.terrainMissing',
+      text: 'No DEM covers this site; terrain-dependent metrics are unavailable.',
     })
   } else if (terrainGrid.synthetic) {
     warnings.push({
