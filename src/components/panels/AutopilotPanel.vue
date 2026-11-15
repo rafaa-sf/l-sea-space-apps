@@ -120,14 +120,13 @@ function violationText(violation) {
 const zoneSignature = computed(() =>
   String(zonesMeta.value.inputSignature ?? zonesMeta.value.signature ?? state.landingZonesStatus.inputSignature ?? ''),
 )
-const computeMs = computed(() => {
-  const meta = state.landingZonesMeta ?? {}
-  const ms = Number(meta.computeMs ?? meta.rankingMs ?? Number.NaN)
+const durationMs = computed(() => {
+  const ms = Number(state.landingZonesStatus?.durationMs ?? Number.NaN)
   return Number.isFinite(ms) ? Math.round(ms) : null
 })
 
-const computedAt = computed(() => {
-  const raw = zonesMeta.value.computedAt ?? zonesMeta.value.finishedAt ?? state.landingZonesStatus.ranAt
+const ranAt = computed(() => {
+  const raw = state.landingZonesStatus?.ranAt
   if (!raw) return t('common.notAvailable')
   const date = new Date(raw)
   return Number.isNaN(date.getTime()) ? String(raw) : formatUtc(date.toISOString(), locale.value)
@@ -685,7 +684,7 @@ const ranking = computed(() => state.scores)
     <div v-if="landingAvailable && zones.length" class="zone-meta" data-testid="landing-zone-signature">
       <p class="panel-hint zone-meta__text" :title="zoneSignature || undefined">
         <template v-if="feasibleCount !== null"> {{ t('autopilot.feasibleCount', { count: feasibleCount, total: zones.length }) }} · </template>
-        {{ t('autopilot.computedAt') }}: {{ computedAt }}<template v-if="computeMs !== null"> · {{ formatDuration(computeMs / 1000) }}</template>
+        {{ t('autopilot.computedAt') }}: {{ ranAt }}<template v-if="durationMs !== null"> · {{ formatDuration(durationMs / 1000) }}</template>
         · {{ t('autopilot.signature') }}: <code data-testid="landing-zone-signature">{{ zoneSignature ? zoneSignature.slice(0, 8) : t('common.notAvailable') }}</code>
       </p>
       <button type="button" class="button button--ghost button--small" :disabled="running" @click="actions.runLandingZones()">

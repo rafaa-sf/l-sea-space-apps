@@ -292,8 +292,7 @@ describe('computeMissionCycles', () => {
     const second = computeMissionCycles({ terrain, site: SITE, ephemeris, mission: MISSION })
     expect(second.meta.inputSignature).toBe(first.meta.inputSignature)
     expect(first.meta.inputSignature).toMatch(/^[0-9a-f]{8}$/)
-    const strip = (result) => ({ ...result, meta: { ...result.meta, computedAt: null, computeMs: null } })
-    expect(JSON.stringify(strip(second))).toBe(JSON.stringify(strip(first)))
+    expect(JSON.stringify(second)).toBe(JSON.stringify(first))
 
     const relaySignature = computeMissionCycles({
       terrain,

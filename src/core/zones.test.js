@@ -281,6 +281,13 @@ describe('detectLandingZones', () => {
     expect(detectLandingZones(null).zones).toEqual([])
     expect(detectLandingZones({ width: 2, height: 2, data: new Float32Array(4) }).zones).toEqual([])
   })
+
+  it('is deterministic for identical inputs', () => {
+    const terrain = makePlane({ width: 64, height: 64, elevationFn: () => 0 })
+    const first = detectLandingZones(terrain, { minAreaKm2: 0.1, maxRoughnessM: null })
+    const second = detectLandingZones(terrain, { minAreaKm2: 0.1, maxRoughnessM: null })
+    expect(JSON.stringify(second)).toBe(JSON.stringify(first))
+  })
 })
 
 describe('zoneSuitability', () => {
@@ -420,6 +427,7 @@ describe('rankLandingZones', () => {
     expect(second.zones.map((entry) => [entry.zone.id, entry.score])).toEqual(
       first.zones.map((entry) => [entry.zone.id, entry.score]),
     )
+    expect(JSON.stringify(second)).toBe(JSON.stringify(first))
   })
 })
 

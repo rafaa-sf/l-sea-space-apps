@@ -190,7 +190,6 @@ export function sortZoneEntriesByFeasibility(entries) {
  * }}
  */
 export function rankLandingZones({ terrain, ephemeris, sites, mission, options } = {}) {
-  const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now()
   const normalizedMission = normalizeMission(mission ?? {})
   const curatedSites = Array.isArray(sites) ? sites : []
   const zoneOptions = options ?? {}
@@ -347,7 +346,6 @@ export function rankLandingZones({ terrain, ephemeris, sites, mission, options }
   })
   for (const entry of entries) entry.inputSignature = signature
 
-  const finishedAt = typeof performance !== 'undefined' ? performance.now() : Date.now()
   const scoredEntries = entries.filter((entry) => entry.score != null)
   const feasibleEntries = entries.filter((entry) => entry.feasible === true)
   const undeterminedEntries = entries.filter((entry) => entry.feasibility?.status === 'undetermined')
@@ -408,8 +406,6 @@ export function rankLandingZones({ terrain, ephemeris, sites, mission, options }
       weights,
       modelVersion: LANDING_MODEL_VERSION,
       inputSignature: signature,
-      computedAt: new Date().toISOString(),
-      computeMs: Math.round((finishedAt - startedAt) * 100) / 100,
       inputs: {
         terrainId: terrain?.id ?? null,
         terrainWidth: terrain?.width ?? null,
@@ -438,7 +434,6 @@ export function rankLandingZones({ terrain, ephemeris, sites, mission, options }
         maxOperatingTemperatureC: normalizedMission.maxOperatingTemperatureC,
         landingEllipseRadiusM: normalizedMission.landingEllipseRadiusM,
       },
-      rankingMs: Math.round((finishedAt - startedAt) * 100) / 100,
     },
   }
 }

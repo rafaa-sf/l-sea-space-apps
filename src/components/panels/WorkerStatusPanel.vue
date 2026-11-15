@@ -53,8 +53,8 @@ const landingZoneMeta = computed(() => state.landingZonesMeta ?? {})
 const landingZoneSignature = computed(() =>
   String(landingZoneMeta.value.inputSignature ?? landingZoneMeta.value.signature ?? ''),
 )
-const landingZoneComputedAt = computed(() => {
-  const raw = landingZoneMeta.value.computedAt ?? landingZoneMeta.value.finishedAt ?? state.landingZonesStatus.ranAt
+const landingZoneRanAt = computed(() => {
+  const raw = state.landingZonesStatus.ranAt
   if (!raw) return t('common.notAvailable')
   const date = new Date(raw)
   return Number.isNaN(date.getTime()) ? String(raw) : formatUtc(date.toISOString(), locale.value)
@@ -83,7 +83,7 @@ const autopilotMode = computed(() => {
     <StatRow label-key="worker.source" :value="state.worker.source === 'worker' ? t('autopilot.source.worker') : t('autopilot.source.main')" :mono="false" />
     <StatRow label-key="worker.autopilotMode" :value="autopilotMode" :mono="false" />
     <StatRow label-key="worker.zoneSignature" :value="landingZoneSignature ? landingZoneSignature.slice(0, 12) : t('common.notAvailable')" />
-    <StatRow label-key="worker.zoneComputedAt" :value="landingZoneComputedAt" :mono="false" />
+    <StatRow label-key="worker.zoneComputedAt" :value="landingZoneRanAt" :mono="false" />
     <StatRow label-key="worker.lastRun" :value="lastRun" :mono="false" />
     <StatRow label-key="worker.duration" :value="duration" :mono="false" />
     <p v-if="workerSummary === 'error'" class="panel-note panel-note--warn" :title="state.worker.error || ''">{{ t('worker.errorHint') }}</p>

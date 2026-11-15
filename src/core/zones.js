@@ -141,11 +141,9 @@ export function zoneSuitability(zone, maxSlopeDeg) {
  * }} Detected zones (empty when no DEM or no flat area passes the filters).
  */
 export function detectLandingZones(terrain, options = {}) {
-  const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now()
   const opts = normalizeZoneOptions(options)
   const kind = isPlanarTerrain(terrain) ? 'planar' : isLatLonTerrain(terrain) ? 'latlon' : 'unknown'
   const finish = (zones, extraMeta = {}) => {
-    const finishedAt = typeof performance !== 'undefined' ? performance.now() : Date.now()
     return {
       zones,
       meta: {
@@ -158,7 +156,6 @@ export function detectLandingZones(terrain, options = {}) {
           'Zones are detected on the loaded DEM at the reported processed resolution; ' +
           'area/slope are projected-grid metrics and the zone centroid is a cell-weighted centroid.',
         ...extraMeta,
-        detectionMs: Math.round((finishedAt - startedAt) * 100) / 100,
       },
     }
   }

@@ -241,8 +241,9 @@ sizing uses the **longest continuous eclipse**, not the total eclipse time.
   logistics, science). Everything is recomputed on every call: terrain region,
   mission profile, mission start time and ephemeris window all feed the metrics,
   and the deterministic `meta.inputSignature` (short hex, also on each entry)
-  changes whenever any of them changes. `meta.computedAt` / `meta.computeMs`
-  record when the run happened.
+  changes whenever any of them changes. The result carries no wall-clock timing;
+  the UI records the duration and run timestamp in `landingZonesStatus.durationMs`
+  and `landingZonesStatus.ranAt`.
 - Ranked entry: `{ zone, rank, score, grade, gradeCode, confidence, components,
   metrics, reasons, warnings, ephemerisSiteId, nearestSiteId,
   nearestSiteDistanceM, zoneLabel, inputSignature }`.
@@ -408,7 +409,7 @@ Documented formulas/approximations:
   `filledGapCount`, `relayOnlyIntervals`; empty intervals when disabled);
   `effective` (`enabled`, `source: 'direct'|'relay'`, intervals/hours) for the
   "Earth link with relay" row; `meta` (`modelVersion: 'mission-cycles/1'`,
-  `inputSignature`, `computedAt`, `computeMs`, `site`, `terrainId`,
+  `inputSignature`, `site`, `terrainId`,
   `ephemerisSiteId`, `samplingSeconds`, `minIntervalSeconds`,
   `profileStepDeg`, `weekCount`, `warnings`, `assumptions`).
 - Relay follows the documented `comms.js` time-fraction coverage model

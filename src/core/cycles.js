@@ -301,7 +301,6 @@ export function computeCyclesSignature({ terrain, site, mission, ephemeris, opti
  * @throws {TypeError} When no ephemeris dataset is provided.
  */
 export function computeMissionCycles({ terrain, site, ephemeris, mission, options } = {}) {
-  const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now()
   if (!ephemeris) throw new TypeError('computeMissionCycles requires an ephemeris dataset')
   if (!site || !Number.isFinite(Number(site.lat)) || !Number.isFinite(Number(site.lon))) {
     throw new TypeError('computeMissionCycles requires a site with finite lat/lon')
@@ -456,8 +455,6 @@ export function computeMissionCycles({ terrain, site, ephemeris, mission, option
     ephemeris: dataset,
     options: { stepSeconds, profileStepDeg },
   })
-  const finishedAt = typeof performance !== 'undefined' ? performance.now() : Date.now()
-
   const direct = {
     intervals: directIntervals,
     linkHours: round2(directLinkHours),
@@ -534,8 +531,6 @@ export function computeMissionCycles({ terrain, site, ephemeris, mission, option
     meta: {
       modelVersion: MISSION_CYCLES_MODEL_VERSION,
       inputSignature: signature,
-      computedAt: new Date().toISOString(),
-      computeMs: Math.round((finishedAt - startedAt) * 100) / 100,
       site: {
         id: site.id ?? null,
         lat: Number(site.lat),
