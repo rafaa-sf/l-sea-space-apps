@@ -12,11 +12,14 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
 import LandingPage from './landing/LandingPage.vue'
+import { useI18n } from 'vue-i18n'
 
 const ToolApp = shallowRef(null)
 const toolLoading = ref(false)
 const toolError = ref(null)
 const dataError = ref(null)
+
+const { t } = useI18n()
 
 const route = ref(readRoute())
 
@@ -77,6 +80,13 @@ function reloadTool() {
   window.location.reload()
 }
 
+const dataErrorTitle = computed(() => {
+  const scope = dataError.value?.scope
+  if (scope === 'ephemeris') return t('shell.ephemerisError')
+  if (scope === 'sites') return t('shell.sitesError')
+  return t('shell.terrainError')
+})
+
 const isTool = computed(() => route.value === 'tool')
 
 onMounted(() => {
@@ -94,28 +104,28 @@ onBeforeUnmount(() => {
   <component :is="ToolApp" v-if="isTool && ToolApp" />
 
   <div v-else-if="isTool && toolError" class="shell-error" role="alert">
-    <h1>Mission console could not load</h1>
-    <p>The application code (JavaScript chunk) failed to load. Check your connection and retry.</p>
+    <h1>{{ t('shell.loadErrorTitle') }}</h1>
+    <p>{{ t('shell.loadErrorBody') }}</p>
     <p class="shell-error__detail">{{ toolError.message }}</p>
     <div class="shell-error__actions">
-      <button type="button" class="shell-button" @click="loadTool">Retry</button>
-      <button type="button" class="shell-button" @click="reloadTool">Reload</button>
+      <button type="button" class="shell-button" @click="loadTool">{{ t('shell.retry') }}</button>
+      <button type="button" class="shell-button" @click="reloadTool">{{ t('shell.reload') }}</button>
     </div>
   </div>
 
   <div v-else-if="isTool" class="shell-loading" role="status" aria-live="polite">
     <div class="spinner" aria-hidden="true" />
-    <span>Loading mission console…</span>
+    <span>{{ t('shell.loading') }}</span>
   </div>
 
   <LandingPage v-else @open-tool="openTool" />
 
   <div v-if="dataError" class="shell-error shell-error--banner" role="alert">
-    <strong>{{ dataError.scope === 'ephemeris' ? 'Ephemeris data error' : dataError.scope === 'sites' ? 'Site catalogue error' : 'Terrain data error' }}</strong>
+    <strong>{{ dataErrorTitle }}</strong>
     <span>{{ dataError.message }}</span>
     <div class="shell-error__actions">
-      <button type="button" class="shell-button" @click="retryData">Retry</button>
-      <button type="button" class="shell-button" @click="reloadTool">Reload</button>
+      <button type="button" class="shell-button" @click="retryData">{{ t('shell.retry') }}</button>
+      <button type="button" class="shell-button" @click="reloadTool">{{ t('shell.reload') }}</button>
     </div>
   </div>
 </template>

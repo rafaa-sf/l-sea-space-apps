@@ -1,4 +1,14 @@
 export default {
+  shell: {
+    loading: 'Loading mission console…',
+    loadErrorTitle: 'Mission console could not load',
+    loadErrorBody: 'The application code (JavaScript chunk) failed to load. Check your connection and retry.',
+    ephemerisError: 'Ephemeris data error',
+    sitesError: 'Site catalogue error',
+    terrainError: 'Terrain data error',
+    retry: 'Retry',
+    reload: 'Reload',
+  },
   scrollRail: { label: 'Page scroll', up: 'Scroll up', down: 'Scroll down' },
   app: {
     productName: 'Lunar Landing Site Navigator',
