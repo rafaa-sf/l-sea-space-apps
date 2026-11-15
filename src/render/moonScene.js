@@ -275,22 +275,38 @@ export async function createMoonScene(canvas, options = {}) {
   }
 
   /** Place the camera for the active view preset (tilted 3D or top-down 2D). */
+  function selectionTarget() {
+    return selectedSite ? siteSurfacePoint(selectedSite) : new THREE.Vector3(0, 0, 0)
+  }
+
+  /** Keep the orbit/zoom centre on the marked site without a visual jump. */
+  function recenterTargetOnSelection() {
+    if (!projection) return
+    const target = selectionTarget()
+    const delta = target.clone().sub(controls.target)
+    if (delta.lengthSq() < 1e-8) return
+    controls.target.copy(target)
+    camera.position.add(delta)
+    controls.update()
+  }
+
   function applyViewPreset(force = true) {
     if (!projection) return
     const distance = fitCameraDistance()
+    const target = selectionTarget()
     if (viewPreset === 'top') {
-      // Straight down on the map centre; camera-relative "up" is world -Z so
+      // Straight down on the marked point; camera-relative "up" is world -Z so
       // north stays up on screen. Rotation is locked, pan/zoom keep working.
       camera.up.set(0, 0, -1)
-      camera.position.set(0, distance, 0)
+      camera.position.copy(target).add(new THREE.Vector3(0, distance, 0))
       controls.enableRotate = false
     } else {
       // Near-top-down tilt: a small southward offset reads as 3D depth.
       camera.up.set(0, 1, 0)
-      camera.position.set(0, distance, distance * 0.04)
+      camera.position.copy(target).add(new THREE.Vector3(0, distance, distance * 0.04))
       controls.enableRotate = true
     }
-    controls.target.set(0, 0, 0)
+    controls.target.copy(target)
     controls.update()
     if (force) notifyViewChange(true)
   }
@@ -730,6 +746,7 @@ export async function createMoonScene(canvas, options = {}) {
         pickables.push(marker)
       }
     }
+    recenterTargetOnSelection()
     updateHelpers()
   }
 

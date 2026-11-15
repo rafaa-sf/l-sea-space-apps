@@ -109,6 +109,14 @@ export function createFallback2D(canvas, options = {}) {
     const w = planar.widthM * scale
     const h = planar.heightM * scale
     mapRect = { x: (widthPx - w) / 2, y: (heightPx - h) / 2, w, h }
+    if (zoom > 1.001 && planar) {
+      const selected = sites.find((site) => site.id === selection.selectedId)
+      if (selected) {
+        const point = planarPoint(selected.lat, selected.lon)
+        mapRect.x = widthPx / 2 - (point.x - planar.bounds.minX) * scale
+        mapRect.y = heightPx / 2 - (planar.bounds.maxY - point.y) * scale
+      }
+    }
   }
 
   function notifyView(force = false) {

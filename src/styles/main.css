@@ -3015,19 +3015,21 @@ body.is-resizing-panes * {
 
   .zoom-bar {
     position: absolute;
-    right: 8px;
+    left: 8px;
     top: 50%;
     bottom: auto;
     z-index: 4;
-    transform: translateY(-50%);
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: 4px;
-    border: 1px solid var(--color-border-strong);
+    gap: 2px;
+    width: 32px;
+    padding: 3px 2px;
+    border: 1px solid var(--color-border);
     border-radius: 999px;
-    background: rgba(13, 16, 22, 0.86);
-    backdrop-filter: blur(6px);
+    background: rgba(13, 16, 22, 0.78);
+    backdrop-filter: blur(4px);
+    transform: translateY(-50%);
     touch-action: none;
   }
 
@@ -3060,10 +3062,12 @@ body.is-resizing-panes * {
   }
 
   .zoom-bar__range {
-    width: 108px;
-    height: 24px;
+    width: 26px;
+    height: 88px;
     margin: 0;
     accent-color: var(--color-accent);
+    writing-mode: vertical-lr;
+    direction: rtl;
   }
 
   /* Slim gutter for the compact scroll rail (kept minimal so the layout does
