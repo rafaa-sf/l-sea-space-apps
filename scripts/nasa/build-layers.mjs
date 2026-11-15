@@ -88,6 +88,13 @@ const LAYER_DEFS = [
     kind: 'imagery',
   },
   {
+    id: 'lroc-nac-1m',
+    label: 'LRO_NAC_Mosaic_1mpp_SP',
+    name: 'LROC NAC 1 m/px — south pole mosaic',
+    description: 'Narrow Angle Camera high-resolution mosaic of the south pole.',
+    kind: 'imagery',
+  },
+  {
     id: 'average-earth-visibility-60m',
     label: 'ClrAVGVISIB_85S_060M_201608_EARTH_SP',
     name: 'Average Earth visibility 60 m/px',

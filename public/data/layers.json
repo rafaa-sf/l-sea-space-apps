@@ -317,6 +317,49 @@
       }
     },
     {
+      "id": "lroc-nac-1m",
+      "name": "LROC NAC 1 m/px — south pole mosaic",
+      "description": "Narrow Angle Camera high-resolution mosaic of the south pole.",
+      "kind": "imagery",
+      "type": "wmts",
+      "label": "LRO_NAC_Mosaic_1mpp_SP",
+      "url": "https://trek.nasa.gov/tiles/Moon/SP/LRO_NAC_Mosaic_1mpp_SP/1.0.0/default/default028mm/{z}/{y}/{x}.png",
+      "template": "https://trek.nasa.gov/tiles/Moon/SP/LRO_NAC_Mosaic_1mpp_SP/1.0.0/default/default028mm/{TileMatrix}/{TileRow}/{TileCol}.png",
+      "urlPlaceholders": {
+        "z": "TileMatrix",
+        "x": "TileCol",
+        "y": "TileRow"
+      },
+      "tileMatrixSet": "default028mm",
+      "format": "image/png",
+      "minZoom": 0,
+      "maxZoom": 12,
+      "projection": {
+        "type": "south_polar_stereographic",
+        "latitudeOfOriginDeg": -90,
+        "centralMeridianDeg": 0,
+        "referenceRadiusM": 1737400,
+        "note": "Moon Trek SP (south polar) tiles; not an equirectangular lat/lon grid."
+      },
+      "boundsM": {
+        "crs": "urn:ogc:def:crs:EPSG::0",
+        "lower": "-136716.373 -136875.424",
+        "upper": "136862.627 136745.576"
+      },
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
+      "viewerUrl": "https://trek.nasa.gov/moon/",
+      "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_NAC_Mosaic_1mpp_SP/1.0.0/WMTSCapabilities.xml",
+      "verified": {
+        "checkedAt": "2026-11-15T11:10:33.909Z",
+        "httpStatus": 200,
+        "cors": "*",
+        "contentType": "image/png",
+        "bytes": 52594,
+        "probeUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_NAC_Mosaic_1mpp_SP/1.0.0/default/default028mm/4/8/8.png",
+        "probeZoom": 4
+      }
+    },
+    {
       "id": "average-earth-visibility-60m",
       "name": "Average Earth visibility 60 m/px",
       "description": "Fraction of time the Earth is visible above the local horizon, from LOLA topography; colorized.",
