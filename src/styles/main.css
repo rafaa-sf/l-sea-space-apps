@@ -7,6 +7,8 @@
   --color-surface: #0d1016;
   --color-surface-2: #11151d;
   --color-surface-3: #161b25;
+  /* Backward-compatible alias: elevated surfaces use the second surface step. */
+  --color-bg-elevated: var(--color-surface-2);
   --color-border: #1d2430;
   --color-border-strong: #556176;
   --color-text: #e5e9f0;
