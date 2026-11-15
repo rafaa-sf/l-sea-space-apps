@@ -29,6 +29,11 @@ function fillFromPointer() {
   formError.value = ''
 }
 
+function usePointerForCycles() {
+  if (!state.pointer?.at) return
+  actions.addCustomSite({ lat: state.pointer.lat, lon: state.pointer.lon })
+}
+
 function addCustomSite() {
   const lat = Number(latInput.value)
   const lon = Number(lonInput.value)
@@ -77,5 +82,17 @@ function addCustomSite() {
         <dd>{{ state.sites.filter((site) => site.source === 'custom').length }}</dd>
       </div>
     </dl>
+
+    <p class="plain-panel__intro">{{ t('sites.cyclesOnPointerHint') }}</p>
+    <div class="button-row">
+      <button
+        type="button"
+        class="button button--secondary button--small"
+        :disabled="!state.pointer.at"
+        @click="usePointerForCycles"
+      >
+        {{ t('sites.cyclesOnPointer') }}
+      </button>
+    </div>
   </div>
 </template>

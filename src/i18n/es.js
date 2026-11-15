@@ -236,6 +236,8 @@ export default {
     lat: 'Latitud (°)',
     lon: 'Longitud (°)',
     usePointer: 'Usar puntero del mapa',
+    cyclesOnPointer: 'Usar puntero para los ciclos de 2 semanas',
+    cyclesOnPointerHint: 'Selecciona las coordenadas del puntero como sitio de análisis para que las bandas de luz y enlace se calculen sobre ese punto (efeméride real del sitio curado más cercano).',
     addCustom: 'Añadir sitio',
     pointerHint: 'Pulsa el terreno del visor para capturar una posición del puntero.',
     selectedHint: 'Sitio seleccionado: {site}',

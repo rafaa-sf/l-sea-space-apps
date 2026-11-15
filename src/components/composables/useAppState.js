@@ -22,6 +22,7 @@ import {
   loadSites,
   loadTerrain,
 } from './useData.js'
+import { nearestCuratedSite } from './nearestSite.js'
 import { toTimestamp } from './format.js'
 import { createPlaybackClock } from './playbackClock.js'
 
@@ -389,11 +390,23 @@ export async function selectSite(id) {
 
   state.loading.ephemeris = true
   try {
-    const result = await loadEphemeris(site)
+    // Custom points have no Horizons file: use the nearest curated site's
+    // ephemeris (real Sun/Earth directions) while the horizon profile is still
+    // computed at the custom coordinates themselves.
+    let ephemerisSite = site
+    if (site.source === 'custom') {
+      const nearest = nearestCuratedSite(state.sites, site.lat, site.lon)
+      if (nearest) {
+        site.ephemerisSiteId = nearest.id
+        ephemerisSite = nearest
+      }
+    }
+    const result = await loadEphemeris(ephemerisSite)
     if (token !== ephemerisToken) return
+    if (site.source === 'custom' && result.source === 'synthetic') site.ephemerisSiteId = null
     state.ephemeris = result.dataset ? markRaw(result.dataset) : null
     state.data.ephemerisSource = result.source
-    state.data.ephemerisOrigin = result.origin ?? null
+    state.data.ephemerisOrigin = site.ephemerisSiteId ? `nearest:${site.ephemerisSiteId}` : result.origin ?? null
     state.data.ephemerisUrl = result.url ?? null
     if (result.dataset) {
       const start = toTimestamp(result.dataset.start)
