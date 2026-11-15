@@ -635,7 +635,7 @@ const dateRows = async () =>
     const rows = [...document.querySelectorAll('.zone-date[data-testid^="ap-date-"]')];
     return rows.map((row) => ({
       hook: row.dataset.testid ?? null,
-      text: (row.textContent || '').replace(/\s+/g, ' ').trim(),
+      text: (row.textContent || '').replace(/\\s+/g, ' ').trim(),
       hasDate: /Feasible mission date|Fecha de misión viable/i.test(row.textContent || ''),
       noDate: /No feasible date|No hay fecha viable/i.test(row.textContent || ''),
     }));
