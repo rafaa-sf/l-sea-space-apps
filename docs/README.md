@@ -5,6 +5,10 @@ navigator built for the NASA International Space Apps Challenge, Málaga 2026.
 
 Live application: <https://rafaa-sf.github.io/l-sea-space-apps/>
 
+L-SEA is open source under the [MIT License](../LICENSE); the free and
+open-source policy, including the terms for NASA data, is in
+[commercial.md](commercial.md).
+
 This index is the entry point when browsing the `docs/` directory. Every
 document is written in English and kept in sync with the implementation.
 Start with [features.md](features.md) for what the product does and why; the
@@ -32,9 +36,9 @@ intended audience.
 | --- | --- | --- |
 | [mission-presets.md](mission-presets.md) | Historical mission profile presets for the site comparator, with sources and modelling assumptions | Reviewers, tool users |
 | [submission.md](submission.md) | Project page content, submission checklist and link inventory | Reviewers |
-| [demo.md](demo.md) | Project Demo format, seven-slide plan, 30-second video script and evidence values | Reviewers |
+| [demo.md](demo.md) | Project Demo format, seven-slide plan, 30-second video script and evidence values; the deck presents the project as open source and free | Reviewers |
 | [scalability.md](scalability.md) | Impact assessment and scalability analysis: beneficiaries, measurable impact, growth, scale limits and roadmap | Reviewers |
-| [commercial.md](commercial.md) | Business case, market, business model and judging-criteria mapping | Reviewers |
+| [commercial.md](commercial.md) | Open-source and free policy: MIT license for code and docs, free demo and deployments, reusable educational materials, sustainability and who it helps | Everyone, reviewers |
 
 ## Quality and operations
 
@@ -75,6 +79,7 @@ documentation:
 | Location | Content |
 | --- | --- |
 | [README.md](../README.md) | Project overview, live application, stack and quick links |
+| [LICENSE](../LICENSE) | MIT license text for the application code and documentation |
 | [src/](../src) | Vue 3 application, Three.js scene and framework-agnostic domain core |
 | [public/data/](../public/data) | Pre-computed NASA datasets (Horizons ephemerides, LOLA terrain, Moon Trek layers, POIs) |
 | [scripts/](../scripts) | Data pipeline, deployment verification, QA and Miro tooling |

@@ -866,7 +866,7 @@ export default {
       data: 'Datos NASA y procedencia',
       submission: 'Contenido de la submission',
       demo: 'Guion y presentación',
-      commercial: 'Caso comercial',
+      commercial: 'Código abierto y gratuito',
       scalability: 'Impacto y escalabilidad',
       qa: 'Calidad y verificación',
       deployment: 'Despliegue',

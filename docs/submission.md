@@ -5,7 +5,7 @@ links and evidence the team submits. Everything below is in English, as required
 
 > **Status (2026-11-15):** application implemented, tested, merged on `main` and
 > deployed. Live application: <https://rafaa-sf.github.io/l-sea-space-apps>. Automated tests:
-> 243 application tests in 16 files plus 8 MCP tests, all passing; CI green; production
+> 246 application tests in 17 files plus 8 MCP tests, all passing; CI green; production
 > build green. The only outstanding item before **Submit for Judging** is inserting the
 > published **Project Demo link** in the Project page.
 
@@ -19,8 +19,9 @@ links and evidence the team submits. Everything below is in English, as required
 | Event | NASA International Space Apps Challenge, Málaga 2026 |
 | Repository | <https://github.com/rafaa-sf/l-sea-space-apps> |
 | Live application | <https://rafaa-sf.github.io/l-sea-space-apps> |
-| Project Demo | Single public link, at most 7 slides or a 30-second video (content in [demo.md](demo.md)); link pending |
+| Project Demo | Single public link, at most 7 slides or a 30-second video (content in [demo.md](demo.md); the deck presents the project as open source and free); link pending |
 | Team | L-SEA (no names of minors) |
+| License | MIT for the application code and documentation (see [LICENSE](../LICENSE)); NASA data keeps its own public-domain and attribution terms ([data.md](data.md)) |
 
 ## 2. Summary (50-200 words)
 
@@ -38,7 +39,7 @@ links and evidence the team submits. Everything below is in English, as required
 > for machines without WebGL. The prototype is implemented and merged on `main`: a
 > mission-control interface, a terrain and horizon engine, ephemeris-driven Sun and
 > Earth visibility, power and communications metrics, a site comparator, autopilot
-> scoring, JSON export and a no-WebGL 2D fallback; 243 app tests in 16 files plus
+> scoring, JSON export and a no-WebGL 2D fallback; 246 app tests in 17 files plus
 > 8 MCP tests pass and CI is green.
 
 Word count: 200 (limit 50-200). Re-count after any edit with `wc -w`.
@@ -77,7 +78,7 @@ exported as a JSON mission brief with links back to NASA tools.
 | Domain core | Plain JavaScript ES modules: terrain, horizon and ray tracing, ephemeris, power, communications, autopilot |
 | Compute | Single Web Worker for horizon and scoring work, keeping the UI responsive |
 | Build | Vite static build (`dist/`), deployed on GitHub Pages |
-| Tests | Vitest: 243 application tests in 16 files plus 8 MCP tests |
+| Tests | Vitest: 246 application tests in 17 files plus 8 MCP tests |
 | Data | Pre-computed NASA datasets: LOLA terrain, JPL Horizons ephemerides, Moon Trek layer catalogue |
 
 Method in one pass over a scenario:
@@ -121,7 +122,7 @@ Method in one pass over a scenario:
 - Real NASA datasets shipped and consumed by the application: 10 curated POIs, 10
   JPL Horizons ephemeris files (2,928 samples each), two LOLA source polar DEM regions (plus four derived DEM area presets) and 21
   verified Moon Trek WMTS layers.
-- Automated test suite: 243 application tests in 16 files plus 8 MCP tests, all
+- Automated test suite: 246 application tests in 17 files plus 8 MCP tests, all
   passing; CI green; production build green.
 - Live deployment on GitHub Pages with post-deploy verification (entry point, favicon, NASA
   data files, terrain binary, SPA rewrite, cache headers) and an interactive live
@@ -162,9 +163,11 @@ Method in one pass over a scenario:
   ephemeris, power, communications, autopilot and service adapters; the UI is covered
   by the live end-to-end check rather than by component-level tests, and the sampled
   Horizons spot-check is a script outside the unit suite.
-- **No commercial validation.** No customer interviews, pricing evidence or
-  market-size figures are claimed anywhere in this submission; the commercial framing
-  is explicitly a set of hypotheses (see [scalability.md](scalability.md)).
+- **Open source and free.** The application code and documentation are MIT
+  licensed (see [LICENSE](../LICENSE)). The public demo and self-hosted
+  deployments are free, with no paid edition or feature tier; the educational
+  materials are reusable with attribution. The submission makes no financial
+  claims (see [commercial.md](commercial.md)).
 
 ## 4. NASA Data
 
@@ -238,15 +241,18 @@ complements QuickMap rather than replacing it. External reference:
 | Challenge brief (challenge 10, Lunar Landing Site Navigator) | Challenge statement | Problem definition, objectives, data and accuracy considerations |
 | Málaga 2026 challenge wallpapers | Event material | Confirms the local Spanish challenge name "Navegador de aterrizaje lunar" and tags |
 | Málaga 2026 participant guide (Spanish, summary in [challenge.md](challenge.md)) | Rules | Deliverables, demo limits, English requirement, AI declarations, privacy, submission process |
-| Málaga 2026 judges guide | Event material (Spanish) | Judge profiles and local judging lenses, mapped in [commercial.md](commercial.md) |
+| Málaga 2026 judges guide | Event material (Spanish) | Judge profiles and local judging lenses; pitch format and delivery notes are in [challenge.md](challenge.md#8-judging-and-local-pitch) and [demo.md](demo.md) |
+| L-SEA code and documentation | Project output | MIT license (see [LICENSE](../LICENSE)) |
 | Artemis III candidate landing regions and site coordinates | Published literature | POI coordinates and provenance, cited per entry in [data.md](data.md) |
 | CSA Moon Explorer | Comparable tool (external) | Inspiration for the curated points-of-interest experience |
 | Vue 3, Three.js, Vite, vue-i18n, Vitest | Software libraries | Application stack; all permissive open-source licences, versions in `package.json` |
 | NASA LOLA/PDS, JPL Horizons, Moon Trek, LROC QuickMap | NASA/partner data | Datasets, endpoints, licences and attribution in [data.md](data.md) |
 
-No commercial market data, customer data or third-party imagery is used. No paid
-assets were purchased. The repository does not redistribute NASA imagery beyond the
-transformed terrain grids and data files required by the application.
+No third-party imagery or personal data is used. The repository does not
+redistribute NASA imagery beyond the transformed terrain grids and data files
+required by the application; those files keep NASA's public-domain and attribution
+terms (see [data.md](data.md)). The project code and documentation are MIT
+licensed (see [LICENSE](../LICENSE)).
 
 ## 6. AI / SI use
 
@@ -300,4 +306,5 @@ source rules):
 | Live application | <https://rafaa-sf.github.io/l-sea-space-apps> |
 | Repository | <https://github.com/rafaa-sf/l-sea-space-apps> |
 | Documentation | <https://github.com/rafaa-sf/l-sea-space-apps/tree/main/docs> |
+| License | <https://github.com/rafaa-sf/l-sea-space-apps/blob/main/LICENSE> (MIT) |
 | Project Demo | <https://rafaa-sf.github.io/l-sea-space-apps/demo/L-SEA-Project-Demo.pdf> (7 slides, English) |

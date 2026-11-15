@@ -872,7 +872,7 @@ export default {
       data: 'NASA data and provenance',
       submission: 'Submission page content',
       demo: 'Demo script and deck',
-      commercial: 'Commercial case',
+      commercial: 'Open source and free',
       scalability: 'Impact and scalability',
       qa: 'Quality and verification',
       deployment: 'Deployment',

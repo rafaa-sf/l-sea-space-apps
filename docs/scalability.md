@@ -1,7 +1,8 @@
 # Impact and scalability
 
 Impact assessment and scalability analysis for L-SEA Space Apps. This is the
-companion of [commercial.md](commercial.md) (business case, market and judging),
+companion of [commercial.md](commercial.md) (open-source and free policy, licensing
+and who it helps),
 [architecture.md](architecture.md) and [deployment.md](deployment.md) (the technical
 constraints behind the scale limits), and [qa.md](qa.md) (measured build and test
 evidence). Claims are hypotheses unless a source is cited, and every unverified claim
@@ -32,9 +33,8 @@ is marked as such.
 - **Risk reduction.** Two failure modes become visible before commitment: a site whose
   solar illumination is marginal for the mission's power needs, and a site and date
   where direct-to-Earth communication is unavailable longer than planned.
-- **Qualitative economic effect.** Avoided re-planning cost, risk-adjusted mission
-  value, a recurring value per mission in the CLPS cadence, and education and outreach
-  value. No public price or cost figures are asserted.
+- **Operational value.** Avoided re-planning work, faster schedule trades, and
+  education and outreach value. No cost, price or financial figures are asserted.
 - **Scientific and educational impact.** The science-versus-operability trade-off is
   made explicit; lunar conditions (no atmosphere, slow Sun, long shadows) become
   intuitive when visualised; the bilingual, install-free format lowers the barrier for
@@ -70,7 +70,7 @@ is marked as such.
 | Tool reduces comparison time | Design and user-experience reasoning | Timed usability test with 3-5 users |
 | Tool improves decision quality | Architecture supports the metrics | Scenario test against Horizons reference |
 | Tool is usable by non-specialists | Accessibility design | Moderated test with an educator or public user |
-| Economic value | Qualitative | One structured interview with a mission-planning professional |
+| Operational value | Qualitative | One structured interview with a mission-planning professional |
 
 ## 2. Scalability
 
@@ -111,14 +111,14 @@ components and render (UI), workers and data scripts, each with a stable interfa
 the real scalability asset: pieces can be swapped (new dataset, new renderer, new
 exporter) without rewriting the product, and teams can work in parallel.
 
-### 2.2 Product and business scalability
+### 2.2 Product and open-source scalability
 
-| Stage | Product shape | Users | Commercial shape |
+| Stage | Product shape | Users | Open-source shape |
 | --- | --- | --- | --- |
-| 0, hackathon | Static web tool, curated sites, EN/ES, JSON brief | Judges, educators | Open source, public URL |
-| 1, pilot | Validated metrics, more sites and epochs, shareable briefs, PDF export | Mission planners, classrooms | Partnership with a CLPS or agency team; consulting |
-| 2, platform | API and scenario workspace, saved studies, team sharing, more bodies | Commercial landers, universities, agencies | Subscription or seat licensing; data add-ons |
-| 3, operational | Validated, versioned, auditable, mission-configurable | Programme offices | Enterprise contracts and integration |
+| 0, hackathon | Static web tool, curated sites, EN/ES, JSON brief | Judges, educators | MIT public repository and free public demo |
+| 1, pilot | Validated metrics, more sites and epochs, shareable briefs, PDF export | Mission planners, classrooms | Free self-hosting; partnerships with a CLPS or agency team welcome |
+| 2, platform | API and scenario workspace, saved studies, team sharing, more bodies | Lunar landers, universities, agencies | Free hosted and self-hosted use; grants or partnerships welcome, never required |
+| 3, operational | Validated, versioned, auditable, mission-configurable | Programme offices | Same MIT terms; optional institutional partnerships and integration |
 
 **Ecosystem plays.** Integrate rather than compete: close the loop with Moon Trek
 layers, QuickMap links (already designed in the JSON brief), JPL Horizons validation
@@ -134,8 +134,8 @@ and validation claims must be bounded and disclosed.
 - **Contract-first parallel work:** the architecture contract lets coder, UI, data and
   commercial workstreams run in parallel with low merge friction.
 - **Conventions and CI:** Conventional Commits, short-lived branches, English-only
-  repository and automated checks. Current state: the application suite passes (243
-  tests in 16 files) plus 8 MCP tests, and CI is green; the remaining scale gap is
+  repository and automated checks. Current state: the application suite passes (246
+  tests in 17 files) plus 8 MCP tests, and CI is green; the remaining scale gap is
   a full accuracy-validation campaign against reference ephemerides (the sampled
   `npm run verify:horizons` spot-check passes) and expanded end-to-end coverage.
 - **Two machines to many:** the repository already models a primary and commercial
@@ -171,4 +171,4 @@ and validation claims must be bounded and disclosed.
 - Build, test and QA evidence: [qa.md](qa.md)
 - Terrain metadata and provenance: `public/data/terrain/index.json` and
   `scripts/nasa/build-terrain.py`
-- Business, market and judging context: [commercial.md](commercial.md)
+- Open-source, licensing and judging context: [commercial.md](commercial.md)

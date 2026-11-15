@@ -185,8 +185,8 @@ The project's demo assets are described in [demo.md](demo.md).
 ## 8. Judging and local pitch
 
 The five reference criteria (Impact, Creativity, Validity, Relevance, Presentation)
-and the Málaga judges' professional lenses are mapped to this project in
-[commercial.md](commercial.md).
+come from the participant guide; the submission narrative that addresses them is in
+[submission.md](submission.md).
 
 - The **local pitch is not the Project Demo** and does not replace Submit for
   Judging.

@@ -44,7 +44,7 @@ flight-dynamics tool.
 
 ## 3. Automated tests
 
-`npm test` (Vitest): **16 test files, 243 tests, all passing**.
+`npm test` (Vitest): **17 test files, 246 tests, all passing**.
 
 | File | Tests |
 | --- | --- |

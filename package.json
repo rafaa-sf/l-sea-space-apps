@@ -2,6 +2,7 @@
   "name": "l-sea-space-apps",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "L-SEA Space Apps: lunar south-pole site selection and mission briefing tool for NASA Space Apps Challenge Malaga 2026.",
   "scripts": {

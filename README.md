@@ -15,6 +15,7 @@ communication windows derived from the same data.
 [![Live](https://img.shields.io/badge/live-rafaa--sf.github.io%2Fl--sea--space--apps-2ea44f)](https://rafaa-sf.github.io/l-sea-space-apps/)
 [![Stack](https://img.shields.io/badge/stack-Vue%203%20%2B%20Three.js-3f80ea)](https://vuejs.org)
 [![Docs](https://img.shields.io/badge/docs-index-6f42c1)](docs/README.md)
+[![License: MIT](https://img.shields.io/badge/license-MIT-2ea44f)](LICENSE)
 
 **Live application:** <https://rafaa-sf.github.io/l-sea-space-apps>
 
@@ -68,7 +69,7 @@ Full grouped index: **[docs/README.md](docs/README.md)**. Feature reference:
 **[docs/features.md](docs/features.md)**.
 
 - **Project and challenge:** [features](docs/features.md) · [challenge](docs/challenge.md) · [architecture](docs/architecture.md) · [NASA data](docs/data.md) · [AI use declaration](docs/ai-usage.md)
-- **Product, impact and submission:** [submission](docs/submission.md) · [demo](docs/demo.md) · [impact and scalability](docs/scalability.md) · [commercial case](docs/commercial.md)
+- **Product, impact and submission:** [submission](docs/submission.md) · [demo](docs/demo.md) · [impact and scalability](docs/scalability.md) · [open source and free](docs/commercial.md)
 - **Quality and operations:** [QA and test bench](docs/qa.md) · [UX compliance](docs/ux-compliance.md) · [deployment](docs/deployment.md) · [contributing](docs/contributing.md) · [security](docs/security.md) · [decisions](docs/decisions.md) · [Miro integration](docs/miro.md)
 - **Reproducible test bench:** [qa/README.md](qa/README.md) · [qa/REPORT.md](qa/REPORT.md)
 
@@ -131,7 +132,7 @@ and [`docs/decisions.md`](docs/decisions.md).
 
 ## Quality and verification
 
-- **Unit and contract tests** — 241 Vitest tests in 16 files for the scientific
+- **Unit and contract tests** — 246 Vitest tests in 17 files for the scientific
   core and the data services (`npm test`), plus 8 tests for the Miro MCP package.
 - **Monte Carlo logic bench** — seeded randomised site/date/mission scenarios over
   the real core with 13 invariants. A 20,000-case run found one real
@@ -167,5 +168,13 @@ follow-up hardening rounds and the agent-opened issues/pull requests, is in
 
 ## License
 
-No license has been selected for this repository yet. Contact the maintainers
-before reuse.
+L-SEA Space Apps is open source under the [MIT License](LICENSE), Copyright
+(c) 2026 L-SEA Team. The license covers the application code, scripts, tests and
+documentation; you may use, modify, distribute and self-host them, provided the
+copyright and permission notice are retained.
+
+NASA data is not relicensed by this project: LOLA/PDS, JPL Horizons and Moon Trek
+data remain under NASA's public-domain policy and their attribution terms,
+documented in [docs/data.md](docs/data.md). The live demo and self-hosted
+deployments are free; the open-source and free policy is described in
+[docs/commercial.md](docs/commercial.md).

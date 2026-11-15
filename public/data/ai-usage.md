@@ -54,7 +54,7 @@ and coordinated with the advisory lock protocol described in `docs/contributing.
 | --- | --- | --- |
 | **Lead** | Coordination / integration | Defined the team structure, the impact & scalability workstream, the QA test-bench contract and the machine-coordination protocol; reviewed and integrated every deliverable; opened the documentation pull request |
 | **commander** | Submission and device QA | Submission-readiness audit, repository-conventions check, decision-log drafts, commit plan, contract-vs-reality gap analysis, and the device/resolution UI matrix with its filterable report (shipped under `qa/ui/`) |
-| **comercial** | Commercialisation | Project-page content (name, summary, detailed description, NASA-data narrative), business case, 7-slide pitch and 30-second video script, judges-criteria mapping, social-media copy |
+| **comercial** | Project narrative and open-source policy | Project-page content (name, summary, detailed description, NASA-data narrative), open-source and free project page, 7-slide pitch and 30-second video script, judges-criteria mapping, social-media copy |
 | **testbench** | Test bench | Test plan and executed QA report, data-integrity validation, deployment-checklist dry run and the Monte Carlo logic bench (shipped under `qa/logic/`) |
 
 ### 2.3 Follow-up hardening rounds (14 November 2026)
@@ -82,8 +82,8 @@ opened the issues/pull requests and reported the results to the human team.
 | Datasets | Processing and formatting of the real NASA data into the compact files under `public/data/`; no values invented |
 | Tests and CI | Vitest unit/contract suites for the scientific core and services, and the GitHub Actions pipelines |
 | Documentation | `README.md`, every file under `docs/` (including this declaration and the submission documents), `public/data/ephemeris/README.md`, `public/data/ai-usage.md` |
-| Submission package | Project page content and readiness checklist, demo deck outline, 30-second video script, business case, judging-criteria mapping and impact analysis, now consolidated in [submission.md](https://github.com/rafaa-sf/l-sea-space-apps/blob/main/docs/submission.md), [demo.md](https://github.com/rafaa-sf/l-sea-space-apps/blob/main/docs/demo.md), [commercial.md](https://github.com/rafaa-sf/l-sea-space-apps/blob/main/docs/commercial.md), [scalability.md](https://github.com/rafaa-sf/l-sea-space-apps/blob/main/docs/scalability.md) and [qa.md](https://github.com/rafaa-sf/l-sea-space-apps/blob/main/docs/qa.md) |
-| QA test bench | Monte Carlo logic bench (`qa/logic/`: 20 000 randomised site/date/mission scenarios over the real scientific core, 13 invariants) and device/resolution UI matrix (`qa/ui/`: 51 viewports × English/Spanish + no-WebGL probes, filterable report), shipped under `qa/`; see [`docs/qa.md`](https://github.com/rafaa-sf/l-sea-space-apps/blob/main/docs/qa.md) and [`qa/README.md`](https://github.com/rafaa-sf/l-sea-space-apps/blob/main/qa/README.md). |
+| Submission package | Project page content and readiness checklist, demo deck outline, 30-second video script, open-source and free project page, judging-criteria mapping and impact analysis, now consolidated in [submission.md](submission.md), [demo.md](demo.md), [commercial.md](commercial.md), [scalability.md](scalability.md) and [qa.md](qa.md) |
+| QA test bench | Monte Carlo logic bench (`qa/logic/`: 20 000 randomised site/date/mission scenarios over the real scientific core, 13 invariants) and device/resolution UI matrix (`qa/ui/`: 51 viewports × English/Spanish + no-WebGL probes, filterable report), shipped under `qa/`; see [`docs/qa.md`](qa.md) and [`qa/README.md`](../qa/README.md). |
 | Hardening and QA | Playback-clock and Sun/Earth direction fixes, UX compliance remediation, whole-page/device/accessibility audits, 10 000–20 000-case Monte Carlo runs, data and documentation recalibration, compass removal |
 | Coordination tooling | Tag-based machine synchronisation (`claim/*`, `sync/*` and `lock/*` tags) and the repository pre-push lock hook |
 | Version control | Branch creation, Conventional-Commit messages, pull requests and tag publication performed by the agents |
@@ -119,10 +119,10 @@ opened the issues/pull requests and reported the results to the human team.
   verified with live tile requests and CORS checks before being written to
   `public/data/layers.json` (see `docs/data.md`).
 - The application builds successfully (`npm run build`) and its unit/contract
-  suites pass (Vitest: **227 tests** in 15 files at the time of writing, plus
+  suites pass (Vitest: **246 tests** in 17 files at the time of writing, plus
   8 MCP checks in CI).
 - Responsive layout and no-WebGL fallback checks are documented in
-  [`docs/qa.md`](https://github.com/rafaa-sf/l-sea-space-apps/blob/main/docs/qa.md); the QA test bench ships under `qa/` and records the
+  [`docs/qa.md`](qa.md); the QA test bench ships under `qa/` and records the
   repository git SHA. The full matrix covers all 51 viewports × EN/ES plus
   no-WebGL probes; the last full run on the merged state passed 103/104 checks,
   and the single 280 px Spanish overflow it found was fixed and re-verified on
@@ -223,7 +223,7 @@ exited 0 with 20/20 site/body checks, 480/480 samples matched and
 max |Δaz| = max |Δel| = 0.0000° inside the documented tolerances (azimuth 0.05°,
 elevation 0.02°). It is a sampled snapshot spot-check, not a full accuracy campaign.
 
-The application suite is now **227 tests in 15 files** (plus 8 MCP checks), and CI
+The application suite is now **246 tests in 17 files** (plus 8 MCP checks), and CI
 and the GitHub Pages deployment stayed green after each commit.
 
 *Event rules reference: AI is allowed at NASA Space Apps; the team must declare the
