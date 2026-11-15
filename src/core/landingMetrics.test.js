@@ -393,6 +393,28 @@ describe('computeLandingMetrics integration', () => {
     })
     expect(otherTerrain).not.toBe(base)
   })
+
+  it('covers the crater-avoidance detection options in the input signature', () => {
+    const signature = (options) => computeInputSignature({
+      terrain,
+      mission: normalizeMission(MISSION),
+      ephemeris,
+      options,
+    })
+    const plain = signature({ maxZones: 8 })
+    const avoiding = signature({ maxZones: 8, avoidCraters: true })
+    const notAvoiding = signature({ maxZones: 8, avoidCraters: false })
+    expect(avoiding).not.toBe(plain)
+    expect(avoiding).not.toBe(notAvoiding)
+    expect(signature({ maxZones: 8, avoidCraters: true })).toBe(avoiding)
+
+    const withClearance = signature({ maxZones: 8, avoidCraters: true, craterClearanceM: 400 })
+    expect(withClearance).not.toBe(avoiding)
+    expect(signature({ maxZones: 8, avoidCraters: true, craterClearanceM: 400 })).toBe(withClearance)
+
+    const largerCraters = signature({ maxZones: 8, avoidCraters: true, craterMinDiameterM: 800 })
+    expect(largerCraters).not.toBe(avoiding)
+  })
 })
 
 
