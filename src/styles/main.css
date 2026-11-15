@@ -1316,6 +1316,16 @@ body.is-resizing-panes * {
   color: var(--color-warn);
 }
 
+.panel-bullet-list {
+  margin: 0;
+  padding-left: 14px;
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-text-faint);
+}
+
 .panel-divider {
   height: 1px;
   background: var(--color-border);

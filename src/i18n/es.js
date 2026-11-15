@@ -749,6 +749,15 @@ export default {
       unavailable: 'No disponible',
     },
   },
+  limits: {
+    title: 'Supuestos y límites',
+    badge: 'Alcance',
+    ephemeris: 'Efemérides: azimut/elevación del Sol y la Tierra de JPL Horizons DE441, 1 nov–31 dic 2026 en pasos de 30 min.',
+    terrain: 'Terreno: DEM reales de LOLA con 74 m y 594 m por píxel; recortes personalizados de 97,66–390,63 m por píxel.',
+    models: 'Modelos: las cifras de energía, comunicaciones y térmica son estimaciones simplificadas, no certificadas para vuelo.',
+    validation: 'Validación: aún no hay una campaña de precisión independiente; las métricas de zonas de aterrizaje son heurísticas.',
+    status: 'Estado: demostración de investigación, no una herramienta para planificar misiones reales ni avalada por la NASA.',
+  },
   export: {
     status: 'Exportación',
     idle: 'Listo',

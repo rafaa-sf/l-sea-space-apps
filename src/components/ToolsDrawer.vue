@@ -11,6 +11,7 @@ import TopographyPanel from './panels/TopographyPanel.vue'
 import OrbitalVariationPanel from './panels/OrbitalVariationPanel.vue'
 import WorkerStatusPanel from './panels/WorkerStatusPanel.vue'
 import FallbackStatusPanel from './panels/FallbackStatusPanel.vue'
+import LimitsPanel from './panels/LimitsPanel.vue'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -133,6 +134,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onWindowKeydown))
           <div v-show="activeTab === 'diagnostics'" role="tabpanel" :aria-label="t('tabs.diagnostics')">
             <WorkerStatusPanel />
             <FallbackStatusPanel />
+            <LimitsPanel />
           </div>
         </div>
       </section>

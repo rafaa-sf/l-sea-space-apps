@@ -755,6 +755,15 @@ export default {
       unavailable: 'Unavailable',
     },
   },
+  limits: {
+    title: 'Assumptions & limits',
+    badge: 'Scope',
+    ephemeris: 'Ephemeris: Sun and Earth az/el from JPL Horizons DE441, 1 Nov–31 Dec 2026 in 30-minute steps.',
+    terrain: 'Terrain: real LOLA DEMs at 74 m and 594 m per pixel; custom crops 97.66–390.63 m per pixel.',
+    models: 'Models: power, comms and thermal figures are simplified estimates, not flight-certified.',
+    validation: 'Validation: no independent accuracy campaign yet; landing-zone metrics are heuristic.',
+    status: 'Status: a research demo, not a mission-planning tool, and not NASA-endorsed.',
+  },
   export: {
     status: 'Export',
     idle: 'Ready',
