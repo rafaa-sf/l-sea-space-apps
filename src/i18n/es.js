@@ -52,6 +52,9 @@ export default {
       direct: { link: 'Enlace directo con la Tierra {start} – {end}', gap: 'Sin enlace directo {start} – {end}' },
       relay: { link: 'Enlace con relé {start} – {end}', gap: 'Sin enlace con relé {start} – {end}' },
     },
+    timelineNote: 'Ciclos locales de sol/eclipse y enlace con la Tierra; no son las fases lunares vistas desde la Tierra.',
+    linkDirectShort: 'Directo',
+    linkRelayShort: 'Relé',
   },
   surfaces: {
     sites: 'Sitios',
@@ -211,10 +214,8 @@ export default {
       workerOk: 'Worker OK',
       workerError: 'Error del worker',
       workerReady: 'Listo',
-
-    zoneSignature: 'Firma de zonas',
-    zoneComputedAt: 'Zonas calculadas',
-  },
+    },
+    cyclesTitle: 'Ciclos de sol y enlace con la Tierra',
   },
   sites: {
     compareButton: 'Comparar',
@@ -731,6 +732,8 @@ export default {
     autopilotPoi: 'POIs curados',
     autopilotZones: 'Zonas de aterrizaje ({source})',
     autopilotZonesIdle: 'Zonas de aterrizaje',
+    zoneSignature: 'Firma de zonas',
+    zoneComputedAt: 'Zonas calculadas',
   },
   fallback: {
     switchHint: 'Cambia entre la vista 3D y la vista 2D cenital desde la barra de herramientas del visor.',

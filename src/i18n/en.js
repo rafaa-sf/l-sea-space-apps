@@ -52,6 +52,9 @@ export default {
       direct: { link: 'Direct Earth link {start} – {end}', gap: 'Direct Earth gap {start} – {end}' },
       relay: { link: 'Relay link {start} – {end}', gap: 'Relay gap {start} – {end}' },
     },
+    timelineNote: 'Local Sun/eclipse and Earth-link cycles; not Earth-observer Moon phases.',
+    linkDirectShort: 'Direct',
+    linkRelayShort: 'Relay',
   },
   surfaces: {
     sites: 'Sites',
@@ -211,10 +214,8 @@ export default {
       workerOk: 'Worker OK',
       workerError: 'Worker error',
       workerReady: 'Ready',
-
-    zoneSignature: 'Landing-zone signature',
-    zoneComputedAt: 'Landing zones computed',
-  },
+    },
+    cyclesTitle: 'Sun and Earth-link cycles',
   },
   sites: {
     compareButton: 'Compare',
@@ -737,6 +738,8 @@ export default {
     autopilotPoi: 'Curated POIs',
     autopilotZones: 'Landing zones ({source})',
     autopilotZonesIdle: 'Landing zones',
+    zoneSignature: 'Landing-zone signature',
+    zoneComputedAt: 'Landing zones computed',
   },
   fallback: {
     switchHint: 'Switch between the 3D view and the top-down 2D view from the viewport toolbar.',

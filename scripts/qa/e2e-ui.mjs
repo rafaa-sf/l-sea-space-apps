@@ -657,6 +657,88 @@ await sleep(1200)
 report.cyclesTimeAfterSeek = await clockValue()
 report.cyclesSeekWorks = Boolean(report.cyclesSeekClicked && report.cyclesTimeAfterSeek && report.cyclesTimeAfterSeek !== timeBeforeCycles)
 
+// Task-33: compact mission-cycle band under the viewport.
+for (let attempt = 0; attempt < 30; attempt += 1) {
+  if (await evaluate(`Boolean(document.querySelector('[data-testid="timeline-cycles-sun"] button'))`)) break
+  await sleep(500)
+}
+report.timelineCycles = await evaluate(`(() => {
+  const band = document.querySelector('.timeline-cycles');
+  const timeline = document.querySelector('.timeline');
+  if (!band || !timeline) return null;
+  const bandRect = band.getBoundingClientRect();
+  const timelineRect = timeline.getBoundingClientRect();
+  return {
+    sunSegments: document.querySelectorAll('[data-testid="timeline-cycles-sun"] button').length,
+    linkSegments: document.querySelectorAll('[data-testid="timeline-cycles-link"] button').length,
+    now: Boolean(document.querySelector('[data-testid="timeline-cycles-now"]')),
+    weeks: document.querySelectorAll('.timeline-cycles__week').length,
+    ticks: document.querySelectorAll('.timeline-cycles__tick').length,
+    linkLabel: document.querySelector('[data-testid="timeline-cycles-link"] .timeline-cycles__label')?.textContent?.trim() ?? null,
+    status: document.querySelector('.timeline-cycles__status')?.textContent?.trim() ?? null,
+    fits: bandRect.top >= timelineRect.top - 1 && bandRect.bottom <= timelineRect.bottom + 1 && (() => {
+      const status = document.querySelector('.timeline-cycles__status');
+      if (!status) return false;
+      const statusRect = status.getBoundingClientRect();
+      return statusRect.top >= timelineRect.top - 1 && statusRect.bottom <= timelineRect.bottom + 1;
+    })() && document.documentElement.scrollWidth <= window.innerWidth,
+    collapsed: document.querySelector('[data-testid="timeline-cycles-toggle"]')?.getAttribute('aria-expanded') ?? null,
+  };
+})()`)
+const bandClockBefore = await clockValue()
+report.timelineCyclesSeekClicked = await evaluate(`(() => {
+  const els = [...document.querySelectorAll('[data-testid="timeline-cycles-link"] button, [data-testid="timeline-cycles-sun"] button')];
+  const button = els[els.length - 1];
+  if (!button) return false;
+  button.click();
+  return true;
+})()`)
+await sleep(1500)
+report.timelineCyclesSeek = { before: bandClockBefore, after: await clockValue() }
+report.timelineCyclesSeekChanged = Boolean(report.timelineCyclesSeekClicked && bandClockBefore && report.timelineCyclesSeek.after && report.timelineCyclesSeek.after !== bandClockBefore)
+const bandLinkBefore = report.timelineCycles?.linkLabel ?? null
+await evaluate(`(() => { const el=document.querySelector('[data-testid="cycles-relay-toggle"]'); if(el) el.click(); return Boolean(el); })()`)
+let bandLinkAfter = bandLinkBefore
+for (let attempt = 0; attempt < 30 && bandLinkAfter === bandLinkBefore; attempt += 1) {
+  await sleep(500)
+  bandLinkAfter = await evaluate(`document.querySelector('[data-testid="timeline-cycles-link"] .timeline-cycles__label')?.textContent?.trim() ?? null`)
+}
+report.timelineCyclesRelay = { before: bandLinkBefore, after: bandLinkAfter }
+report.timelineCyclesRelayChanged = Boolean(bandLinkBefore && bandLinkAfter && bandLinkAfter !== bandLinkBefore)
+
+report.timelineCyclesA11y = await evaluate(`(() => {
+  const status = document.querySelector('.timeline-cycles__status');
+  const axis = document.querySelector('.timeline-cycles__axis');
+  return Boolean(status) && !(axis && axis.contains(status));
+})()`)
+report.timelineCyclesTitleEN = await evaluate(`document.querySelector('[data-testid="timeline-cycles-sun"] button')?.getAttribute('title') ?? null`)
+report.timelineResponsive = {}
+for (const [width, height] of [[1440, 1000], [1200, 1000], [1024, 900], [900, 900], [720, 900], [480, 800]]) {
+  await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false })
+  await sleep(650)
+  report.timelineResponsive[width] = await evaluate(`(() => {
+    const band = document.querySelector('.timeline-cycles');
+    const timeline = document.querySelector('.timeline');
+    if (!band || !timeline) return { visible: false, fits: false, overflowX: true };
+    const bandRect = band.getBoundingClientRect();
+    const timelineRect = timeline.getBoundingClientRect();
+    return {
+      visible: bandRect.height > 10,
+      fits: bandRect.top >= timelineRect.top - 1 && bandRect.bottom <= timelineRect.bottom + 1 && (() => {
+        const status = document.querySelector('.timeline-cycles__status');
+        if (!status) return false;
+        const statusRect = status.getBoundingClientRect();
+        return statusRect.top >= timelineRect.top - 1 && statusRect.bottom <= timelineRect.bottom + 1;
+      })(),
+      overflowX: document.documentElement.scrollWidth > window.innerWidth,
+      timelineHeight: Math.round(timelineRect.height),
+      bandHeight: Math.round(bandRect.height),
+    };
+  })()`)
+}
+await send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 1000, deviceScaleFactor: 1, mobile: false })
+await sleep(700)
+
 // Task-29: feasible mission date per zone and timeline jump (Artemis III preset).
 await evaluate(`(() => {
   const tab = document.querySelector('[data-testid="analysis-tab-autopilot"]');
@@ -928,6 +1010,12 @@ const failed =
   !(report.cyclesWeeks >= 2) || !report.cyclesRelayToggled ||
   report.cyclesSummaryAfter === report.cyclesSummaryBefore ||
   !report.cyclesSeekWorks ||
+  !report.timelineCycles || !(report.timelineCycles.sunSegments >= 1) ||
+  !(report.timelineCycles.linkSegments >= 1) || !report.timelineCycles.now ||
+  !report.timelineCycles.fits || !report.timelineCyclesSeekChanged ||
+  !report.timelineCyclesRelayChanged || !report.timelineCyclesA11y ||
+  !report.timelineCyclesTitleEN ||
+  !Object.values(report.timelineResponsive ?? {}).every((entry) => entry.visible && entry.fits && !entry.overflowX) ||
   !report.rtgSourceChanged || !report.rtgPowerSet ||
   !report.rtgFeasible || !report.rtgNote ||
   !report.rtgInsufficient || !report.rtgViolationText || !report.rtgRestored ||

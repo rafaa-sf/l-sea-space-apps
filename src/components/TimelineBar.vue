@@ -5,6 +5,7 @@
  * mode). Kept to a single row so it never competes with the viewport.
  */
 import { computed } from 'vue'
+import TimelineCycles from './TimelineCycles.vue'
 import { useI18n } from 'vue-i18n'
 import { actions, ephemerisRange, state, workerSummary } from './composables/useAppState.js'
 import {
@@ -89,8 +90,8 @@ function onSpeedChange(event) {
         class="input dem-select__control"
         :value="state.playback.speedMinutes"
         data-testid="playback-speed"
-        :aria-label="t('timeline.speed', { minutes: state.playback.speedMinutes })"
-        :title="t('timeline.speed', { minutes: state.playback.speedMinutes })"
+        :aria-label="t('datetime.speed', { minutes: state.playback.speedMinutes })"
+        :title="t('datetime.speed', { minutes: state.playback.speedMinutes })"
         @change="onSpeedChange"
       >
         <option :value="5">5</option>
@@ -134,11 +135,14 @@ function onSpeedChange(event) {
       </button>
     </div>
 
-    <div class="timeline__status">
-      <span class="status-text">{{ t('timeline.workerLabel') }}: {{ workerLabel }}</span>
-      <span class="status-separator" aria-hidden="true" />
-      <span class="status-text">{{ rendererLabel }}</span>
-      <span v-if="state.loading.analysis" class="status-text">{{ t('common.computing') }}</span>
-    </div>
+    <TimelineCycles>
+      <template #status>
+        <span class="timeline__status-inline">
+          <span class="status-text">{{ t('timeline.workerLabel') }}: {{ workerLabel }}</span>
+          <span class="status-separator" aria-hidden="true" />
+          <span class="status-text">{{ rendererLabel }}</span>
+          <span v-if="state.loading.analysis" class="status-text">{{ t('common.computing') }}</span></span>
+      </template>
+    </TimelineCycles>
   </section>
 </template>
