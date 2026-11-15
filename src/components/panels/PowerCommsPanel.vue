@@ -10,7 +10,7 @@ import StatRow from '../ui/StatRow.vue'
 import { actions, state } from '../composables/useAppState.js'
 import { formatDuration, formatNumber, formatPercent } from '../composables/format.js'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const power = computed(() => state.analysis.power)
 const budget = computed(() => state.analysis.commBudget)
@@ -31,7 +31,7 @@ const totalWindowLabel = computed(() =>
 )
 
 const dataLabel = computed(() =>
-  budget.value ? `${formatNumber(budget.value.estimatedMb, 0)} Mb` : t('common.notAvailable'),
+  budget.value ? `${formatNumber(budget.value.estimatedMb, 0, locale.value)} Mb` : t('common.notAvailable'),
 )
 </script>
 

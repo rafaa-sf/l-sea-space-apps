@@ -17,7 +17,7 @@ const emit = defineEmits(['open-tools'])
 const exportBusy = computed(() => state.export.status === 'busy')
 const exportLabel = computed(() => (exportBusy.value ? t('header.exporting') : t('header.export')))
 const selectedName = computed(() => siteDisplayName(t, te, selectedSite.value) || t('common.none'))
-const utcLabel = computed(() => formatUtc(state.time))
+const utcLabel = computed(() => formatUtc(state.time, locale.value))
 
 const locales = [
   { code: 'en', label: 'EN', titleKey: 'header.english' },

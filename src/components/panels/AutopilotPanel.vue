@@ -10,7 +10,7 @@ import { actions, state } from '../composables/useAppState.js'
 import { reasonText, siteDisplayName } from '../composables/labels.js'
 import { formatAngle, formatDistance, formatDuration, formatLat, formatLon, formatMeters, formatNumber, formatUtc } from '../composables/format.js'
 
-const { t, te } = useI18n()
+const { t, locale, te } = useI18n()
 
 const landingAvailable = computed(() => !state.landingZonesStatus.unavailable)
 const zones = computed(() => state.landingZones ?? [])
@@ -130,7 +130,7 @@ const computedAt = computed(() => {
   const raw = zonesMeta.value.computedAt ?? zonesMeta.value.finishedAt ?? state.landingZonesStatus.ranAt
   if (!raw) return t('common.notAvailable')
   const date = new Date(raw)
-  return Number.isNaN(date.getTime()) ? String(raw) : formatUtc(date.toISOString())
+  return Number.isNaN(date.getTime()) ? String(raw) : formatUtc(date.toISOString(), locale.value)
 })
 
 const MISSION_FIELD_SPECS = [

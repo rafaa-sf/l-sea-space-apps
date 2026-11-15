@@ -11,7 +11,7 @@ import { hasWorker } from '../composables/moduleBridge.js'
 import { state, workerSummary } from '../composables/useAppState.js'
 import { formatDuration, formatUtc } from '../composables/format.js'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const workerStatus = computed(() => {
   switch (workerSummary.value) {
@@ -36,7 +36,7 @@ const workerTone = computed(() => {
 })
 
 const lastRun = computed(() =>
-  state.worker.lastRunAt ? formatUtc(state.worker.lastRunAt) : t('common.notAvailable'),
+  state.worker.lastRunAt ? formatUtc(state.worker.lastRunAt, locale.value) : t('common.notAvailable'),
 )
 
 const duration = computed(() =>
@@ -57,7 +57,7 @@ const landingZoneComputedAt = computed(() => {
   const raw = landingZoneMeta.value.computedAt ?? landingZoneMeta.value.finishedAt ?? state.landingZonesStatus.ranAt
   if (!raw) return t('common.notAvailable')
   const date = new Date(raw)
-  return Number.isNaN(date.getTime()) ? String(raw) : formatUtc(date.toISOString())
+  return Number.isNaN(date.getTime()) ? String(raw) : formatUtc(date.toISOString(), locale.value)
 })
 
 const autopilotMode = computed(() => {

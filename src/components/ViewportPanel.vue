@@ -158,10 +158,10 @@ const ephemerisBadge = computed(() => t(sourceLabelKey(state.data.ephemerisSourc
 const legendGradient = hypsometricCssGradient()
 const elevationStats = computed(() => state.data.terrainStats)
 const elevationMaxLabel = computed(() =>
-  elevationStats.value ? `${formatNumber(elevationStats.value.maxM, 0)} m` : '',
+  elevationStats.value ? `${formatNumber(elevationStats.value.maxM, 0, locale.value)} m` : '',
 )
 const elevationMinLabel = computed(() =>
-  elevationStats.value ? `${formatNumber(elevationStats.value.minM, 0)} m` : '',
+  elevationStats.value ? `${formatNumber(elevationStats.value.minM, 0, locale.value)} m` : '',
 )
 
 function niceScaleMeters(target) {

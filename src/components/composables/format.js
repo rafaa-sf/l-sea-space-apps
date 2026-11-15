@@ -1,9 +1,32 @@
 /**
  * Small formatting helpers shared by the panels. Everything is UTC: the app
  * never guesses the browser time zone for mission planning.
+ *
+ * Copy is bilingual (EN/ES): helpers resolve the UI locale from
+ * `document.documentElement.lang` (kept in sync with the i18n locale) and fall
+ * back to English. Tests pass the locale explicitly as the last argument.
  */
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const MONTHS = {
+  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  es: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
+}
+
+const INTL_LOCALES = { en: 'en-US', es: 'es-ES' }
+
+/**
+ * Locale used by the formatters: an explicit argument wins, then the document
+ * language (`es*` → es), then English for anything else or in non-DOM tests.
+ * @param {string} [locale] Explicit BCP-47 tag, e.g. `'es'`, `'es-ES'`.
+ * @returns {'en'|'es'}
+ */
+function resolveLocale(locale) {
+  let tag = locale
+  if (tag == null && typeof document !== 'undefined' && document.documentElement) {
+    tag = document.documentElement.lang
+  }
+  return String(tag ?? '').toLowerCase().startsWith('es') ? 'es' : 'en'
+}
 
 /** Parse an ISO string or Date into a timestamp (ms). */
 export function toTimestamp(value) {
@@ -13,13 +36,18 @@ export function toTimestamp(value) {
   return NaN
 }
 
-/** `2026-11-14 12:00 UTC` */
-export function formatUtc(value) {
+/**
+ * `14 Nov 2026 12:00 UTC` in English, `14 nov 2026 12:00 UTC` in Spanish.
+ * @param {Date|string|number} value Mission instant (always rendered in UTC).
+ * @param {string} [locale] Optional locale override; defaults to the UI locale.
+ */
+export function formatUtc(value, locale) {
   const ms = toTimestamp(value)
   if (!Number.isFinite(ms)) return '—'
   const date = new Date(ms)
+  const lang = resolveLocale(locale)
   const day = String(date.getUTCDate()).padStart(2, '0')
-  const month = MONTHS[date.getUTCMonth()]
+  const month = MONTHS[lang][date.getUTCMonth()]
   const year = date.getUTCFullYear()
   const hours = String(date.getUTCHours()).padStart(2, '0')
   const minutes = String(date.getUTCMinutes()).padStart(2, '0')
@@ -62,12 +90,22 @@ export function formatDuration(seconds) {
   return `${secs} s`
 }
 
-/** Localised-ish fixed number, with a dash for missing values. */
-export function formatNumber(value, digits = 0) {
-  if (!Number.isFinite(Number(value))) return '—'
-  return Number(value).toLocaleString('en-US', {
+/**
+ * Localised fixed number, with a dash for missing values: `1,234` (en) /
+ * `1.234` (es).
+ * @param {number|string} value Numeric value; non-finite renders as `—`.
+ * @param {number} [digits] Fixed number of decimals.
+ * @param {string} [locale] Optional locale override; defaults to the UI locale.
+ */
+export function formatNumber(value, digits = 0, locale) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return '—'
+  // `useGrouping: 'always'` keeps the Spanish thousands dot on 4-digit values
+  // (es-ES otherwise leaves `1234` ungrouped); older engines treat it as auto.
+  return numeric.toLocaleString(INTL_LOCALES[resolveLocale(locale)], {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
+    useGrouping: 'always',
   })
 }
 
