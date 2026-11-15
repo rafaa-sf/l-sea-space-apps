@@ -803,6 +803,8 @@ export default {
     challengeBadge: 'Challenge 10 · CSA',
     title: 'Lunar Landing Site Navigator',
     subtitle: 'Compare lunar south-pole landing sites and dates — Sun, Earth, power and communications in one place.',
+    heroImageAlt: "Full Moon photographed by NASA's Lunar Reconnaissance Orbiter",
+    heroImageCredit: 'NASA / GSFC / Arizona State University · LRO',
     cta: 'Open the tool',
     ctaHint: 'Interactive mission console. No install and no login.',
     docsCta: 'Read the documentation',
