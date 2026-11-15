@@ -7,7 +7,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import PanelCard from '../ui/PanelCard.vue'
 import StatRow from '../ui/StatRow.vue'
-import { actions, selectedSite, state } from '../composables/useAppState.js'
+import { actions, isLandingZoneSite, selectedSite, state } from '../composables/useAppState.js'
 import { siteDisplayName, siteSourceLabel, sourceLabelKey } from '../composables/labels.js'
 import { formatAngle, formatLat, formatLon, formatMeters } from '../composables/format.js'
 
@@ -35,6 +35,13 @@ const regionLabel = computed(() => {
   if (terrain) return `${terrain.width} x ${terrain.height} @ ${formatAngle(terrain.lat1, 1)}`
   return t('common.notAvailable')
 })
+
+/**
+ * A ranked landing zone is a transient analysis site: its perimeter is the
+ * equivalent circle of the zone area, so it is shown as a derived readout
+ * instead of an editable mission input.
+ */
+const zoneDerived = computed(() => isLandingZoneSite(selectedSite.value))
 
 const perimeter = computed({
   get: () => selectedSite.value?.perimeterM ?? state.mission.perimeterM,
@@ -69,8 +76,13 @@ const mast = computed({
         label-key="coords.distanceFromPole"
         :value="distanceFromPoleKm === null ? '—' : `${distanceFromPoleKm.toFixed(1)} km`"
       />
+      <StatRow
+        v-if="zoneDerived"
+        label-key="coords.equivalentPerimeter"
+        :value="formatMeters(selectedSite.perimeterM)"
+      />
       <div class="field-row">
-        <label class="field">
+        <label v-if="!zoneDerived" class="field">
           <span class="field__label">{{ t('coords.perimeter') }}</span>
           <input v-model.number="perimeter" class="input" type="number" min="1" step="10" />
         </label>
@@ -79,6 +91,7 @@ const mast = computed({
           <input v-model.number="mast" class="input" type="number" min="1" step="1" />
         </label>
       </div>
+      <p v-if="zoneDerived" class="panel-note">{{ t('coords.equivalentPerimeterHint') }}</p>
       <div class="panel-divider" />
       <StatRow label-key="coords.datum" :value="`${formatMeters(state.terrain?.datum ?? 1737400)}`" />
       <StatRow v-if="terrainStats" label-key="coords.relief" :value="formatMeters(terrainStats.reliefM)" />

@@ -260,6 +260,8 @@ export default {
     aspect: 'Aspect (downhill)',
     distanceFromPole: 'Distance from pole',
     perimeter: 'Perimeter (m)',
+    equivalentPerimeter: 'Equivalent perimeter (m)',
+    equivalentPerimeterHint: 'Derived from the landing-zone area; it is not a mission requirement.',
     mast: 'Mast (m)',
     datum: 'Reference radius',
     relief: 'Terrain relief',

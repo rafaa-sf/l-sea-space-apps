@@ -260,6 +260,8 @@ export default {
     aspect: 'Orientación (bajada)',
     distanceFromPole: 'Distancia al polo',
     perimeter: 'Perímetro (m)',
+    equivalentPerimeter: 'Perímetro equivalente (m)',
+    equivalentPerimeterHint: 'Derivado del área de la zona de aterrizaje; no es un requisito de la misión.',
     mast: 'Mástil (m)',
     datum: 'Radio de referencia',
     relief: 'Relieve del terreno',

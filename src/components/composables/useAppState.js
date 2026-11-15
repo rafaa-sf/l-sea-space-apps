@@ -95,19 +95,33 @@ function writeStorage(key, value) {
   }
 }
 
-function loadStoredMission() {
-  const stored = readStorage(STORAGE_MISSION)
-  if (!stored || typeof stored !== 'object') return { ...DEFAULT_MISSION }
+/** The autopilot panel bounds the mission perimeter input to these metres. */
+export const MISSION_PERIMETER_BOUNDS = Object.freeze({ minM: 10, maxM: 5000 })
+
+/**
+ * Merge a stored mission into the defaults, discarding values that cannot be a
+ * mission input. The perimeter is bounded like the autopilot input, so a
+ * corrupt or legacy `lsea.mission` entry cannot show an absurd requirement.
+ */
+export function sanitizeStoredMission(stored) {
   const mission = { ...DEFAULT_MISSION }
+  if (!stored || typeof stored !== 'object') return mission
   for (const key of Object.keys(DEFAULT_MISSION)) {
     const value = stored[key]
     if (typeof DEFAULT_MISSION[key] === 'boolean') {
       mission[key] = Boolean(value)
-    } else if (Number.isFinite(Number(value))) {
-      mission[key] = Number(value)
+      continue
     }
+    const numeric = Number(value)
+    if (!Number.isFinite(numeric)) continue
+    if (key === 'perimeterM' && (numeric < MISSION_PERIMETER_BOUNDS.minM || numeric > MISSION_PERIMETER_BOUNDS.maxM)) continue
+    mission[key] = numeric
   }
   return mission
+}
+
+function loadStoredMission() {
+  return sanitizeStoredMission(readStorage(STORAGE_MISSION))
 }
 
 export const state = reactive({
@@ -191,6 +205,15 @@ export const selectedSite = computed(() => {
   if (state.landingZoneSite && state.selectedSiteId === state.landingZoneSite.id) return state.landingZoneSite
   return state.sites.find((site) => site.id === state.selectedSiteId) ?? null
 })
+
+/**
+ * True for the transient site derived from a ranked landing zone. Its
+ * `perimeterM` is the equivalent circle perimeter of the zone area (legitimately
+ * large), not a mission requirement, so the UI must not present it as editable.
+ */
+export function isLandingZoneSite(site) {
+  return Boolean(site && site.zoneId !== null && site.zoneId !== undefined)
+}
 
 export const compareSites = computed(() =>
   state.compareSiteIds.map((id) => state.sites.find((site) => site.id === id)).filter(Boolean),
