@@ -83,7 +83,7 @@ function normalizeBriefSite(site) {
     description: site.description ?? null,
     links: {
       quickMap: buildQuickMapUrl(site),
-      moonTrek: buildMoonTrekViewerUrl(),
+      moonTrek: buildMoonTrekViewerUrl(site),
     },
   }
 }
@@ -190,6 +190,22 @@ export function buildBrief(input = {}) {
           : 'the analysis is unavailable for the selected site with the loaded data',
       )
     }
+    const terrainSource = analysis.terrain?.source ?? null
+    const ephemerisSource = analysis.ephemeris?.source ?? null
+    if (terrainSource === 'synthetic' || terrainSource === 'fallback') {
+      analysisLimitations.push(
+        'the terrain shown is a synthetic placeholder, not NASA LOLA data; slope/horizon metrics are illustrative',
+      )
+    }
+    if (terrainSource === 'error') {
+      analysisLimitations.push('the LOLA terrain failed to load for this brief')
+    }
+    if (ephemerisSource === 'synthetic' || ephemerisSource === 'fallback') {
+      analysisLimitations.push('the Sun/Earth ephemeris is a synthetic placeholder, not JPL Horizons data')
+    }
+    if (ephemerisSource === 'error') {
+      analysisLimitations.push('the JPL Horizons ephemeris failed to load for this brief')
+    }
     if (analysis.timeWarning?.code === 'ephemeris-window-clamped') {
       analysisLimitations.push(
         `the requested time is outside the precomputed ephemeris window (${analysis.timeWarning.start} to ${analysis.timeWarning.end})` +
@@ -243,8 +259,10 @@ export function buildBrief(input = {}) {
     analysisIncomplete,
     analysisLimitations,
     links: {
-      quickMap: selectedSite?.links.quickMap ?? buildQuickMapUrl(selectedSite ?? {}),
-      moonTrek: MOON_TREK_URL,
+      // Top-level links are always rebuilt from the selected coordinates; a
+      // stale/malformed site.links value must not leak into the brief.
+      quickMap: buildQuickMapUrl(selectedSite ?? {}),
+      moonTrek: buildMoonTrekViewerUrl(selectedSite ?? {}),
       layers: {
         moonTrek: MOON_TREK_URL,
         quickMap: QUICK_MAP_URL,

@@ -136,27 +136,34 @@ export async function loadSites(options = {}) {
   const fetchImpl = options.fetchImpl ?? globalThis.fetch
   if (typeof fetchImpl !== 'function') return []
   const url = dataUrl(POIS_PATH, options.dataRoot)
-  const controller = options.signal ? null : new AbortController()
-  const timer = controller ? setTimeout(() => controller.abort(), options.timeoutMs ?? 15000) : null
-  try {
-    const response = await fetchImpl(url, {
-      signal: options.signal ?? controller?.signal,
-      cache: 'no-cache',
-    })
-    if (!response || !response.ok) {
-      console.warn(`[sites] could not load ${url}: HTTP ${response?.status ?? 'error'}`)
-      return []
+  const timeoutMs = Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : 15000
+  const attempts = Math.max(1, Math.min(3, Number.isFinite(Number(options.retries)) ? Number(options.retries) : 2))
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const controller = options.signal ? null : new AbortController()
+    const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null
+    try {
+      const response = await fetchImpl(url, {
+        signal: options.signal ?? controller?.signal,
+        cache: 'no-cache',
+      })
+      if (!response || !response.ok) {
+        console.warn(`[sites] could not load ${url}: HTTP ${response?.status ?? 'error'}`)
+        // 4xx is authoritative (e.g. POI catalogue genuinely missing).
+        if (response && response.status >= 400 && response.status < 500) return []
+        continue
+      }
+      const payload = await response.json()
+      const sites = parseSitesPayload(payload)
+      if (sites.length === 0) console.warn(`[sites] ${url} contains no usable sites`)
+      return sites
+    } catch (error) {
+      console.warn(`[sites] could not load ${url}: ${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      if (timer) clearTimeout(timer)
     }
-    const payload = await response.json()
-    const sites = parseSitesPayload(payload)
-    if (sites.length === 0) console.warn(`[sites] ${url} contains no usable sites`)
-    return sites
-  } catch (error) {
-    console.warn(`[sites] could not load ${url}: ${error instanceof Error ? error.message : String(error)}`)
-    return []
-  } finally {
-    if (timer) clearTimeout(timer)
+    if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, 250 * attempt))
   }
+  return []
 }
 
 /**

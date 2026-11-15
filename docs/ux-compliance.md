@@ -311,7 +311,7 @@ and playback-clock unit tests cover the formatting and timing changes.
 
 | Check | Result |
 | --- | --- |
-| `npm test` | 246/246 tests passing |
+| `npm test` | 275/275 tests passing |
 | `npm run build` | green |
 | Device matrix — tool `#/tool`, English, **all 51 boxes + 2 no-WebGL probes** (implementation time) | **53/53 pass**, all 7 `@ui/*` checks (no horizontal overflow, no console errors, boxes in viewport, panels rendered, **targets ≥ 24 px**, **fonts ≥ 12 px**) |
 | **Re-check on merged `develop`** (2026-11-14) — tool, 7 device boxes × EN/ES (desktop, tablet, 390/360/320/280 px phones) | **16/16 pass**, all 7 `@ui/*` checks |

@@ -44,12 +44,12 @@ flight-dynamics tool.
 
 ## 3. Automated tests
 
-`npm test` (Vitest): **17 test files, 246 tests, all passing**.
+`npm test` (Vitest): **19 test files, 275 tests, all passing**.
 
 | File | Tests |
 | --- | --- |
-| `src/core/engine.test.js` | 15 |
-| `src/core/terrain.test.js` | 20 |
+| `src/core/engine.test.js` | 20 |
+| `src/core/terrain.test.js` | 21 |
 | `src/core/ephemeris.test.js` | 20 |
 | `src/core/autopilot.test.js` | 19 |
 | `src/core/power.test.js` | 8 |
@@ -60,13 +60,16 @@ flight-dynamics tool.
 | `src/core/landingMetrics.test.js` | 33 |
 | `src/core/missionPresets.test.js` | 3 |
 | `src/render/geo.test.js` | 8 |
-| `src/services/services.test.js` | 28 |
+| `src/render/markerOpacity.test.js` | 2 |
+| `src/services/services.test.js` | 33 |
+| `src/workers/tasks.test.js` | 7 |
 | `src/components/composables/format.test.js` | 14 |
+| `src/components/composables/nearestSite.test.js` | 3 |
 | `src/components/composables/playbackClock.test.js` | 6 |
-| `src/components/composables/useAppState.test.js` | 8 |
-| **Total** | **243** |
+| `src/components/composables/useAppState.test.js` | 17 |
+| **Total** | **275** |
 
-`npm --prefix mcp/miro test`: **8 tests, 8 passing** (mocked HTTP, no token or network).
+`npm --prefix mcp/miro test`: **24 tests, 24 passing** (mocked HTTP, no token or network).
 
 Coverage focus: polar-stereographic transforms and bilinear sampling, horizon and ray
 tracing with curvature, ephemeris interpolation and set-event detection, power and

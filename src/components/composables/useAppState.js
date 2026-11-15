@@ -145,10 +145,14 @@ export const state = reactive({
     ephemeris: false,
     analysis: false,
   },
+  bootError: null,
   data: {
     sitesSource: 'pending',
     sitesUrl: null,
     sitesCount: 0,
+    sitesError: null,
+    terrainError: null,
+    ephemerisError: null,
     terrainSource: 'pending',
     terrainOrigin: null,
     terrainUrl: null,
@@ -276,6 +280,21 @@ let instantTimer = null
 let missionTimer = null
 let persistTimer = null
 
+function notifyDataError(scope, error) {
+  if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+    window.dispatchEvent(
+      new CustomEvent('lsea:data-error', {
+        detail: {
+          scope,
+          message: error?.message ?? String(error ?? 'unknown error'),
+          code: error?.code ?? 'unknown',
+          at: new Date().toISOString(),
+        },
+      }),
+    )
+  }
+}
+
 function reportError(scope, error) {
   const message = error instanceof Error ? error.message : String(error)
   state.errors.push({ scope, message, at: new Date().toISOString() })
@@ -294,8 +313,41 @@ async function ensureCompute() {
 
 /** Load every dataset and initialise the first site selection. Resolves once. */
 export function boot() {
-  if (!bootPromise) bootPromise = doBoot()
+  if (!bootPromise) {
+    bootPromise = doBoot().catch((error) => {
+      reportError('boot', error)
+      state.bootError = {
+        scope: 'boot',
+        message: error instanceof Error ? error.message : String(error),
+        at: new Date().toISOString(),
+      }
+      state.booted = true
+      state.loading.sites = false
+      state.loading.terrain = false
+      state.loading.layers = false
+      state.loading.ephemeris = false
+      state.loading.analysis = false
+      notifyDataError('boot', state.bootError)
+    })
+  }
   return bootPromise
+}
+
+/** Retry the whole boot after a network failure (BH-01). */
+export function retryBoot() {
+  bootPromise = null
+  state.bootError = null
+  state.booted = false
+  state.loading.sites = true
+  state.loading.terrain = true
+  state.loading.layers = true
+  return boot()
+}
+
+if (typeof window !== 'undefined') {
+  // Root.vue (shell) must not eagerly import the heavy tool store; it calls this
+  // retry hook after a boot/data error event.
+  window.__lseaRetryBoot = retryBoot
 }
 
 async function doBoot() {
@@ -321,6 +373,8 @@ async function doBoot() {
 
   state.sites = sitesResult.sites
   state.data.sitesSource = sitesResult.source
+  state.data.sitesError = sitesResult.error ?? null
+  if (sitesResult.error) notifyDataError('sites', sitesResult.error)
   state.data.sitesUrl = sitesResult.url ?? null
   state.data.sitesCount = sitesResult.sites.length
   state.loading.sites = false
@@ -342,6 +396,8 @@ async function doBoot() {
     /* no URL search params available */
   }
 
+  state.data.terrainError = terrainResult.error ?? null
+  if (terrainResult.error && !terrainResult.terrain) notifyDataError('terrain', terrainResult.error)
   if (terrainResult.terrain) {
     state.terrain = markRaw(terrainResult.terrain)
     state.viewTerrain = markRaw(terrainResult.viewTerrain ?? terrainResult.terrain)
@@ -362,6 +418,17 @@ async function doBoot() {
   }
   state.loading.terrain = false
   state.loading.analysis = true
+
+  if (!terrainResult.terrain || state.sites.length === 0) {
+    state.bootError = {
+      scope: !terrainResult.terrain ? 'terrain' : 'sites',
+      message:
+        (!terrainResult.terrain ? 'The LOLA terrain DEM could not be loaded. ' : '') +
+        (state.sites.length === 0 ? 'The landing-site catalogue could not be loaded.' : ''),
+      at: new Date().toISOString(),
+    }
+    notifyDataError(state.bootError.scope, state.bootError)
+  }
 
   const storedSite = readStorage(STORAGE_SITE)
   const initialSite = state.sites.find((site) => site.id === storedSite) ?? state.sites[0] ?? null
@@ -406,8 +473,12 @@ export async function selectSite(id) {
     if ((site.source === 'custom' || site.source === 'pointer') && result.source === 'synthetic') site.ephemerisSiteId = null
     state.ephemeris = result.dataset ? markRaw(result.dataset) : null
     state.data.ephemerisSource = result.source
+    state.data.ephemerisError = result.error ?? null
     state.data.ephemerisOrigin = site.ephemerisSiteId ? `nearest:${site.ephemerisSiteId}` : result.origin ?? null
     state.data.ephemerisUrl = result.url ?? null
+    if (result.error || !result.dataset) {
+      notifyDataError('ephemeris', result.error ?? { code: 'ephemeris-unavailable', message: 'Ephemeris unavailable' })
+    }
     if (result.dataset) {
       const start = toTimestamp(result.dataset.start)
       const end = toTimestamp(result.dataset.end)
@@ -1117,6 +1188,50 @@ export async function runLandingZones() {
     unavailable: false,
   }
   return state.landingZones
+}
+
+/** Retry the terrain load after a network/invalid-data failure (BH-01/BH-03). */
+export async function retryTerrain() {
+  state.loading.terrain = true
+  state.data.terrainError = null
+  try {
+    const result = await loadTerrain({ regionId: state.data.terrainRegionId ?? undefined })
+    if (!result.terrain) {
+      state.data.terrainError = result.error ?? { code: 'terrain-unavailable' }
+      state.bootError = { scope: 'terrain', message: result.error?.message ?? 'Terrain unavailable', at: new Date().toISOString() }
+      return null
+    }
+    const compute = await ensureCompute()
+    state.terrain = markRaw(result.terrain)
+    state.viewTerrain = markRaw(result.viewTerrain ?? result.terrain)
+    state.data.terrainSource = result.source
+    state.data.terrainOrigin = result.origin ?? null
+    state.data.terrainRegionId = result.regionId ?? null
+    state.data.terrainRegionName = result.regionName ?? result.terrain.name ?? null
+    state.data.terrainStats = compute.terrainStats(result.terrain)
+    state.data.terrainIndex = getTerrainIndexRegions() ?? state.data.terrainIndex
+    state.bootError = null
+    state.data.terrainError = null
+    if (state.selectedSiteId) selectSite(state.selectedSiteId)
+    return result.terrain
+  } catch (error) {
+    reportError('terrain', error)
+    state.data.terrainError = { code: 'terrain-unavailable', message: String(error) }
+    return null
+  } finally {
+    state.loading.terrain = false
+  }
+}
+
+/** Retry the current site's ephemeris after a timeout/error (BH-09). */
+export async function retryEphemeris() {
+  if (!state.selectedSiteId) return null
+  return selectSite(state.selectedSiteId)
+}
+
+if (typeof window !== 'undefined') {
+  window.__lseaRetryTerrain = retryTerrain
+  window.__lseaRetryEphemeris = retryEphemeris
 }
 
 /** Select a ranked landing zone as a transient analysis site. */

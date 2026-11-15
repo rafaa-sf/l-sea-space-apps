@@ -74,11 +74,27 @@ export function loadEphemeris(siteId, options = {}) {
   if (!options.force && ephemerisCache.has(key)) return ephemerisCache.get(key)
 
   const promise = (async () => {
-    const dataset = await loadEphemerisCore(key, {
-      baseUrl: options.dataRoot,
-      fetchImpl: options.fetchImpl,
-      signal: options.signal,
-    })
+    const timeoutMs = Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : 15000
+    const attempts = Math.max(1, Math.min(3, Number.isFinite(Number(options.retries)) ? Number(options.retries) : 2))
+    let dataset = null
+    for (let attempt = 1; attempt <= attempts && !dataset; attempt += 1) {
+      const controller = options.signal ? null : new AbortController()
+      const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null
+      try {
+        dataset = await loadEphemerisCore(key, {
+          baseUrl: options.dataRoot,
+          fetchImpl: options.fetchImpl,
+          signal: options.signal ?? controller?.signal,
+        })
+      } catch {
+        dataset = null
+      } finally {
+        if (timer) clearTimeout(timer)
+      }
+      if (!dataset && attempt < attempts) {
+        await new Promise((resolve) => setTimeout(resolve, 250 * attempt))
+      }
+    }
     if (!dataset) return null
     // Keep the canonical site id stable even if the file omitted it.
     if (!dataset.siteId) dataset.siteId = key

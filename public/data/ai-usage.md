@@ -119,7 +119,7 @@ opened the issues/pull requests and reported the results to the human team.
   verified with live tile requests and CORS checks before being written to
   `public/data/layers.json` (see `docs/data.md`).
 - The application builds successfully (`npm run build`) and its unit/contract
-  suites pass (Vitest: **246 tests** in 17 files at the time of writing, plus
+  suites pass (Vitest: **275 tests** in 19 files at the time of writing, plus
   8 MCP checks in CI).
 - Responsive layout and no-WebGL fallback checks are documented in
   [`docs/qa.md`](qa.md); the QA test bench ships under `qa/` and records the
@@ -223,7 +223,7 @@ exited 0 with 20/20 site/body checks, 480/480 samples matched and
 max |Δaz| = max |Δel| = 0.0000° inside the documented tolerances (azimuth 0.05°,
 elevation 0.02°). It is a sampled snapshot spot-check, not a full accuracy campaign.
 
-The application suite is now **246 tests in 17 files** (plus 8 MCP checks), and CI
+The application suite is now **275 tests in 19 files** (plus 24 MCP checks), and CI
 and the GitHub Pages deployment stayed green after each commit.
 
 *Event rules reference: AI is allowed at NASA Space Apps; the team must declare the

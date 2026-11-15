@@ -33,6 +33,27 @@ export const LOLA_ATTRIBUTION = 'NASA/GSFC/LOLA (PDS Geosciences Node)'
 let indexPromise = null
 
 /** Cache of loaded terrain regions keyed by region id. */
+
+/** Fetch with AbortSignal timeout and a bounded retry (BH-01). */
+async function fetchWithRetry(fetchImpl, url, init = {}, options = {}) {
+  const timeoutMs = Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : 15000
+  const attempts = Math.max(1, Math.min(3, Number.isFinite(Number(options.retries)) ? Number(options.retries) : 2))
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    try {
+      const response = await fetchImpl(url, { ...init, signal: controller.signal })
+      if (response && response.ok) return response
+      if (response && response.status >= 400 && response.status < 500) return null
+    } catch {
+      /* transient: retry below */
+    } finally {
+      clearTimeout(timer)
+    }
+    if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, 250 * attempt))
+  }
+  return null
+}
 const regionCache = new Map()
 
 /**
@@ -51,7 +72,7 @@ export async function loadTerrainIndex(options = {}) {
 
   const promise = (async () => {
     try {
-      const response = await fetchImpl(url, { cache: 'no-cache' })
+      const response = await fetchWithRetry(fetchImpl, url, { cache: 'no-cache' }, { timeoutMs: 12000, retries: 2 })
       if (!response || !response.ok) {
         console.warn(`[lola] could not load ${url}: HTTP ${response?.status ?? 'error'}`)
         return null
@@ -143,7 +164,7 @@ async function fetchRegion(entry, options = {}) {
 
   let metadata = null
   try {
-    const metaResponse = await fetchImpl(metaUrl, { cache: 'no-cache' })
+    const metaResponse = await fetchWithRetry(fetchImpl, metaUrl, { cache: 'no-cache' }, { timeoutMs: 12000 })
     if (metaResponse?.ok) metadata = await metaResponse.json()
   } catch {
     /* metadata is optional; the index entry carries the essential fields */
@@ -151,7 +172,7 @@ async function fetchRegion(entry, options = {}) {
 
   let buffer = null
   try {
-    const binResponse = await fetchImpl(binUrl, { cache: 'force-cache' })
+    const binResponse = await fetchWithRetry(fetchImpl, binUrl, { cache: 'force-cache' }, { timeoutMs: 20000, retries: 2 })
     if (!binResponse?.ok) {
       console.warn(`[lola] could not load ${binUrl}: HTTP ${binResponse?.status ?? 'error'}`)
       return null
@@ -169,6 +190,16 @@ async function fetchRegion(entry, options = {}) {
       options.referenceRadiusM ?? 1737400,
       options.attribution ?? LOLA_ATTRIBUTION,
     )
+    const width = Number(regionMetadata.width)
+    const height = Number(regionMetadata.height)
+    const dtype = String(regionMetadata.dtype ?? 'int16').toLowerCase()
+    const expectedBytes = width * height * (dtype === 'float32' ? 4 : 2)
+    if (!Number.isFinite(width) || !Number.isFinite(height) || buffer.byteLength !== expectedBytes) {
+      console.warn(
+        `[lola] terrain region ${entry.id} has ${buffer.byteLength} B, expected ${expectedBytes} B (${width}x${height} ${dtype})`,
+      )
+      return null
+    }
     return createProjectedTerrain(regionMetadata, buffer)
   } catch (error) {
     console.warn(`[lola] terrain region ${entry.id} could not be decoded: ${error instanceof Error ? error.message : String(error)}`)

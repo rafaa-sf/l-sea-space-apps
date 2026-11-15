@@ -133,3 +133,49 @@ describe('task-59 correctness guards', () => {
     expect(distanceFromSouthPoleKm(Number.NaN)).toBeNull()
   })
 })
+
+
+describe('terrain buffer validation (task-60 BH-03/BH-11)', async () => {
+  const { validateTerrainBuffer } = await import('./useData.js')
+  const grid = { width: 4, height: 4, dtype: 'int16' }
+  function buffer(values) {
+    return new Int16Array(values).buffer
+  }
+
+  it('accepts a complete int16 grid in the documented range', () => {
+    const result = validateTerrainBuffer(buffer(Array.from({ length: 16 }, (_, i) => i * 10 - 80)), grid)
+    expect(result.ok).toBe(true)
+    expect(result.reason).toBeNull()
+    expect(result.min).toBe(-80)
+    expect(result.max).toBe(70)
+  })
+
+  it('rejects truncated or oversized binaries', () => {
+    expect(validateTerrainBuffer(buffer([0, 1, 2]), grid).reason).toBe('terrain-length-mismatch')
+    expect(validateTerrainBuffer(new ArrayBuffer(0), grid).reason).toBe('terrain-length-mismatch')
+  })
+
+  it('rejects all-no-data and excessive no-data grids', () => {
+    expect(validateTerrainBuffer(buffer(Array(16).fill(-32768)), grid).reason).toBe('terrain-all-nodata')
+    const noisy = buffer(Array.from({ length: 16 }, (_, i) => (i < 5 ? -32768 : i * 10)))
+    expect(validateTerrainBuffer(noisy, { ...grid, maxNoDataRatio: 0.2 }).reason).toBe('terrain-nodata-ratio')
+  })
+
+  it('rejects physically impossible elevation ranges', () => {
+    expect(validateTerrainBuffer(buffer(Array(16).fill(20000)), grid).reason).toBe('terrain-elevation-range')
+    expect(validateTerrainBuffer(buffer(Array(16).fill(-20000)), grid).reason).toBe('terrain-elevation-range')
+  })
+})
+
+
+describe('brief link builders (task-61)', async () => {
+  const { briefLinks } = await import('./useData.js')
+  it('uses the projected QuickMap link and MoonTrek deep link', () => {
+    const links = briefLinks({ id: 's', lat: -89.78, lon: 204.27 })
+    expect(links.quickMap).toContain('quickmap.lroc.im-ldi.com')
+    expect(links.quickMap).toContain('prjExtent=')
+    expect(links.quickMap).not.toContain('extent=')
+    expect(links.moonTrek).toContain('trek.nasa.gov/moon/#/v1/115/0.5/0/204.270/-89.780/')
+    expect(briefLinks(null).quickMap).toBe('https://quickmap.lroc.im-ldi.com/')
+  })
+})

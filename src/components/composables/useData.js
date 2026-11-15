@@ -16,6 +16,11 @@ import {
   normalizePlanarTerrain,
 } from './localCore.js'
 import { loadService } from './moduleBridge.js'
+import {
+  buildMoonTrekViewerUrl,
+  buildQuickMapUrl,
+  QUICK_MAP_URL as QUICK_MAP_BASE_URL,
+} from '../../services/moontrek.js'
 import { dataRootUrl } from '../../services/dataUrl.js'
 
 // Base-aware so sub-path deployments (GitHub Pages) load the datasets too.
@@ -36,36 +41,72 @@ export const DATA_SOURCES = {
   },
   quickMap: {
     label: 'LROC QuickMap',
-    url: 'https://quickmap.lroc.asu.edu/',
+    url: 'https://quickmap.lroc.im-ldi.com/',
   },
 }
 
 export const APP_LINKS = {
   aiUsage: `${DATA_ROOT}/ai-usage.md`,
   moonTrek: 'https://trek.nasa.gov/moon/',
-  quickMap: 'https://quickmap.lroc.asu.edu/',
+  quickMap: 'https://quickmap.lroc.im-ldi.com/',
   lola: 'https://pds-geosciences.wustl.edu/missions/lro/lola.htm',
   horizons: 'https://ssd.jpl.nasa.gov/horizons/',
 }
 
-async function fetchJson(url, timeoutMs = 15000) {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
-  try {
-    const response = await fetch(url, { signal: controller.signal })
-    if (!response.ok) return null
-    return await response.json()
-  } catch {
-    return null
-  } finally {
-    clearTimeout(timer)
-  }
+const FETCH_DEFAULTS = Object.freeze({ timeoutMs: 12000, retries: 2, backoffMs: 300 })
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function fetchFirst(candidates, timeoutMs) {
+/**
+ * Fetch with an AbortSignal timeout and a bounded number of attempts. Returns
+ * `{ ok, status, data, error }` instead of throwing so callers can surface a
+ * visible error and retry (BH-01/BH-09).
+ */
+async function fetchWithRetry(url, { timeoutMs, retries, as = 'json', ...init } = {}) {
+  const timeout = Number(timeoutMs) > 0 ? Number(timeoutMs) : FETCH_DEFAULTS.timeoutMs
+  const attempts = Math.max(1, Math.min(4, Number.isFinite(Number(retries)) ? Number(retries) : FETCH_DEFAULTS.retries))
+  let lastError = null
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeout)
+    try {
+      const response = await fetch(url, { ...init, signal: controller.signal })
+      if (!response || !response.ok) {
+        lastError = {
+          code: 'http-error',
+          status: response?.status ?? null,
+          message: `HTTP ${response?.status ?? 'error'}`,
+        }
+        if (response && response.status >= 400 && response.status < 500) break
+        continue
+      }
+      const data = as === 'arraybuffer' ? await response.arrayBuffer() : await response.json()
+      return { ok: true, status: response.status, data, url }
+    } catch (error) {
+      lastError = {
+        code: error?.name === 'AbortError' ? 'timeout' : 'network',
+        message: error instanceof Error ? error.message : String(error),
+      }
+    } finally {
+      clearTimeout(timer)
+    }
+    if (attempt < attempts) await sleep(FETCH_DEFAULTS.backoffMs * attempt)
+  }
+  return { ok: false, status: lastError?.status ?? null, data: null, error: lastError, url }
+}
+
+async function fetchJson(url, timeoutMs = FETCH_DEFAULTS.timeoutMs, options = {}) {
+  return fetchWithRetry(url, { timeoutMs, retries: options.retries, as: 'json' })
+}
+
+async function fetchFirst(candidates, timeoutMs, options = {}) {
+  let lastError = null
   for (const url of candidates) {
-    const data = await fetchJson(url, timeoutMs)
-    if (data) return { url, data }
+    const result = await fetchJson(url, timeoutMs, options)
+    if (result.ok && result.data) return { url, data: result.data, result }
+    lastError = lastError ?? result
   }
   return null
 }
@@ -175,7 +216,7 @@ function normalizeSites(raw) {
 }
 
 /** Load the POI catalogue. Never throws. */
-export async function loadSites() {
+export async function loadSites(options = {}) {
   const service = await loadService('sites')
   if (service && typeof service.loadSites === 'function') {
     try {
@@ -189,7 +230,20 @@ export async function loadSites() {
   const found = await fetchFirst([`${DATA_ROOT}/pois.json`, `${DATA_ROOT}/sites.json`, `${DATA_ROOT}/pois/pois.json`])
   const sites = normalizeSites(found?.data)
   if (sites.length) return { sites, source: 'dataset', url: found.url }
-  return { sites: fallbackSites(), source: 'fallback' }
+  if (options.fallback === true) {
+    // Explicit development/offline fallback: placeholders are marked as such and
+    // must never be presented as verified POIs (BH-10/BH-12).
+    return {
+      sites: fallbackSites().map((site) => ({ ...site, source: 'placeholder', placeholder: true })),
+      source: 'fallback',
+      error: { code: 'pois-unavailable', message: 'POI catalogue unavailable; placeholder sites shown' },
+    }
+  }
+  return {
+    sites: [],
+    source: 'error',
+    error: { code: 'pois-unavailable', message: 'POI catalogue could not be loaded' },
+  }
 }
 
 /** Create a custom site from a latitude/longitude pair. */
@@ -219,18 +273,80 @@ export function createCustomSite({ lat, lon, name = null, elevationM = null } = 
 /* Terrain                                                                    */
 /* -------------------------------------------------------------------------- */
 
-async function fetchBinary(url, timeoutMs = 30000) {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
-  try {
-    const response = await fetch(url, { signal: controller.signal })
-    if (!response.ok) return null
-    return await response.arrayBuffer()
-  } catch {
-    return null
-  } finally {
-    clearTimeout(timer)
+async function fetchBinary(url, timeoutMs = 20000) {
+  const result = await fetchWithRetry(url, {
+    timeoutMs,
+    retries: 2,
+    as: 'arraybuffer',
+    cache: 'force-cache',
+  })
+  return result.ok ? result.data : null
+}
+
+/**
+ * Validate a decoded DEM buffer against its declared grid, dtype and physical
+ * range (BH-03/BH-11). Exported for failure-injection tests.
+ *
+ * @param {ArrayBuffer|ArrayBufferView} buffer
+ * @param {{width?: number, height?: number, dtype?: string, maxNoDataRatio?: number}} grid
+ * @returns {{ok: boolean, reason: string|null, bytes: number, expectedBytes: number|null, noDataRatio: number, min: number|null, max: number|null, values: number|null}}
+ */
+export function validateTerrainBuffer(buffer, grid = {}) {
+  const width = Number(grid.width)
+  const height = Number(grid.height)
+  const dtype = String(grid.dtype ?? 'int16').toLowerCase()
+  const bytesPerSample = dtype === 'float32' ? 4 : 2
+  const bytes = buffer?.byteLength ?? 0
+  const expectedBytes =
+    Number.isFinite(width) && Number.isFinite(height) ? width * height * bytesPerSample : null
+  const failed = (reason) => ({
+    ok: false,
+    reason,
+    bytes,
+    expectedBytes,
+    noDataRatio: 0,
+    min: null,
+    max: null,
+    values: null,
+  })
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width < 2 || height < 2) {
+    return failed('terrain-dtype-or-grid-missing')
   }
+  if (expectedBytes !== bytes) return failed('terrain-length-mismatch')
+  let data
+  try {
+    data = dtype === 'float32' ? new Float32Array(buffer) : new Int16Array(buffer)
+  } catch {
+    return failed('terrain-dtype-mismatch')
+  }
+  let noData = 0
+  let finite = 0
+  let min = Infinity
+  let max = -Infinity
+  for (let index = 0; index < data.length; index += 1) {
+    const value = data[index]
+    if (dtype === 'float32' && !Number.isFinite(value)) {
+      noData += 1
+      continue
+    }
+    if (value === -32768) {
+      noData += 1
+      continue
+    }
+    finite += 1
+    if (value < min) min = value
+    if (value > max) max = value
+  }
+  const noDataRatio = data.length > 0 ? noData / data.length : 1
+  const maxNoDataRatio = Number.isFinite(Number(grid.maxNoDataRatio)) ? Number(grid.maxNoDataRatio) : 0.2
+  if (finite === 0) return { ...failed('terrain-all-nodata'), noDataRatio, values: finite }
+  if (noDataRatio > maxNoDataRatio) {
+    return { ...failed('terrain-nodata-ratio'), noDataRatio, min, max, values: finite }
+  }
+  if (min < -15000 || max > 15000) {
+    return { ...failed('terrain-elevation-range'), noDataRatio, min, max, values: finite }
+  }
+  return { ok: true, reason: null, bytes, expectedBytes, noDataRatio, min, max, values: finite }
 }
 
 /** Resolve a region-relative URL against `/data/terrain/`. */
@@ -271,7 +387,17 @@ export const DEM_REGIONS = Object.freeze([
 export async function loadTerrain(options = {}) {
   // Pick the analysis region from the terrain index: an explicit region id wins,
   // otherwise the wide area (the POI list spans the whole south-pole cap).
-  const index = await fetchJson(`${DATA_ROOT}/terrain/index.json`, 20000)
+  const indexResult = await fetchJson(`${DATA_ROOT}/terrain/index.json`, 12000)
+  if (!indexResult.ok) {
+    return {
+      terrain: null,
+      viewTerrain: null,
+      source: 'error',
+      origin: 'error',
+      error: { code: 'terrain-index-unavailable', ...indexResult.error },
+    }
+  }
+  const index = indexResult.data
   const regions = Array.isArray(index?.regions) ? index.regions : []
   lastTerrainRegions = regions
   const explicitRegion = Boolean(options.regionId)
@@ -337,9 +463,38 @@ export async function loadTerrain(options = {}) {
   // 2. Direct read of the region listed in the index.
   if (preferred) {
     const binUrl = terrainUrl(preferred.bin ?? preferred.file)
-    const buffer = binUrl ? await fetchBinary(binUrl, 60000) : null
-    if (buffer) {
-      const dtype = String(preferred.dtype ?? preferred.grid?.dtype ?? 'int16').toLowerCase()
+    const buffer = binUrl ? await fetchBinary(binUrl, 20000) : null
+    if (!buffer) {
+      return {
+        terrain: null,
+        viewTerrain: null,
+        source: 'error',
+        origin: 'error',
+        error: { code: 'terrain-bin-unavailable', message: `Could not download ${binUrl ?? preferred.id}` },
+      }
+    }
+    const dtype = String(preferred.dtype ?? preferred.grid?.dtype ?? 'int16').toLowerCase()
+    const grid = {
+      width: Number(preferred.width ?? preferred.grid?.width),
+      height: Number(preferred.height ?? preferred.grid?.height),
+      dtype,
+    }
+    const validation = validateTerrainBuffer(buffer, { ...grid, maxNoDataRatio: 0.2 })
+    if (!validation.ok) {
+      return {
+        terrain: null,
+        viewTerrain: null,
+        source: 'error',
+        origin: 'error',
+        error: {
+          code: 'terrain-invalid',
+          reason: validation.reason,
+          message: `Terrain grid rejected: ${validation.reason}`,
+          ...validation,
+        },
+      }
+    }
+    {
       const data = dtype === 'float32' ? new Float32Array(buffer) : new Int16Array(buffer)
       const planar = normalizePlanarTerrain({
         ...preferred,
@@ -367,13 +522,24 @@ export async function loadTerrain(options = {}) {
     }
   }
 
-  const fallback = createFallbackTerrain(180, 180)
+  if (options.fallback === true) {
+    const fallback = createFallbackTerrain(180, 180)
+    return {
+      terrain: fallback,
+      viewTerrain: fallback,
+      source: 'synthetic',
+      origin: 'fallback',
+      synthetic: true,
+      attribution: null,
+      error: { code: 'terrain-synthetic', message: 'Synthetic DEM placeholder (not NASA data)' },
+    }
+  }
   return {
-    terrain: fallback,
-    viewTerrain: fallback,
-    source: 'synthetic',
-    origin: 'fallback',
-    attribution: null,
+    terrain: null,
+    viewTerrain: null,
+    source: 'error',
+    origin: 'error',
+    error: { code: 'terrain-unavailable', message: 'No valid LOLA terrain region could be loaded' },
   }
 }
 
@@ -382,7 +548,7 @@ export async function loadTerrain(options = {}) {
 /* -------------------------------------------------------------------------- */
 
 /** Load the pre-computed Horizons ephemeris for a site. Never throws. */
-export async function loadEphemeris(site) {
+export async function loadEphemeris(site, options = {}) {
   if (!site) return { dataset: null, source: 'none' }
   const service = await loadService('horizons')
   if (service && typeof service.loadEphemeris === 'function') {
@@ -407,7 +573,20 @@ export async function loadEphemeris(site) {
   }
   const dataset = normalizeEphemeris(raw, site.id)
   if (dataset) return { dataset, source: 'dataset', origin: 'dataset', url: found.url }
-  return { dataset: createSyntheticEphemeris(site), source: 'synthetic', origin: 'synthetic' }
+  if (options.fallback === true) {
+    return {
+      dataset: createSyntheticEphemeris(site),
+      source: 'synthetic',
+      origin: 'synthetic',
+      error: { code: 'ephemeris-synthetic', message: 'Synthetic ephemeris placeholder (not JPL Horizons data)' },
+    }
+  }
+  return {
+    dataset: null,
+    source: 'error',
+    origin: 'error',
+    error: { code: 'ephemeris-unavailable', message: `Ephemeris for ${site.id} could not be loaded` },
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -445,7 +624,7 @@ function normalizeLayer(raw, index) {
 }
 
 /** Load the layer catalogue. Never throws. */
-export async function loadLayers() {
+export async function loadLayers(options = {}) {
   const found = await fetchFirst([`${DATA_ROOT}/layers.json`, `${DATA_ROOT}/layers/layers.json`])
   const raw = found?.data
   const list = Array.isArray(raw) ? raw : raw?.layers ?? raw?.items ?? null
@@ -453,7 +632,10 @@ export async function loadLayers() {
     const layers = list.map(normalizeLayer).filter(Boolean)
     if (layers.length) return { layers, source: 'dataset', url: found.url }
   }
-  return { layers: fallbackLayers(), source: 'fallback' }
+  if (options.fallback === true) {
+    return { layers: fallbackLayers(), source: 'fallback', error: { code: 'layers-unavailable' } }
+  }
+  return { layers: [], source: 'error', error: { code: 'layers-unavailable', message: 'Layer catalogue could not be loaded' } }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -463,17 +645,17 @@ export async function loadLayers() {
 /** URLs cited in the exported brief. */
 export function briefLinks(site) {
   const links = {
-    quickMap: APP_LINKS.quickMap,
+    quickMap: QUICK_MAP_BASE_URL,
     moonTrek: APP_LINKS.moonTrek,
     lola: APP_LINKS.lola,
     horizons: APP_LINKS.horizons,
   }
   if (site) {
-    const lat = Number(site.lat).toFixed(4)
-    const lon = ((Number(site.lon) % 360) + 360) % 360
-    links.quickMap = `https://quickmap.lroc.asu.edu/layers?extent=-${Math.abs(Number(lat)) - 1},-1,${Number(lat) + 1},1&proj=10&secondaryProj=0`
-    links.moonTrek = `https://trek.nasa.gov/moon/#/v1/115/0.5/0/${lon.toFixed(3)}/${lat}/-170.000/0.000/90.000/0/0/0`
-    links.horizons = `https://ssd.jpl.nasa.gov/horizons/app.html#/`
+    // Same builders as services/export.js: projected prjExtent QuickMap link and
+    // the documented Moon Trek deep link (BH task-61).
+    links.quickMap = buildQuickMapUrl(site)
+    links.moonTrek = buildMoonTrekViewerUrl(site)
+    links.horizons = 'https://ssd.jpl.nasa.gov/horizons/app.html#/'
     links.siteCoordinates = { lat: Number(site.lat), lon: Number(site.lon) }
   }
   return links

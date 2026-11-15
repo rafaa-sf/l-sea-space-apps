@@ -169,12 +169,25 @@ describe('Moon Trek service', () => {
     expect(wms).toContain('LAYERS=layer')
   })
 
-  it('builds QuickMap and Moon Trek viewer links', () => {
+  it('builds projected QuickMap and documented Moon Trek site links', () => {
     const quickMap = buildQuickMapUrl({ lat: -89.78, lon: 204.27 })
-    expect(quickMap.startsWith('https://quickmap.lroc.asu.edu/?')).toBe(true)
+    expect(quickMap.startsWith('https://quickmap.lroc.im-ldi.com/?')).toBe(true)
     expect(quickMap).toContain('proj=10')
-    expect(quickMap).toContain('extent=')
-    expect(buildQuickMapUrl({ lat: 'x' })).toBe('https://quickmap.lroc.asu.edu/')
+    expect(quickMap).toContain('prjExtent=')
+    // The current app ignores the legacy lon/lat extent parameter.
+    expect(quickMap).not.toContain('extent=')
+    // Polar stereographic projection of (-89.78, 204.27), ±25 km half-span:
+    // rho = 2R tan(pi/4 + lat/2); x = rho sin(lon); y = rho cos(lon).
+    expect(quickMap).toBe(
+      'https://quickmap.lroc.im-ldi.com/?proj=10&prjExtent=-27742.1,-31081.5,22257.9,18918.5',
+    )
+    expect(buildQuickMapUrl({ lat: 'x' })).toBe('https://quickmap.lroc.im-ldi.com/')
+
+    const moonTrek = buildMoonTrekViewerUrl({ lat: -89.78, lon: 204.27 })
+    expect(moonTrek).toBe(
+      'https://trek.nasa.gov/moon/#/v1/115/0.5/0/204.270/-89.780/-170.000/0.000/90.000/0/0/0',
+    )
+    expect(buildMoonTrekViewerUrl({ lat: 'x' })).toBe(MOON_TREK_URL)
     expect(buildMoonTrekViewerUrl({ layer: LAYER })).toBe(MOON_TREK_URL)
   })
 
@@ -219,11 +232,15 @@ describe('export service', () => {
     expect(brief.sites.length).toBe(1)
     expect(brief.rankedSites.length).toBe(1)
     expect(brief.rankedSites[0].score).toBe(96)
-    expect(brief.links.quickMap).toContain('quickmap.lroc.asu.edu')
-    expect(brief.links.moonTrek).toBe(MOON_TREK_URL)
+    expect(brief.links.quickMap).toContain('quickmap.lroc.im-ldi.com')
+    expect(brief.links.quickMap).toContain('prjExtent=')
+    expect(brief.links.moonTrek).toContain('trek.nasa.gov/moon/#/v1/115/0.5/0/')
     expect(brief.dataSources.length).toBeGreaterThanOrEqual(4)
     expect(brief.limitations.length).toBeGreaterThan(0)
-    expect(brief.sites[0].links.quickMap).toContain('extent=')
+    expect(brief.sites[0].links.quickMap).toContain('prjExtent=')
+    expect(brief.sites[0].links.quickMap).not.toContain('extent=')
+    // Top-level links are always rebuilt from the selected coordinates.
+    expect(brief.links.quickMap).toBe(buildQuickMapUrl({ lat: sites[0].lat, lon: sites[0].lon }))
     expect(JSON.parse(briefToJson(brief)).schema).toBe(BRIEF_SCHEMA)
   })
 
@@ -328,6 +345,25 @@ describe('brief analysis completeness (task-59 BH-08)', () => {
     expect(brief.analysisComplete).toBe(false)
     expect(brief.analysisIncomplete).toBe(true)
     expect(brief.analysisLimitations.join(' ')).toMatch(/no analysis snapshot/i)
+    expect(brief.limitations.join(' ')).toMatch(/Analysis incomplete/i)
+  })
+
+  it('marks synthetic terrain/ephemeris provenance and offline limits', () => {
+    const brief = buildBrief({
+      sites: [],
+      mission: {},
+      computation: {
+        analysis: {
+          ready: true,
+          unavailable: false,
+          terrain: { source: 'synthetic' },
+          ephemeris: { source: 'error' },
+        },
+      },
+    })
+    expect(brief.analysisIncomplete).toBe(true)
+    expect(brief.analysisLimitations.join(' ')).toMatch(/synthetic placeholder/i)
+    expect(brief.analysisLimitations.join(' ')).toMatch(/ephemeris failed/i)
     expect(brief.limitations.join(' ')).toMatch(/Analysis incomplete/i)
   })
 
@@ -562,7 +598,7 @@ describe('service load retries', () => {
       return { ok: true, status: 200, json: async () => payload }
     }
 
-    expect(await loadEphemeris('demo', { fetchImpl })).toBeNull()
+    // The built-in bounded retry absorbs one transient network failure (BH-01).
     const dataset = await loadEphemeris('demo', { fetchImpl })
     expect(dataset).not.toBeNull()
     expect(dataset.siteId).toBe('demo')
@@ -588,7 +624,7 @@ describe('service load retries', () => {
       return { ok: true, status: 200, json: async () => payload }
     }
 
-    expect(await loadTerrainIndex({ fetchImpl })).toBeNull()
+    // The built-in bounded retry absorbs one transient network failure (BH-01).
     const index = await loadTerrainIndex({ fetchImpl })
     expect(index).not.toBeNull()
     expect(index.regions.map((region) => region.id)).toEqual(['r1'])

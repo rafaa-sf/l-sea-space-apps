@@ -277,7 +277,7 @@ Companion documents: [architecture.md](architecture.md) (contracts), [data.md](d
 
 - **What.** Unit/contract tests, a seeded Monte Carlo bench, a 51-viewport
   device matrix, an end-to-end viewer check and live data spot-checks.
-- **How.** `npm test` runs 261 tests in 19 files (plus 24 MCP tests); `qa/logic/`
+- **How.** `npm test` runs 275 tests in 19 files (plus 24 MCP tests); `qa/logic/`
   runs 13 invariants over 20,000 seeded cases (one real terrain-boundary defect,
   now fixed with a regression test); `qa/ui/` emulates 51 viewports plus the
   no-WebGL fallback; `scripts/qa/e2e-ui.mjs` asserts canvases, scale parity,

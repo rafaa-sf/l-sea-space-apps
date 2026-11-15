@@ -22,8 +22,17 @@ export const LAYERS_PATH = 'layers.json'
 /** Base viewer URL of NASA Moon Trek. */
 export const MOON_TREK_URL = 'https://trek.nasa.gov/moon/'
 
-/** Base URL of LROC QuickMap. */
-export const QUICK_MAP_URL = 'https://quickmap.lroc.asu.edu/'
+/**
+ * Base URL of LROC QuickMap. The legacy `quickmap.lroc.asu.edu` host redirects
+ * here; the current app ignores lon/lat `extent` and uses `prjExtent` in the
+ * display projection instead (see {@link buildQuickMapUrl}).
+ */
+export const QUICK_MAP_URL = 'https://quickmap.lroc.im-ldi.com/'
+
+/** Reference radius and QuickMap half-span used for the projected extent. */
+const QUICK_MAP_REFERENCE_RADIUS_M = 1737400
+const QUICK_MAP_HALF_SPAN_M = 25000
+const QUICK_MAP_SOUTH_POLAR_PROJECTION = 10
 
 /** Attribution required by the Moon Trek/LOLA/LROC data. */
 export const MOON_TREK_ATTRIBUTION =
@@ -205,37 +214,55 @@ export function buildWmsUrl(layer, request) {
  * @param {{layer?: Object|null, layerId?: string|null}} [options]
  * @returns {string}
  */
-export function buildMoonTrekViewerUrl(options = {}) {
-  return options.layer?.viewerUrl ?? MOON_TREK_URL
+export function buildMoonTrekViewerUrl(site = {}) {
+  // Documented Moon Trek deep link: v1/115/0.5/0/<lon>/<lat>/...
+  // Layer/link callers may still pass `{ layer }` or `{ viewerUrl }`; those keep
+  // their explicit viewer URL, otherwise a site-centred link is built.
+  const explicit = site?.layer?.viewerUrl ?? site?.viewerUrl
+  if (explicit) return explicit
+  const lat = Number(site?.lat)
+  const lon = Number(site?.lon)
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return MOON_TREK_URL
+  const lonDeg = ((lon % 360) + 360) % 360
+  const latDeg = Math.max(-90, Math.min(90, lat))
+  return `${MOON_TREK_URL}#/v1/115/0.5/0/${lonDeg.toFixed(3)}/${latDeg.toFixed(3)}/-170.000/0.000/90.000/0/0/0`
+}
+
+/** Round to one decimal place for the QuickMap projection extent. */
+function roundProjectedMeters(value) {
+  return Math.round(value * 10) / 10
 }
 
 /**
  * Build an LROC QuickMap link for a site.
  *
- * QuickMap accepts an `extent` query parameter (`west,south,east,north`, degrees)
- * plus a projection code; `proj=10` is the south polar stereographic view. The
- * window is widened in longitude as the site approaches the pole, where a fixed
- * longitude span covers almost no ground.
+ * The current QuickMap app ignores the legacy lon/lat `extent` parameter and
+ * opens in the south-polar stereographic projection (`proj=10`) using
+ * `prjExtent=xMin,yMin,xMax,yMax` in that projection's metres. The extent is a
+ * square of ±25 km around the site, projected with the same LOLA polar
+ * stereographic formula as the DEM pipeline:
  *
- * @param {{lat: number, lon: number, zoom?: number, spanDeg?: number}} site
- * @returns {string}
+ * `rho = 2·R·tan(π/4 + lat/2); x = rho·sin(lon); y = rho·cos(lon)`, R = 1737400 m.
+ *
+ * @param {{lat?: number, lon?: number}} site
+ * @returns {string} QuickMap URL, or the bare catalogue base URL when the site is invalid.
  */
 export function buildQuickMapUrl(site) {
-  const lat = Number(site?.lat)
-  const lon = Number(site?.lon)
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return QUICK_MAP_URL
-  const cosLat = Math.cos((lat * Math.PI) / 180)
-  const latSpan = Math.min(2, Math.max(0.2, 2 / 64))
-  const lonSpan = Math.min(180, Math.max(1, latSpan / Math.max(cosLat, 0.01)))
-  const west = (((lon - lonSpan) % 360) + 360) % 360
-  const east = (((lon + lonSpan) % 360) + 360) % 360
-  const south = Math.max(-90, lat - latSpan)
-  const north = Math.min(90, lat + latSpan)
-  const params = new URLSearchParams({
-    extent: `${west.toFixed(3)},${south.toFixed(3)},${east.toFixed(3)},${north.toFixed(3)}`,
-    proj: '10',
-  })
-  return `${QUICK_MAP_URL}?${params.toString()}`
+  const latDeg = Number(site?.lat)
+  const lonDeg = Number(site?.lon)
+  if (!Number.isFinite(latDeg) || !Number.isFinite(lonDeg)) return QUICK_MAP_URL
+  const lat = Math.max(-90, Math.min(90, latDeg))
+  const lon = (lonDeg * Math.PI) / 180
+  const rho = 2 * QUICK_MAP_REFERENCE_RADIUS_M * Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)
+  const x = rho * Math.sin(lon)
+  const y = rho * Math.cos(lon)
+  const extent = [
+    roundProjectedMeters(x - QUICK_MAP_HALF_SPAN_M),
+    roundProjectedMeters(y - QUICK_MAP_HALF_SPAN_M),
+    roundProjectedMeters(x + QUICK_MAP_HALF_SPAN_M),
+    roundProjectedMeters(y + QUICK_MAP_HALF_SPAN_M),
+  ].join(',')
+  return `${QUICK_MAP_URL}?proj=${QUICK_MAP_SOUTH_POLAR_PROJECTION}&prjExtent=${extent}`
 }
 
 /**

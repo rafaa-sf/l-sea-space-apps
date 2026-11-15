@@ -362,10 +362,13 @@ npm run data:lola -- --extent-km=608 --size=2048 --id=south-pole-608km-2048px  #
 QuickMap (Arizona State University) is used for human cross-checks and for the site
 links in the exported mission brief, not as a data source.
 
-- `https://quickmap.lroc.asu.edu/` responds HTTP 301 and redirects to
-  `https://quickmap.lroc.im-ldi.com/` (HTTP 200).
+- `https://quickmap.lroc.im-ldi.com/` is the current QuickMap host (HTTP 200;
+  the legacy `quickmap.lroc.asu.edu` host redirects there). The app ignores the
+  old lon/lat `extent` parameter.
 - Deep-link pattern used by the export:
-  `https://quickmap.lroc.asu.edu/layers?extent=<minLon>,<minLat>,<maxLon>,<maxLat>&proj=10&secondaryProj=0`
+  `https://quickmap.lroc.im-ldi.com/?proj=10&prjExtent=<xMin>,<yMin>,<xMax>,<yMax>`
+  where x/y are LOLA polar-stereographic metres (`rho = 2R tan(pi/4 + lat/2);
+  x = rho sin(lon); y = rho cos(lon)`, R = 1737400 m) for a ±25 km window.
   (verified HTTP 200 after the redirect).
 - No API key and no CORS requirement, because the application only links out.
 
@@ -536,7 +539,7 @@ disappears, and terrain only if the grid geometry changes. `npm run build` copie
 | Moon Trek WMS GetCapabilities (`/moontrek/wms?...`) | HTTP 404; Moon Trek does not expose WMS | WMTS REST tiles (verified) |
 | `PSR_SP` layer label | HTTP 404 | `LRO_LOLA_Illumination_SPole65S_240m` (verified PSR raster) |
 | `A3_Named_regions_SP` as a tile layer | capabilities 404; it is a catalogue item, not WMTS | not shipped; the application ships its own POIs |
-| QuickMap data API (`quickmap.lroc.asu.edu/api/...`) | host redirects to a single-page application without a documented open API | link-only use (verified deep links) |
+| QuickMap data API (`quickmap.lroc.im-ldi.com/api/...`) | host redirects to a single-page application without a documented open API | link-only use (verified deep links) |
 | Zenodo south-pole shape-from-shading dataset | HTTP 403 in this environment | not used |
 | LOLA `.img` (uncompressed, 115.5 MB) as terrain input | valid data but 4-5 times larger than the JP2 equivalent | PDS JP2 products (same data, smaller) |
 | Published coordinates for the de Gerlache rim 1 and Leibnitz Beta region centres | not found in openly accessible sources during the event | derived from the official NASA Artemis III site-mosaic WMTS footprints and labelled as derived |
@@ -573,7 +576,7 @@ Last run (2026-11-14): **all 12 checks passed**.
 | PDS label declares data set `LRO-L-LOLA-4-GDR-V1.0`, scaling 0.5, offset 1,737,400 | PASS |
 | JPL Horizons API reachable (`ssd.jpl.nasa.gov`) | PASS |
 | NASA Moon Trek south-pole layer catalogue reachable (`trek.nasa.gov`) | PASS |
-| LROC QuickMap reachable (`quickmap.lroc.asu.edu`) | PASS |
+| LROC QuickMap reachable (`quickmap.lroc.im-ldi.com`) | PASS |
 | No non-NASA ephemeris library in the dependencies | PASS |
 | No forbidden ephemeris library imported anywhere in `src/` or `scripts/` | PASS |
 | `index.html` loads no external scripts or styles | PASS |
