@@ -797,6 +797,8 @@ export default {
     challengeBadge: 'Reto 10 · CSA',
     title: 'Navegador de aterrizaje lunar',
     subtitle: 'Compara lugares y fechas de alunizaje en el polo sur lunar: Sol, Tierra, energía y comunicaciones en un solo lugar.',
+    heroImageAlt: 'Luna llena fotografiada por el Lunar Reconnaissance Orbiter de la NASA',
+    heroImageCredit: 'NASA / GSFC / Arizona State University · LRO',
     cta: 'Abrir la herramienta',
     ctaHint: 'Consola de misión interactiva. Sin instalación y sin registro.',
     docsCta: 'Leer la documentación',

@@ -13,22 +13,24 @@ const emit = defineEmits(['open-tool'])
 
 const REPO = 'https://github.com/rafaa-sf/l-sea-space-apps'
 const DOCS_INDEX = `${REPO}/blob/main/docs/README.md`
+const BASE_URL = import.meta.env.BASE_URL
+const MOON_IMAGE = `${BASE_URL}images/moon-lro.jpg`
 
 const DOCS = [
-  { key: 'challenge', path: 'docs/challenge.md', icon: '◎' },
-  { key: 'architecture', path: 'docs/architecture.md', icon: '⌗' },
-  { key: 'data', path: 'docs/data.md', icon: '◍' },
-  { key: 'submission', path: 'docs/submission.md', icon: '✧' },
-  { key: 'demo', path: 'docs/demo.md', icon: '▶' },
-  { key: 'commercial', path: 'docs/commercial.md', icon: '◈' },
-  { key: 'scalability', path: 'docs/scalability.md', icon: '↗' },
-  { key: 'qa', path: 'docs/qa.md', icon: '✓' },
-  { key: 'deployment', path: 'docs/deployment.md', icon: '☁' },
-  { key: 'security', path: 'docs/security.md', icon: '⛨' },
-  { key: 'aiUsage', path: 'docs/ai-usage.md', icon: '✳' },
-  { key: 'contributing', path: 'docs/contributing.md', icon: '⚒' },
-  { key: 'decisions', path: 'docs/decisions.md', icon: '⋮' },
-  { key: 'miro', path: 'docs/miro.md', icon: '▦' },
+  { key: 'challenge', path: 'docs/challenge.md' },
+  { key: 'architecture', path: 'docs/architecture.md' },
+  { key: 'data', path: 'docs/data.md' },
+  { key: 'submission', path: 'docs/submission.md' },
+  { key: 'demo', path: 'docs/demo.md' },
+  { key: 'commercial', path: 'docs/commercial.md' },
+  { key: 'scalability', path: 'docs/scalability.md' },
+  { key: 'qa', path: 'docs/qa.md' },
+  { key: 'deployment', path: 'docs/deployment.md' },
+  { key: 'security', path: 'docs/security.md' },
+  { key: 'aiUsage', path: 'docs/ai-usage.md' },
+  { key: 'contributing', path: 'docs/contributing.md' },
+  { key: 'decisions', path: 'docs/decisions.md' },
+  { key: 'miro', path: 'docs/miro.md' },
 ]
 
 function docUrl(path) {
@@ -87,29 +89,45 @@ function openDocsIndex() {
           <p class="landing__subtitle">{{ t('landing.subtitle') }}</p>
           <div class="landing__actions">
             <button type="button" class="button button--primary landing__cta" @click="emit('open-tool')">
-              {{ t('landing.cta') }} <span aria-hidden="true">→</span>
+              {{ t('landing.cta') }}
+              <svg class="landing__icon landing__icon--inline" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
             </button>
-            <button type="button" class="button button--quiet" @click="openDocsIndex">
+            <button type="button" class="button button--secondary" @click="openDocsIndex">
               {{ t('landing.docsCta') }}
             </button>
           </div>
           <p class="landing__cta-hint">{{ t('landing.ctaHint') }}</p>
         </div>
 
-        <aside class="landing__hero-aside" :aria-label="t('landing.stats.data')">
-          <div class="landing__stat">
-            <strong>{{ t('landing.stats.data') }}</strong>
-            <span>{{ t('landing.stats.dataNote') }}</span>
-          </div>
-          <div class="landing__stat">
-            <strong>{{ t('landing.stats.languages') }}</strong>
-            <span>{{ t('landing.stats.languagesNote') }}</span>
-          </div>
-          <div class="landing__stat">
-            <strong>{{ t('landing.stats.tested') }}</strong>
-            <span>{{ t('landing.stats.testedNote') }}</span>
-          </div>
-        </aside>
+        <figure class="landing__hero-media">
+          <img
+            class="landing__moon"
+            :src="MOON_IMAGE"
+            :alt="t('landing.heroImageAlt')"
+            width="1400"
+            height="1400"
+            loading="eager"
+            decoding="async"
+          />
+          <figcaption class="landing__hero-credit">{{ t('landing.heroImageCredit') }}</figcaption>
+        </figure>
+      </section>
+
+      <section class="landing__stats" :aria-label="t('landing.stats.data')">
+        <div class="landing__stat">
+          <strong>{{ t('landing.stats.data') }}</strong>
+          <span>{{ t('landing.stats.dataNote') }}</span>
+        </div>
+        <div class="landing__stat">
+          <strong>{{ t('landing.stats.languages') }}</strong>
+          <span>{{ t('landing.stats.languagesNote') }}</span>
+        </div>
+        <div class="landing__stat">
+          <strong>{{ t('landing.stats.tested') }}</strong>
+          <span>{{ t('landing.stats.testedNote') }}</span>
+        </div>
       </section>
 
       <section class="landing__section" :aria-label="t('landing.howto.title')">
@@ -143,22 +161,34 @@ function openDocsIndex() {
         <h2 class="landing__h2">{{ t('landing.features.title') }}</h2>
         <div class="landing__section-body landing__grid landing__grid--features">
           <article class="landing__card">
-            <span class="landing__card-icon" aria-hidden="true">◎</span>
+            <svg class="landing__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="7" />
+              <circle cx="12" cy="12" r="2" />
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+            </svg>
             <h3>{{ t('landing.features.f1t') }}</h3>
             <p>{{ t('landing.features.f1b') }}</p>
           </article>
           <article class="landing__card">
-            <span class="landing__card-icon" aria-hidden="true">☀</span>
+            <svg class="landing__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="10" r="4" />
+              <path d="M12 3v2M4.5 7.5l1.4 1.4M19.5 7.5l-1.4 1.4M2 17h20M5 21h14" />
+            </svg>
             <h3>{{ t('landing.features.f2t') }}</h3>
             <p>{{ t('landing.features.f2b') }}</p>
           </article>
           <article class="landing__card">
-            <span class="landing__card-icon" aria-hidden="true">⚡</span>
+            <svg class="landing__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M13 2 5 13h6l-1 9 8-11h-6l1-9Z" />
+            </svg>
             <h3>{{ t('landing.features.f3t') }}</h3>
             <p>{{ t('landing.features.f3b') }}</p>
           </article>
           <article class="landing__card">
-            <span class="landing__card-icon" aria-hidden="true">✦</span>
+            <svg class="landing__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 3h7l4 4v14H7z" />
+              <path d="M14 3v5h5M10 12h6M10 16h6" />
+            </svg>
             <h3>{{ t('landing.features.f4t') }}</h3>
             <p>{{ t('landing.features.f4b') }}</p>
           </article>
@@ -198,7 +228,10 @@ function openDocsIndex() {
           </div>
           <p class="landing__section-link">
             <a :href="docUrl('docs/scalability.md')" target="_blank" rel="noopener noreferrer">
-              {{ t('landing.impact.link') }} <span aria-hidden="true">↗</span>
+              {{ t('landing.impact.link') }}
+              <svg class="landing__icon landing__icon--inline" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 17 17 7M8 7h9v9" />
+              </svg>
             </a>
           </p>
         </div>
@@ -223,7 +256,10 @@ function openDocsIndex() {
           </div>
           <p class="landing__section-link">
             <a :href="DOCS_INDEX" target="_blank" rel="noopener noreferrer">
-              {{ t('landing.docs.open') }} <span aria-hidden="true">↗</span>
+              {{ t('landing.docs.open') }}
+              <svg class="landing__icon landing__icon--inline" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 17 17 7M8 7h9v9" />
+              </svg>
             </a>
           </p>
         </div>
@@ -323,9 +359,9 @@ function openDocsIndex() {
 /* ------------------------------------------------------------------ hero */
 .landing__hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.75fr);
-  gap: clamp(18px, 3vw, 36px);
-  align-items: start;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  gap: clamp(18px, 3vw, 40px);
+  align-items: center;
   padding: 12px 0 18px;
   border-bottom: 1px solid var(--color-border);
 }
@@ -376,10 +412,56 @@ function openDocsIndex() {
   font-size: 12px;
 }
 
-.landing__hero-aside {
-  display: grid;
-  gap: 8px;
+.landing__hero-media {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
   min-width: 0;
+}
+
+.landing__hero-media::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  width: min(78%, 360px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(91, 141, 239, 0.28) 0%, rgba(91, 141, 239, 0.08) 45%, transparent 70%);
+  filter: blur(26px);
+  pointer-events: none;
+}
+
+.landing__moon {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  max-width: 440px;
+  height: auto;
+  mix-blend-mode: screen;
+  filter: contrast(1.05);
+  mask-image: radial-gradient(circle closest-side, #000 93%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle closest-side, #000 93%, transparent 100%);
+}
+
+.landing__hero-credit {
+  max-width: 440px;
+  color: var(--color-text-faint);
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.landing__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .landing__stat {
@@ -429,6 +511,8 @@ function openDocsIndex() {
 
 .landing__h2::before {
   content: counter(landing-section, decimal-leading-zero);
+  flex: 0 0 auto;
+  white-space: nowrap;
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 700;
@@ -466,7 +550,7 @@ function openDocsIndex() {
 }
 
 .landing__grid--docs {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 /* ------------------------------------------------------------------ cards */
@@ -481,9 +565,22 @@ function openDocsIndex() {
   background: var(--color-surface);
 }
 
-.landing__card-icon {
+.landing__icon {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
   color: var(--color-accent-strong);
-  font-size: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.landing__icon--inline {
+  width: 15px;
+  height: 15px;
+  margin-left: 2px;
 }
 
 .landing__card h3 {
@@ -596,7 +693,25 @@ function openDocsIndex() {
   color: var(--color-text);
   font-size: 12.5px;
   text-decoration: none;
+  justify-content: space-between;
   transition: border-color 120ms ease, background 120ms ease;
+}
+
+.landing__doc-arrow {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+  margin-left: auto;
+  color: var(--color-text-faint);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.landing__doc:hover .landing__doc-arrow {
+  color: var(--color-accent-strong);
 }
 
 .landing__doc-label {
@@ -677,8 +792,8 @@ function openDocsIndex() {
     grid-template-columns: 1fr;
   }
 
-  .landing__hero-aside {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .landing__moon {
+    max-width: 340px;
   }
 
   .landing__section {
@@ -703,9 +818,6 @@ function openDocsIndex() {
     grid-template-columns: 1fr;
   }
 
-  .landing__hero-aside {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 640px) {
@@ -729,6 +841,10 @@ function openDocsIndex() {
 
   .landing__title {
     font-size: 26px;
+  }
+
+  .landing__stats {
+    grid-template-columns: 1fr;
   }
 
   .landing__footer {
