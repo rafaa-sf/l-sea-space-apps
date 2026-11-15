@@ -106,7 +106,7 @@ and [`docs/decisions.md`](docs/decisions.md).
 
 ## Quality and verification
 
-- **Unit and contract tests** — 238 Vitest tests in 16 files for the scientific
+- **Unit and contract tests** — 240 Vitest tests in 16 files for the scientific
   core and the data services (`npm test`), plus 8 tests for the Miro MCP package.
 - **Monte Carlo logic bench** — seeded randomised site/date/mission scenarios over
   the real core with 13 invariants. A 20,000-case run found one real
