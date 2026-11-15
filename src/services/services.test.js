@@ -4,7 +4,7 @@
  * the storage fallback.
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { appBaseUrl, dataRootUrl, dataUrl } from './dataUrl.js'
 import {
   parseSitesPayload,
@@ -291,6 +291,26 @@ describe('storage service', () => {
     expect(writeStorage('lsea.v1.test', { a: 1 })).toBe(false)
     expect(readStorage('lsea.v1.test')).toEqual({ a: 1 })
     expect(readStorage('lsea.v1.missing', 'fallback')).toBe('fallback')
+  })
+
+  it('reads the in-memory fallback after a failed localStorage write (quota)', () => {
+    const fakeLocalStorage = {
+      getItem: () => null,
+      setItem: () => {
+        throw new DOMException('Quota exceeded', 'QuotaExceededError')
+      },
+      removeItem: () => {},
+    }
+    vi.stubGlobal('localStorage', fakeLocalStorage)
+    try {
+      clearState()
+      expect(writeStorage('lsea.v1.test-quota', { a: 1 })).toBe(false)
+      expect(readStorage('lsea.v1.test-quota')).toEqual({ a: 1 })
+      expect(readStorage('lsea.v1.missing', 'fallback')).toBe('fallback')
+    } finally {
+      clearState()
+      vi.unstubAllGlobals()
+    }
   })
 
   it('round-trips the application state', () => {

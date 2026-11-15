@@ -52,7 +52,10 @@ export function readStorage(key, fallback = null) {
   try {
     if (typeof localStorage !== 'undefined') {
       const raw = localStorage.getItem(key)
-      if (raw == null) return fallback
+      if (raw == null) {
+        if (memoryStore.has(key)) return memoryStore.get(key)
+        return fallback
+      }
       return JSON.parse(raw)
     }
   } catch (error) {
