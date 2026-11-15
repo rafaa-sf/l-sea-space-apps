@@ -7,7 +7,7 @@
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { actions, selectedSite, state } from './composables/useAppState.js'
+import { actions, compareSites, selectedSite, state } from './composables/useAppState.js'
 import { getCompute } from './composables/useCompute.js'
 import { DEM_REGIONS } from './composables/useData.js'
 import { lonLatToPlanarMeters } from '../render/geo.js'
@@ -165,6 +165,42 @@ const demRegionId = computed(() => state.data.terrainRegionId ?? demRegions.valu
 const ephemerisBadge = computed(() => t(sourceLabelKey(state.data.ephemerisSource, 'ephemeris')))
 
 const legendGradient = hypsometricCssGradient()
+/** Altitude of the selected point and, when comparing, of each compared site. */
+const altitudeEntries = computed(() => {
+  const selected = selectedSite.value
+  const sampleM = (site) => {
+    if (!site) return null
+    const candidate = site.id === selected?.id ? state.analysis.siteElevationM : site.elevationM
+    if (Number.isFinite(Number(candidate))) return Number(candidate)
+    if (compute && state.terrain) {
+      const sampled = compute.sampleElevation(state.terrain, site.lat, site.lon)
+      return Number.isFinite(Number(sampled)) ? Number(sampled) : null
+    }
+    return null
+  }
+  const rows = []
+  if (selected) {
+    rows.push({
+      id: selected.id,
+      label: t('viewport.selectedAltitude'),
+      name: siteDisplayName(t, te, selected),
+      elevationM: sampleM(selected),
+      color: '#6ee7ff',
+    })
+  }
+  for (const site of compareSites.value) {
+    if (site.id === selected?.id) continue
+    rows.push({
+      id: site.id,
+      label: siteDisplayName(t, te, site),
+      name: siteDisplayName(t, te, site),
+      elevationM: sampleM(site),
+      color: '#ffb454',
+    })
+  }
+  return rows.filter((row) => row.elevationM !== null)
+})
+
 const elevationStats = computed(() => state.data.terrainStats)
 const elevationMaxLabel = computed(() =>
   elevationStats.value ? `${formatNumber(elevationStats.value.maxM, 0, locale.value)} m` : '',
@@ -616,6 +652,18 @@ onBeforeUnmount(() => {
           <span class="map-legend__ticks">
             <span>{{ elevationMaxLabel }}</span>
             <span>{{ elevationMinLabel }}</span>
+          </span>
+        </span>
+        <span v-if="altitudeEntries.length" class="map-legend__altitudes" data-testid="map-altitude">
+          <span class="map-legend__altitudes-title">{{ t('viewport.altitudeTitle') }}</span>
+          <span
+            v-for="entry in altitudeEntries"
+            :key="entry.id"
+            class="map-legend__altitude"
+          >
+            <span class="map-legend__altitude-dot" :style="{ background: entry.color }" aria-hidden="true" />
+            <span class="map-legend__altitude-name" :title="entry.label">{{ entry.name }}</span>
+            <span class="map-legend__altitude-value">{{ formatNumber(entry.elevationM, 0) }} m</span>
           </span>
         </span>
       </div>

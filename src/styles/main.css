@@ -1663,6 +1663,53 @@ body.is-resizing-panes * {
   color: var(--color-text-faint);
 }
 
+.map-legend__altitudes {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+  padding-top: 4px;
+  border-top: 1px solid var(--color-border);
+}
+
+.map-legend__altitudes-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.map-legend__altitude {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  min-width: 0;
+}
+
+.map-legend__altitude-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.map-legend__altitude-name {
+  max-width: 132px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-dim);
+}
+
+.map-legend__altitude-value {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
 .map-scale {
   position: absolute;
   right: 10px;
