@@ -80,6 +80,8 @@ const normalizedCache = new WeakMap()
  * @property {number} startMs First sample timestamp.
  * @property {number} endMs Last sample timestamp.
  * @property {number} stepSeconds Median sample spacing in seconds.
+ * @property {number|null} [orbitPeriodDays] Lunar orbit period in days used to
+ *   replay the covered window periodically, or `null` when not declared.
  */
 
 /**
@@ -103,6 +105,32 @@ export function toTimestamp(value) {
     return Number.isFinite(parsed) ? parsed : Number.NaN
   }
   return Number.NaN
+}
+
+/**
+ * Normalize an optional dataset-level lunar orbit period in days.
+ *
+ * @param {*} value Raw value (number or numeric string).
+ * @returns {number|null} Positive finite period in days, otherwise `null`.
+ */
+function normalizeOrbitPeriodDays(value) {
+  if (value == null || value === '') return null
+  const days = Number(value)
+  return Number.isFinite(days) && days > 0 ? days : null
+}
+
+/**
+ * Format a date-like value as an ISO-8601 string, or `null` when unusable.
+ *
+ * @param {*} value Raw date-like value.
+ * @returns {string|null}
+ */
+function isoOrNull(value) {
+  if (!value) return null
+  const timestampMs = toTimestamp(value)
+  if (!Number.isFinite(timestampMs)) return null
+  const date = new Date(timestampMs)
+  return Number.isNaN(date.getTime()) ? null : date.toISOString()
 }
 
 /**
@@ -250,8 +278,8 @@ export function normalizeEphemerisDataset(raw, options = {}) {
     return {
       id: String(variant.id ?? variant.name ?? `variant-${index + 1}`),
       label: String(variant.label ?? variant.name ?? `Variant ${index + 1}`),
-      validFrom: variant.validFrom ? new Date(toTimestamp(variant.validFrom)).toISOString() : null,
-      validTo: variant.validTo ? new Date(toTimestamp(variant.validTo)).toISOString() : null,
+      validFrom: isoOrNull(variant.validFrom),
+      validTo: isoOrNull(variant.validTo),
       startMs: variantSamples.length ? variantSamples[0].t : Number.NaN,
       endMs: variantSamples.length ? variantSamples[variantSamples.length - 1].t : Number.NaN,
       samples: variantSamples,
@@ -284,6 +312,7 @@ export function normalizeEphemerisDataset(raw, options = {}) {
     generated: source.generated ?? source.generatedAt ?? null,
     range: source.range ?? null,
     stepMinutes: source.stepMinutes ?? null,
+    orbitPeriodDays: normalizeOrbitPeriodDays(source.orbitPeriodDays),
     samples,
     variants,
     startMs,

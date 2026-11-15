@@ -113,6 +113,16 @@ describe('normalizeEphemerisDataset', () => {
     expect(() => normalizeEphemerisDataset(null)).toThrow(TypeError)
   })
 
+  it('copies a declared orbit period and defaults it to null', () => {
+    const samples = makeDataset({ count: 3 }).samples
+    const periodic = normalizeEphemerisDataset({ siteId: 'periodic', orbitPeriodDays: 2, samples })
+    expect(periodic.orbitPeriodDays).toBe(2)
+    expect(normalizeEphemerisDataset({ siteId: 'periodic', orbitPeriodDays: '2', samples }).orbitPeriodDays).toBe(2)
+    expect(makeDataset().orbitPeriodDays).toBeNull()
+    expect(normalizeEphemerisDataset({ siteId: 'invalid', orbitPeriodDays: 0, samples }).orbitPeriodDays).toBeNull()
+    expect(normalizeEphemerisDataset({ siteId: 'invalid', orbitPeriodDays: -2, samples }).orbitPeriodDays).toBeNull()
+  })
+
   it('builds a catalogue keyed by site id', () => {
     const catalog = normalizeEphemerisCatalog({
       sites: {
@@ -153,6 +163,18 @@ describe('sampleAt', () => {
     const shifted = sampleAt(dataset, START + 2.5 * 24 * HOUR, { orbitPeriodDays: 2 })
     const direct = sampleAt(dataset, START + 0.5 * 24 * HOUR)
     expect(shifted.timestampMs).toBeCloseTo(direct.timestampMs, 0)
+  })
+
+  it('wraps with a dataset orbit period and clamps without one', () => {
+    const samples = makeDataset().samples
+    const periodic = normalizeEphemerisDataset({ siteId: 'test-site', orbitPeriodDays: 2, samples })
+    const wrapped = sampleAt(periodic, periodic.endMs + 24 * HOUR)
+    expect(wrapped.extrapolated).toBe(false)
+    expect(wrapped.timestampMs).toBeGreaterThanOrEqual(periodic.startMs)
+    expect(wrapped.timestampMs).toBeLessThanOrEqual(periodic.endMs)
+
+    const plain = makeDataset()
+    expect(sampleAt(plain, plain.endMs + 24 * HOUR).extrapolated).toBe(true)
   })
 
   it('throws on an invalid date', () => {
@@ -256,6 +278,29 @@ describe('orbital variants', () => {
 
     const explicit = sampleAt(dataset, '2026-11-05T00:30:00Z', { variantId: 'epoch-b' })
     expect(explicit.variantId).toBe('epoch-b')
+  })
+
+  it('tolerates a malformed variant valid-from date', () => {
+    const base = makeDataset({ count: 3, stepMinutes: 60 })
+    const variantSamples = [
+      { time: '2026-11-05T00:00:00Z', sun: { az: 10, el: 1 }, earth: { az: 190, el: 2 } },
+      { time: '2026-11-05T01:00:00Z', sun: { az: 11, el: 1.1 }, earth: { az: 191, el: 2.1 } },
+    ]
+    const dataset = normalizeEphemerisDataset({
+      siteId: 'variant-site',
+      samples: base.samples,
+      variants: [
+        {
+          id: 'bad-date',
+          validFrom: 'not-a-date',
+          validTo: '2026-11-06T00:00:00Z',
+          samples: variantSamples,
+        },
+      ],
+    })
+    const variant = listVariants(dataset)[0]
+    expect(variant.validFrom).toBeNull()
+    expect(variant.validTo).toBe('2026-11-06T00:00:00.000Z')
   })
 })
 
