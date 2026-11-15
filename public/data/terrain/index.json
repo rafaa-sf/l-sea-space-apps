@@ -147,6 +147,30 @@
       "pixelSizeXM": 390.625,
       "pixelSizeYM": 390.625,
       "squarePixels": true
+    },
+    {
+      "id": "south-pole-608km-2048px",
+      "role": "wide-area",
+      "meta": "south-pole-608km-2048px.json",
+      "bin": "south-pole-608km-2048px.bin",
+      "width": 2048,
+      "height": 2048,
+      "pixelSizeM": 296.875,
+      "boundsM": {
+        "minX": -304000,
+        "maxX": 304000,
+        "minY": -304000,
+        "maxY": 304000,
+        "lower": "-304000 -304000",
+        "upper": "304000 304000"
+      },
+      "elevationRangeM": [
+        -7288,
+        7024
+      ],
+      "pixelSizeXM": 296.875,
+      "pixelSizeYM": 296.875,
+      "squarePixels": true
     }
   ],
   "attribution": "NASA/GSFC/LOLA (PDS Geosciences Node)"

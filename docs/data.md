@@ -235,19 +235,35 @@ the build script resamples them into web grids.
     bounds plus/minus 75,840 m, about 8.4 MB binary.
   - `south-pole-80s-80m.json` and `.bin`: 1024 x 1024, 593.75 m/px, int16 metres,
     bounds plus/minus 304,000 m, about 2.1 MB binary.
+  - `south-pole-608km-2048px.json` and `.bin`: 2048 x 2048, 296.875 m/px, int16
+    metres, bounds plus/minus 304,000 m (same 608 km footprint as the 1024 px
+    wide-area grid at 4x the pixels), exactly 8,388,608 bytes (8.0 MiB) binary.
+    Built from the cached `LDEM_80S_80M` JP2 with the local downloader; the
+    static asset is fetched by the browser **only when that region is selected**.
   - `index.json`: region list, projection description and default region.
 - Format: little-endian int16, row-major, row 0 is the north (max Y) edge, values in
   metres relative to `R = 1737400 m`; no-data pixels are `-32768`.
 
-Measured elevation ranges of the web grids: -4,378 to +2,369 m (high resolution) and
--7,274 to +7,001 m (wide area), consistent with the PDS products.
+Measured elevation ranges of the web grids: -4,378 to +2,369 m (high resolution),
+-7,274 to +7,001 m (1024 px wide area) and -7,288 to +7,024 m (2048 px wide area),
+consistent with the PDS products.
 
 **Attribution:** NASA/GSFC/LOLA (PDS Geosciences Node), data set
 `LRO-L-LOLA-4-GDR-V1.0`.
 
 ### Local DEM downloader (before the first render)
 
-The DEM area selector is populated from `public/data/terrain/index.json`. The repository ships four extra area presets generated with this downloader (100, 200, 300 and 400 km at 1024 px) besides the two standard regions, and the selector sorts them by extent: 100 km, 152 km high detail, 200 km, 300 km, 400 km, 608 km wide area. Any additional local region created with the commands below appears in the same selector after a reload.
+The DEM area selector is populated from `public/data/terrain/index.json`. The repository ships four extra area presets generated with this downloader (100, 200, 300 and 400 km at 1024 px) plus the larger **608 km @ 2048 px wide-area grid** (`south-pole-608km-2048px`, 296.875 m/px) besides the two standard regions. The selector sorts them by extent: 100 km, 152 km high detail, 200 km, 300 km, 400 km, 608 km (1024 px), 608 km (2048 px). Any additional local region created with the commands below appears in the same selector after a reload.
+
+Tradeoff of the 608 km @ 2048 px option: it covers the same polar area as the
+608 km @ 1024 px grid at twice the linear resolution (296.875 m/px vs 593.75 m/px),
+but the browser downloads and decodes 8.4 MB instead of 2.1 MB, and wide-area
+worker runs are slower (measured on the shipped data: landing-zone/date-search
+worker ~3.1 s for 8 zones x 14 days x 12 h step vs ~1.0-1.9 s on the 1024 px
+grid). It is a selectable region only: the index `defaultRegionId` stays
+`south-pole-875s-20m`, so it is never downloaded unless the user picks it (or a
+site outside the 75.8 km high-resolution footprint is auto-selected, where the
+loader now prefers the finer wide-area grid).
 
 `scripts/nasa/download-lola.mjs` is the user-facing local download step: it
 acquires the official PDS products, verifies them, caches them under
@@ -272,6 +288,7 @@ npm run data:lola -- --extent-km=100x60 --size=512x384 --id=custom-window
 npm run data:lola -- --dry-run                      # plan only, no downloads or writes
 npm run data:lola -- --region=both --force          # re-download the products
 npm run data:lola -- --extent-km=400 --overwrite    # replace a changed existing region
+npm run data:lola -- --extent-km=608 --size=2048 --id=south-pole-608km-2048px  # shipped 2k wide-area grid
 ```
 
 - Downloads are polite (project `User-Agent`, 300 s timeout, three attempts with
@@ -372,9 +389,9 @@ Every test used `Origin: http://localhost:5173`.
 | `public/data/pois.json` | 10 curated lunar south-pole sites of interest | about 8 KB |
 | `public/data/layers.json` | 21 verified Moon Trek WMTS layers | about 39 KB |
 | `public/data/ephemeris/` | 10 files x 2,928 topocentric Sun/Earth samples, plus index and schema | about 2.8 MB |
-| `public/data/terrain/` | 6 LOLA polar-stereographic int16 grids (2 standard regions + 4 area presets: 100, 200, 300 and 400 km at 1024 px), plus index | about 19 MB |
+| `public/data/terrain/` | 7 LOLA polar-stereographic int16 grids (2 standard regions + 4 area presets: 100, 200, 300 and 400 km at 1024 px + the 608 km @ 2048 px wide-area grid), plus index | about 27 MB |
 | `public/data/ai-usage.md` | AI use declaration served by the application | about 7 KB |
-| **Total** | | **about 13.4 MB** (copied into `dist/data/`) |
+| **Total** | | **about 30 MB** (copied into `dist/data/`) |
 
 ### Ephemerides (JPL Horizons, DE441)
 
