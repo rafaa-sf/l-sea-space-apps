@@ -133,3 +133,42 @@ margin and enough battery could therefore look “possible” yet be gated as
 impossible. Fixed in PR #19: the field is now **“Consecutive sunlit days needed”**
 (EN) / **“Días consecutivos de sol necesarios”** (ES), with an explanatory
 tooltip and `aria-description`.
+
+## Crater avoidance ("Avoid craters") — false "craters" on peaks and slopes
+
+**Symptom reported:** with *Avoid craters* enabled the autopilot often failed to
+avoid the crater interior while instead excluding/flagging peaks and foothills.
+
+**Root cause:** `findCraters` accepted a rim found in only half of the sampled
+directions (`>= ceil(directions/2)`) and derived the radius from the **mean** rim
+distance. On rough polar DEMs a nearby massif could supply one or two "rim"
+directions, producing a large false crater centred on a slope; its circular
+footprint then removed cells on high ground instead of the actual bowl. Measured
+on the high-resolution DEM (`south-pole-875s-20m`): **37 of 69 detected "craters"
+(54 %)** had weak rim support or were not depressions (inside mean elevation
+higher than the surrounding annulus).
+
+**Fix** (`src/core/terrain.js`, regression tests in `terrain.test.js`):
+
+- require a coherent rim in **≥75 %** of the sampled directions (6/8 by default,
+  configurable with `minRimSupportRatio`);
+- use the **median** rim distance (and median rim elevation) instead of the mean,
+  and require at least 75 % of the directions to agree within 0.5–1.8× that median;
+- reject a raised mound and a one-sided depression (new tests).
+
+**After the fix:** the high-resolution DEM reports **17 craters, 0 non-depressions**
+(54 % → 0 % in the depression test); the bench finds **no zone centroid inside a
+detected crater** and confirms that cells are excluded for every setting.
+
+Bench: [`crater-avoid-mc.mjs`](crater-avoid-mc.mjs) — 3 DEM regions × 3 avoidance
+settings (default, 300 m clearance, 1200 m minimum diameter), 9 checks, 0 failures.
+
+| DEM region | Craters before | Craters after | Non-depressions after | Zones inside a crater (avoid ON) |
+| --- | ---: | ---: | ---: | ---: |
+| `south-pole-875s-20m` (74 m/px) | 69 | **17** | 0 | 0 |
+| `south-pole-80s-80m` (594 m/px) | 120 | 120 | 18 (large degraded basins) | 0 |
+| `south-pole-400km-1024px` | 120 | 120 | 14 | 0 |
+
+The remaining "non-depression" flags on the coarse DEMs are large overlapping
+basins with central peaks (inside mean only slightly above the annulus); the
+avoidance still never returns a zone inside a detected crater.

@@ -233,6 +233,38 @@ describe('crater detection', () => {
     expect(Math.abs(detected.lon - craterCenter.lon)).toBeLessThan(3)
   })
 
+  it('does not report a raised mound as a crater', () => {
+    const hill = makePlanarGrid({
+      width: 129,
+      height: 129,
+      boundsM: 8000,
+      elevationFn: (x, y) => {
+        const distance = Math.hypot(x, y)
+        return distance < 2000 ? 300 * (1 - (distance / 2000) ** 2) : 0
+      },
+    })
+    expect(findCraters(hill, { minDiameterM: 800, maxDiameterM: 8000, minDepthM: 40 })).toEqual([])
+  })
+
+  it('rejects a one-sided depression whose rim is not coherent', () => {
+    // Bowl only on the +y half-plane: the rim exists in roughly half of the
+    // directions, which must not be accepted as a crater.
+    const halfBowl = makePlanarGrid({
+      width: 161,
+      height: 161,
+      boundsM: 12000,
+      elevationFn: (x, y) => {
+        const distance = Math.hypot(x, y)
+        if (y <= 0) return 0
+        if (distance <= 1500) return -300 * (1 - (distance / 1500) ** 2)
+        if (distance <= 1800) return 80
+        return 0
+      },
+    })
+    const craters = findCraters(halfBowl, { minDiameterM: 800, maxDiameterM: 6000, minDepthM: 40 })
+    expect(craters).toEqual([])
+  })
+
   it('returns [] without a usable terrain', () => {
     expect(findCraters(null)).toEqual([])
     expect(findCraters({ width: 2, height: 2, data: new Float32Array(4) })).toEqual([])
