@@ -81,6 +81,7 @@ export default {
     hint: 'Build any extent locally with npm run data:lola -- --extent-km=400x300 --size=1024x768 --center-x=-50000 --center-y=40000; every region in public/data/terrain/index.json appears here after reload.',
   },
   common: {
+    skipToContent: 'Skip to main content',
     open: 'Open',
     loading: 'Loading…',
     computing: 'Computing…',

@@ -47,6 +47,13 @@ function setLocale(code) {
   }
 }
 
+function skipToMain(event) {
+  event.preventDefault()
+  const target = document.getElementById('landing-main')
+  target?.focus()
+  target?.scrollIntoView({ block: 'start' })
+}
+
 function openDocsIndex() {
   window.open(DOCS_INDEX, '_blank', 'noopener')
 }
@@ -54,6 +61,8 @@ function openDocsIndex() {
 
 <template>
   <div class="landing">
+    <a class="skip-link" href="#landing-main" @click.prevent="skipToMain">{{ t('common.skipToContent') }}</a>
+
     <header class="landing__bar">
       <div class="landing__brand">
         <span class="brand-mark" aria-hidden="true" />
@@ -78,7 +87,7 @@ function openDocsIndex() {
       </div>
     </header>
 
-    <main class="landing__main">
+    <main id="landing-main" class="landing__main" tabindex="-1">
       <section class="landing__hero" :aria-label="t('landing.title')">
         <div class="landing__hero-text">
           <p class="landing__badges">

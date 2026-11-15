@@ -194,6 +194,13 @@ function closeTools() {
   drawer.open = false
 }
 
+function skipToWorkspace(event) {
+  event.preventDefault()
+  const target = document.getElementById('workspace')
+  target?.focus()
+  target?.scrollIntoView({ block: 'start' })
+}
+
 function showMessage(text) {
   toast.value = text
   if (toastTimer) clearTimeout(toastTimer)
@@ -266,9 +273,11 @@ onBeforeUnmount(() => {
     class="app-shell"
     :style="{ '--layout-left': `${layout.left}px`, '--layout-right': `${layout.right}px` }"
   >
+    <a class="skip-link" href="#workspace" @click.prevent="skipToWorkspace">{{ t('common.skipToContent') }}</a>
+
     <HeaderBar @open-tools="openTools" />
 
-    <main class="app-main" :aria-busy="!state.booted">
+    <main id="workspace" class="app-main" tabindex="-1" :aria-busy="!state.booted">
       <SitesSurface data-testid="layout-left-rail" />
       <ResizeHandle
         side="left"

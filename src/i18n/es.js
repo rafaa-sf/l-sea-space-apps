@@ -81,6 +81,7 @@ export default {
  
   },
   common: {
+    skipToContent: 'Saltar al contenido principal',
     open: 'Abrir',
     loading: 'Cargando…',
     computing: 'Calculando…',
