@@ -295,20 +295,31 @@ async function createRenderer() {
   initializing.value = true
   note.value = null
   await destroyRenderer()
+  if (token !== recreateToken) return
   // A canvas element that already holds a WebGL context cannot return a 2D
   // context (and vice versa), so mount a fresh canvas for every renderer.
   canvasKey.value += 1
   await nextTick()
-  if (!canvasRef.value) return
+  if (token !== recreateToken) return
+  const canvas = canvasRef.value
+  if (!canvas) return
 
   const want3d = state.system.viewMode === 'auto' ? Boolean(webgl.value?.ok) : state.system.viewMode === '3d'
   let created = null
+  let threeAttempted = false
 
   if (want3d && webgl.value?.ok) {
+    threeAttempted = true
     try {
       const { createMoonScene } = await import('../render/moonScene.js')
-      created = await createMoonScene(canvasRef.value, rendererOptions())
+      if (token !== recreateToken) return
+      created = await createMoonScene(canvas, rendererOptions())
+      if (token !== recreateToken) {
+        created?.dispose?.()
+        return
+      }
     } catch (error) {
+      if (token !== recreateToken) return
       console.warn('[lsea] WebGL scene failed, using the 2D map', error)
       note.value = 'three-failed'
       created = null
@@ -316,10 +327,22 @@ async function createRenderer() {
   }
 
   if (!created) {
+    if (token !== recreateToken) return
+    // Even a failed 3D attempt may have taken a WebGL context on this canvas;
+    // never reuse it for the 2D fallback. Mount a fresh canvas for 2D only.
+    if (threeAttempted) {
+      canvasKey.value += 1
+      await nextTick()
+      if (token !== recreateToken) return
+    }
+    const fallbackCanvas = canvasRef.value
+    if (!fallbackCanvas) return
     try {
       const { createFallback2D } = await import('../render/fallback2d.js')
-      created = createFallback2D(canvasRef.value, rendererOptions())
+      if (token !== recreateToken) return
+      created = createFallback2D(fallbackCanvas, rendererOptions())
     } catch (error) {
+      if (token !== recreateToken) return
       console.error('[lsea] 2D fallback failed', error)
       note.value = 'fallback-failed'
       initializing.value = false
