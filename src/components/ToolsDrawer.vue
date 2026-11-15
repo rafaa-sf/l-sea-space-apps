@@ -21,7 +21,17 @@ const emit = defineEmits(['close', 'update:tab'])
 const { t } = useI18n()
 
 const closeButton = ref(null)
+const dialogRef = ref(null)
 let lastFocused = null
+
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ')
 
 const activeTab = computed({
   get: () => props.tab,
@@ -45,11 +55,46 @@ function onClose() {
   if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus()
 }
 
+/** Focusable children of the open dialog, skipping hidden tab panels. */
+function focusableItems() {
+  const root = dialogRef.value
+  if (!root) return []
+  return Array.from(root.querySelectorAll(FOCUSABLE_SELECTOR)).filter(
+    (element) => element.getClientRects().length > 0,
+  )
+}
+
+function trapTab(event) {
+  const items = focusableItems()
+  if (!items.length) {
+    event.preventDefault()
+    return
+  }
+  const first = items[0]
+  const last = items[items.length - 1]
+  const active = document.activeElement
+  const inside = Boolean(dialogRef.value && dialogRef.value.contains(active))
+  if (event.shiftKey) {
+    if (!inside || active === first) {
+      event.preventDefault()
+      last.focus()
+    }
+    return
+  }
+  if (!inside || active === last) {
+    event.preventDefault()
+    first.focus()
+  }
+}
+
 function onWindowKeydown(event) {
-  if (props.open && event.key === 'Escape') {
+  if (!props.open) return
+  if (event.key === 'Escape') {
     event.preventDefault()
     onClose()
+    return
   }
+  if (event.key === 'Tab') trapTab(event)
 }
 
 watch(
@@ -67,7 +112,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onWindowKeydown))
   <Teleport to="body">
     <div v-if="open" class="drawer-root">
       <div class="drawer-backdrop" @click="onClose" />
-      <section class="drawer" role="dialog" aria-modal="true" :aria-label="t('drawer.title')">
+      <section ref="dialogRef" class="drawer" role="dialog" aria-modal="true" :aria-label="t('drawer.title')">
         <header class="drawer__head">
           <h2 class="drawer__title">{{ t('drawer.title') }}</h2>
           <button ref="closeButton" type="button" class="button button--quiet button--small drawer__close" @click="onClose">

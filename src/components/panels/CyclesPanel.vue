@@ -287,7 +287,9 @@ const statusLabel = computed(() => {
     </div>
 
     <p v-if="status === 'unavailable'" class="panel-note panel-note--warn">{{ t('cycles.unavailable') }}</p>
-    <p v-else-if="status === 'error'" class="panel-note panel-note--warn">{{ t('cycles.error') }}: {{ error }}</p>
+    <p v-else-if="status === 'error'" class="panel-note panel-note--warn" :title="error || undefined">
+      {{ t('cycles.error') }}
+    </p>
 
     <div v-if="cycles" class="cycles-chart">
       <div class="cycles-axis" aria-hidden="true">

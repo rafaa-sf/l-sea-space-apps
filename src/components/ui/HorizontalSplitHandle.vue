@@ -4,7 +4,7 @@
  * Drag up/down to change the map share of the centre column; keyboard
  * ArrowUp/ArrowDown (Shift = larger steps), Home or double-click resets.
  */
-import { ref } from 'vue'
+import { onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
@@ -22,6 +22,8 @@ let startY = 0
 let startRatio = props.ratio
 let pendingY = 0
 let rafId = null
+let dragTarget = null
+let activePointerId = null
 
 const clampRatio = (value) => Math.min(props.max, Math.max(props.min, value))
 
@@ -32,16 +34,42 @@ function emitRatio(value) {
 function onPointerDown(event) {
   if (event.button !== 0) return
   dragging.value = true
+  dragTarget = event.currentTarget
+  activePointerId = event.pointerId
   startY = event.clientY
   startRatio = props.ratio
   pendingY = event.clientY
   try {
-    event.currentTarget.setPointerCapture(event.pointerId)
+    dragTarget.setPointerCapture(event.pointerId)
   } catch {
     /* best effort */
   }
   document.body.classList.add('is-resizing-panes')
   event.preventDefault()
+}
+
+/**
+ * End the drag in every code path (pointerup, pointercancel, unmount): stop the
+ * pending frame, drop the body class and release the pointer capture.
+ */
+function endDrag() {
+  dragging.value = false
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+  document.body.classList.remove('is-resizing-panes')
+  if (dragTarget && activePointerId !== null) {
+    try {
+      if (dragTarget.hasPointerCapture(activePointerId)) {
+        dragTarget.releasePointerCapture(activePointerId)
+      }
+    } catch {
+      /* best effort */
+    }
+  }
+  dragTarget = null
+  activePointerId = null
 }
 
 function onPointerMove(event) {
@@ -59,22 +87,29 @@ function onPointerMove(event) {
 
 function onPointerUp(event) {
   if (!dragging.value) return
-  dragging.value = false
+  const clientY = event.clientY ?? pendingY
   if (rafId !== null) {
     cancelAnimationFrame(rafId)
     rafId = null
   }
-  const delta = (event.clientY ?? pendingY) - startY
+  const delta = clientY - startY
   const height = Math.max(120, window.innerHeight - 160)
   emitRatio(startRatio + delta / height)
   emit('commit')
-  document.body.classList.remove('is-resizing-panes')
+  endDrag()
+}
+
+function onPointerCancel() {
+  if (!dragging.value) return
+  endDrag()
 }
 
 function reset() {
   emitRatio(props.defaultRatio)
   emit('commit')
 }
+
+onBeforeUnmount(endDrag)
 
 function onKeydown(event) {
   const step = event.shiftKey ? 0.12 : 0.04
@@ -121,7 +156,7 @@ function onKeydown(event) {
     @pointerdown="onPointerDown"
     @pointermove="onPointerMove"
     @pointerup="onPointerUp"
-    @pointercancel="dragging = false"
+    @pointercancel="onPointerCancel"
     @keydown="onKeydown"
     @dblclick="reset"
   >

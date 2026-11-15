@@ -21,7 +21,7 @@ import ResizeHandle from './components/ui/ResizeHandle.vue'
 import HorizontalSplitHandle from './components/ui/HorizontalSplitHandle.vue'
 import { actions, state } from './components/composables/useAppState.js'
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 
 const drawer = reactive({ open: false, tab: 'layers' })
 const toast = ref(null)
@@ -202,8 +202,19 @@ function showMessage(text) {
   }, 9000)
 }
 
+/**
+ * Human sentence for a reported failure. The raw message stays in the console
+ * (see `reportError`) and never reaches the main UI.
+ * @param {{ scope?: string, message?: string }} error Entry from `state.errors`.
+ */
+function errorText(error) {
+  const scope = typeof error?.scope === 'string' ? error.scope : ''
+  const key = `common.errors.${scope}`
+  return scope && te(key) ? t(key) : t('common.errors.unknown')
+}
+
 function showToast(error) {
-  showMessage(`${error.scope}: ${error.message}`)
+  showMessage(errorText(error))
 }
 
 const FIRST_RUN_HINT_KEY = 'lsea.firstRunHintSeen'

@@ -661,8 +661,8 @@ const ranking = computed(() => state.scores)
       / {{ t('autopilot.sourceLabel') }}: {{ sourceLabel }}
       <template v-if="state.autopilot.durationMs !== null"> / {{ formatDuration(state.autopilot.durationMs / 1000) }}</template>
     </p>
-    <p v-if="state.autopilot.error" class="panel-note panel-note--warn">
-      {{ t('autopilot.fallbackNote') }}: {{ state.autopilot.error }}
+    <p v-if="state.autopilot.error" class="panel-note panel-note--warn" :title="state.autopilot.error">
+      {{ t('common.errors.autopilot') }}
     </p>
 
     <p v-if="noFeasibleDate" class="feasibility-alert" data-testid="ap-no-feasible-date" role="status">
@@ -697,8 +697,8 @@ const ranking = computed(() => state.scores)
         {{ t('autopilot.zonesUnavailable') }}
       </p>
       <p v-else-if="running" class="panel-note">{{ t('autopilot.zonesRunning') }}</p>
-      <p v-else-if="state.landingZonesStatus.status === 'error'" class="panel-note panel-note--warn">
-        {{ t('autopilot.zonesError') }}: {{ state.landingZonesStatus.error }}
+      <p v-else-if="state.landingZonesStatus.status === 'error'" class="panel-note panel-note--warn" :title="state.landingZonesStatus.error">
+        {{ t('common.errors.landing-zones') }}
       </p>
       <p v-else-if="state.landingZonesStatus.status === 'stale'" class="panel-note panel-note--warn">
         {{ t('autopilot.zonesStale') }}
