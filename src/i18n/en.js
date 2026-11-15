@@ -274,10 +274,6 @@ export default {
     title: 'Comparator',
     empty: 'Add sites to the comparator from the site list.',
     hint: 'Scores come from the autopilot; perimeter and mast are stored per site.',
-    presetLabel: 'Mission profile preset',
-    presetNone: 'Current mission profile',
-    presetHint: 'Choose a historical mission profile to compare the selected sites under its constraints (approximate values).',
-    presetSource: 'Mission source',
     site: 'Site',
     score: 'Score',
     sunlight: 'Sunlit',
@@ -291,16 +287,7 @@ export default {
     maxReached: 'Comparator is full (max {max}).',
     staleScores: 'Mission profile changed — run the autopilot to refresh the scores.',
     tableLabel: 'Site comparison table',
-    presets: {
-      apollo11: { label: 'Apollo 11', note: 'Short crewed sortie with on-board fuel-cell power; no relay, small data budget. Apollo fuel cells are modelled as on-board non-solar power.' },
-      apollo17: { label: 'Apollo 17', note: 'Three-day crewed surface stay, fuel-cell power, no relay, moderate data budget.' },
-      surveyor1: { label: 'Surveyor 1', note: 'Early robotic soft lander; solar/battery power and a short surface mission.' },
-      luna9: { label: 'Luna 9', note: 'First robotic soft landing; one-day solar/battery mission, tiny data budget.' },
-      luna17: { label: 'Luna 17 / Lunokhod 1', note: 'Long robotic solar mission with a rover; no relay in this simplified profile.' },
-      change4: { label: 'Change 4', note: 'Solar lander with a lunar relay (Queqiao); long mission, larger data budget.' },
-      change5: { label: 'Change 5', note: 'Solar sample-return mission with relay support; short surface stay.' },
-      artemis3: { label: 'Artemis III', note: 'Modern crewed south-pole reference: 14 days, solar/battery, 10 continuous sunlight days required.' },
-    },
+
 
   },
   datetime: {
@@ -706,6 +693,21 @@ export default {
       goToDate: 'Go to feasible date',
       noDate: 'No feasible date in the searched window',
       noDateAlert: 'No landing zone has a feasible mission date in the searched window — change the mission profile or search step.',
+    },
+
+    presetLabel: 'Mission profile preset',
+    presetNone: 'Current mission profile',
+    presetHint: 'Choose a historical mission profile to constrain the mission controls, landing zones and autopilot (approximate values).',
+    presetSource: 'Mission source',
+    presets: {
+      apollo11: { label: 'Apollo 11', note: 'Short crewed sortie with on-board fuel-cell power; no relay, small data budget. Apollo fuel cells are modelled as on-board non-solar power.' },
+      apollo17: { label: 'Apollo 17', note: 'Three-day crewed surface stay, fuel-cell power, no relay, moderate data budget.' },
+      surveyor1: { label: 'Surveyor 1', note: 'Early robotic soft lander; solar/battery power and a short surface mission.' },
+      luna9: { label: 'Luna 9', note: 'First robotic soft landing; one-day solar/battery mission, tiny data budget.' },
+      luna17: { label: 'Luna 17 / Lunokhod 1', note: 'Long robotic solar mission with a rover; no relay in this simplified profile.' },
+      change4: { label: 'Change 4', note: 'Solar lander with a lunar relay (Queqiao); long mission, larger data budget.' },
+      change5: { label: 'Change 5', note: 'Solar sample-return mission with relay support; short surface stay.' },
+      artemis3: { label: 'Artemis III', note: 'Modern crewed south-pole reference: 14 days, solar/battery, 10 continuous sunlight days required.' },
     },
 
 

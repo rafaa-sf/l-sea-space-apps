@@ -274,10 +274,6 @@ export default {
     title: 'Comparador',
     empty: 'Añade sitios al comparador desde la lista de sitios.',
     hint: 'Las puntuaciones vienen del autopilot; el perímetro y el mástil se guardan por sitio.',
-    presetLabel: 'Perfil de misión predefinido',
-    presetNone: 'Perfil de misión actual',
-    presetHint: 'Elige un perfil histórico para comparar los sitios seleccionados bajo sus restricciones (valores aproximados).',
-    presetSource: 'Fuente de la misión',
     site: 'Sitio',
     score: 'Puntuación',
     sunlight: 'Sol',
@@ -291,16 +287,7 @@ export default {
     maxReached: 'El comparador está completo (máx. {max}).',
     staleScores: 'El perfil de misión ha cambiado — ejecuta el piloto automático para actualizar las puntuaciones.',
     tableLabel: 'Tabla de comparación de sitios',
-    presets: {
-      apollo11: { label: 'Apollo 11', note: 'Salida tripulada corta con energía de celdas de combustible; sin relé y poco presupuesto de datos. Las celdas de combustible se modelan como energía no solar a bordo.' },
-      apollo17: { label: 'Apollo 17', note: 'Tres días de estancia tripulada en superficie, celdas de combustible, sin relé y presupuesto de datos moderado.' },
-      surveyor1: { label: 'Surveyor 1', note: 'Primer aterrizador robótico; energía solar/batería y misión corta en superficie.' },
-      luna9: { label: 'Luna 9', note: 'Primer aterrizaje suave robótico; misión solar/batería de un día y presupuesto de datos mínimo.' },
-      luna17: { label: 'Luna 17 / Lunokhod 1', note: 'Misión robótica solar larga con rover; sin relé en este perfil simplificado.' },
-      change4: { label: 'Change 4', note: 'Aterrizador solar con relé lunar (Queqiao); misión larga y mayor presupuesto de datos.' },
-      change5: { label: 'Change 5', note: 'Misión solar de retorno de muestras con relé; estancia corta en superficie.' },
-      artemis3: { label: 'Artemis III', note: 'Referencia tripulada moderna al polo sur: 14 días, solar/batería, 10 días de sol continuo requeridos.' },
-    },
+
 
   },
   datetime: {
@@ -700,6 +687,21 @@ export default {
       goToDate: 'Ir a la fecha viable',
       noDate: 'No hay fecha viable en la ventana buscada',
       noDateAlert: 'Ninguna zona tiene una fecha de misión viable en la ventana buscada — cambia el perfil de misión o el paso de búsqueda.',
+    },
+
+    presetLabel: 'Perfil de misión predefinido',
+    presetNone: 'Perfil de misión actual',
+    presetHint: 'Elige un perfil histórico para restringir los controles de misión, las zonas de aterrizaje y el autopiloto (valores aproximados).',
+    presetSource: 'Fuente de la misión',
+    presets: {
+      apollo11: { label: 'Apolo 11', note: 'Salida tripulada corta con energía de celdas de combustible; sin relé, presupuesto de datos pequeño. Las celdas de Apolo se modelan como energía no solar a bordo.' },
+      apollo17: { label: 'Apolo 17', note: 'Estancia tripulada de tres días, energía de celdas de combustible, sin relé, presupuesto de datos moderado.' },
+      surveyor1: { label: 'Surveyor 1', note: 'Aterrizador robótico temprano; energía solar/batería y misión corta.' },
+      luna9: { label: 'Luna 9', note: 'Primer aterrizaje suave robótico; misión solar/batería de un día, presupuesto de datos mínimo.' },
+      luna17: { label: 'Luna 17 / Lunokhod 1', note: 'Larga misión robótica solar con rover; sin relé en este perfil simplificado.' },
+      change4: { label: 'Change 4', note: 'Aterrizador solar con relé lunar (Queqiao); misión larga, mayor presupuesto de datos.' },
+      change5: { label: 'Change 5', note: 'Misión solar de retorno de muestras con relé; estancia corta.' },
+      artemis3: { label: 'Artemis III', note: 'Referencia tripulada moderna al polo sur: 14 días, solar/batería, 10 días de sol continuo requeridos.' },
     },
 
 

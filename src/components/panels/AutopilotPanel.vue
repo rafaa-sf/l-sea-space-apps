@@ -6,8 +6,9 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import PanelCard from '../ui/PanelCard.vue'
-import { actions, state } from '../composables/useAppState.js'
+import { actions, DEFAULT_MISSION, state } from '../composables/useAppState.js'
 import { reasonText, siteDisplayName } from '../composables/labels.js'
+import { MISSION_PRESETS, getMissionPreset } from '../../core/missionPresets.js'
 import { formatAngle, formatDistance, formatDuration, formatLat, formatLon, formatMeters, formatNumber, formatUtc } from '../composables/format.js'
 
 const { t, locale, te } = useI18n()
@@ -533,6 +534,28 @@ function formatFeasibleDate(value) {
   return Number.isNaN(date.getTime()) ? String(value) : formatUtc(date.toISOString())
 }
 
+const selectedPresetId = computed(() => {
+  const id = state.mission.presetId ?? ''
+  return getMissionPreset(id) ? id : ''
+})
+const activePreset = computed(() => getMissionPreset(state.mission.presetId ?? ''))
+
+function applyMissionPreset(event) {
+  const id = event.target.value
+  const preset = getMissionPreset(id)
+  if (!preset) {
+    if (state.mission.presetId) {
+      actions.updateMission({ ...DEFAULT_MISSION, presetId: null })
+      actions.runAutopilot().catch(() => {})
+      actions.runLandingZones().catch(() => {})
+    }
+    return
+  }
+  actions.updateMission({ ...preset.mission, presetId: preset.id })
+  actions.runAutopilot().catch(() => {})
+  actions.runLandingZones().catch(() => {})
+}
+
 const batteryCapacityWh = missionField('batteryCapacityWh')
 const heaterMaxW = missionField('heaterMaxW')
 const heaterWPerK = missionField('heaterWPerK')
@@ -654,6 +677,28 @@ const ranking = computed(() => state.scores)
         <span class="field__label">{{ t('autopilot.mission.bitrateMbps') }}</span>
         <input v-model.number="bitrateMbps" class="input" type="number" min="0.1" max="1000" step="0.1" />
       </label>
+    </div>
+
+    <div class="field presets">
+      <label class="field__label" for="mission-preset">{{ t('autopilot.presetLabel') }}</label>
+      <select
+        id="mission-preset"
+        class="input"
+        data-testid="mission-preset-select"
+        :value="selectedPresetId"
+        :aria-label="t('autopilot.presetLabel')"
+        @change="applyMissionPreset"
+      >
+        <option value="">{{ t('autopilot.presetNone') }}</option>
+        <option v-for="preset in MISSION_PRESETS" :key="preset.id" :value="preset.id">
+          {{ t(`autopilot.presets.${preset.id}.label`) }} ({{ preset.year }})
+        </option>
+      </select>
+      <p v-if="activePreset" class="panel-note">
+        {{ t(`autopilot.presets.${activePreset.id}.note`) }}
+        <a :href="activePreset.source" target="_blank" rel="noopener noreferrer">{{ t('autopilot.presetSource') }}</a>
+      </p>
+      <p v-else class="panel-note">{{ t('autopilot.presetHint') }}</p>
     </div>
 
     <p class="panel-note">

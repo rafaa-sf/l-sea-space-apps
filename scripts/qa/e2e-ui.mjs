@@ -341,6 +341,9 @@ report.compare = await click('Compare', true)
 await sleep(2000)
 text = await bodyText()
 report.comparator = section(text, 'COMPARATOR', 120)
+report.comparatorNoPreset = await evaluate(`![...document.querySelectorAll('[data-testid="mission-preset-select"]')].some((el) => el.offsetParent !== null)`)
+await click('Autopilot', true)
+await sleep(1000)
 report.presetChanged = await evaluate(`(() => {
   const select = document.querySelector('[data-testid="mission-preset-select"]');
   if (!select) return false;
@@ -357,7 +360,7 @@ await click('Autopilot', true)
 await sleep(1500)
 report.presetPowerSource = await evaluate(`document.querySelector('[data-testid="mission-power-source"]')?.value ?? null`)
 report.presetRtgPower = await evaluate(`document.querySelector('[data-testid="mission-rtg-power"]')?.value ?? null`)
-await click('Compare', true)
+await click('Autopilot', true)
 await sleep(1200)
 report.presetRestored = await evaluate(`(() => {
   const select = document.querySelector('[data-testid="mission-preset-select"]');
@@ -656,9 +659,9 @@ report.cyclesSeekWorks = Boolean(report.cyclesSeekClicked && report.cyclesTimeAf
 
 // Task-29: feasible mission date per zone and timeline jump (Artemis III preset).
 await evaluate(`(() => {
-  const compare = [...document.querySelectorAll('button')].find((button) => (button.textContent || '').trim() === 'Compare');
-  if (compare) compare.click();
-  return Boolean(compare);
+  const tab = document.querySelector('[data-testid="analysis-tab-autopilot"]');
+  if (tab) tab.click();
+  return Boolean(tab);
 })()`)
 await sleep(600)
 report.presetApplied = await evaluate(`(() => {
@@ -755,7 +758,7 @@ report.dateStepMeta = stepMetaText
 report.dateStepValue = await evaluate(`document.querySelector('[data-testid="ap-date-step"]')?.value ?? null`)
 report.dateStepRecomputed = /step 24 h/.test(stepMetaText) || report.dateStepValue === '24'
 report.dateStepSignature = signatureAfterStep
-await click('Compare', true)
+await click('Autopilot', true)
 await sleep(1000)
 await evaluate(`(() => {
   const select = document.querySelector('[data-testid="mission-preset-select"]');
@@ -918,7 +921,7 @@ const failed =
   !report.defaultFeasible || !Array.isArray(report.zoneDuplicateLabels) || report.zoneDuplicateLabels.length > 0 ||
   !report.infeasibleState || !report.infeasibleBadge || !report.infeasibleAlert ||
   !report.restorePower || !report.restoredFeasible ||
-  !report.presetApplied || !report.dateJumpClicked || !report.dateJumpChanged ||
+  !report.comparatorNoPreset || !report.presetApplied || !report.dateJumpClicked || !report.dateJumpChanged ||
   report.dateRowsWithDate < 1 || !report.dateSearchToggle ||
   !report.dateStepChanged || !report.dateStepRecomputed ||
   !(report.cyclesSunSegments >= 1) || !(report.cyclesDirectSegments >= 1) ||

@@ -6,9 +6,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import StatRow from '../ui/StatRow.vue'
-import { actions, DEFAULT_MISSION, MAX_COMPARE, compareSites, isLandingZoneSite, selectedSite, state } from '../composables/useAppState.js'
+import { actions, MAX_COMPARE, compareSites, isLandingZoneSite, selectedSite, state } from '../composables/useAppState.js'
 import { siteDisplayName } from '../composables/labels.js'
-import { MISSION_PRESETS, getMissionPreset } from '../../core/missionPresets.js'
 import { formatAngle, formatLat, formatNumber } from '../composables/format.js'
 
 const { t, te } = useI18n()
@@ -46,32 +45,6 @@ function updateMast(id, value) {
 
 const maxReached = computed(() => state.compareSiteIds.length >= MAX_COMPARE)
 
-// The select mirrors `state.mission` so a preset applied elsewhere (autopilot,
-// another panel) is reflected here. Unknown ids fall back to "current profile"
-// instead of leaving the select blank or rendering `undefined` details.
-const selectedPresetId = computed(() => {
-  const id = state.mission.presetId ?? ''
-  return getMissionPreset(id) ? id : ''
-})
-
-const activePreset = computed(() => getMissionPreset(state.mission.presetId ?? ''))
-
-function applyMissionPreset(event) {
-  const id = event.target.value
-  const preset = getMissionPreset(id)
-  if (!preset) {
-    if (state.mission.presetId) {
-      actions.updateMission({ ...DEFAULT_MISSION, presetId: null })
-      actions.runAutopilot().catch(() => {})
-      actions.runLandingZones().catch(() => {})
-    }
-    return
-  }
-  actions.updateMission({ ...preset.mission, presetId: preset.id })
-  actions.runAutopilot().catch(() => {})
-  actions.runLandingZones().catch(() => {})
-}
-
 /**
  * Finite number or `null`; missing score fields (null/undefined/'') stay
  * missing instead of collapsing to 0.
@@ -85,20 +58,21 @@ function numericOr(value) {
 /** Fixed-point text that never leaks `NaN`/`undefined` into the table. */
 function fixedText(value, digits) {
   const numeric = numericOr(value)
-  return numeric === null ? '—' : numeric.toFixed(digits)
+  return numeric === null ? '\u2014' : numeric.toFixed(digits)
 }
 
 /** Power in watts, or a bare dash when the score has no usable average. */
 function wattText(value) {
   const numeric = numericOr(value)
-  return numeric === null ? '—' : `${formatNumber(numeric, 0)} W`
+  return numeric === null ? '\u2014' : `${formatNumber(numeric, 0)} W`
 }
 
 /** `#3`, or a bare dash when the rank is missing. */
 function rankText(value) {
   const numeric = numericOr(value)
-  return numeric === null ? '—' : `#${numeric}`
+  return numeric === null ? '\u2014' : `#${numeric}`
 }
+
 </script>
 
 <template>
@@ -181,28 +155,6 @@ function rankText(value) {
         </div>
       </div>
     </template>
-
-    <div class="field presets">
-      <label class="field__label" for="mission-preset">{{ t('comparator.presetLabel') }}</label>
-      <select
-        id="mission-preset"
-        class="input"
-        data-testid="mission-preset-select"
-        :value="selectedPresetId"
-        :aria-label="t('comparator.presetLabel')"
-        @change="applyMissionPreset"
-      >
-        <option value="">{{ t('comparator.presetNone') }}</option>
-        <option v-for="preset in MISSION_PRESETS" :key="preset.id" :value="preset.id">
-          {{ t(`comparator.presets.${preset.id}.label`) }} ({{ preset.year }})
-        </option>
-      </select>
-      <p v-if="activePreset" class="panel-note">
-        {{ t(`comparator.presets.${activePreset.id}.note`) }}
-        <a :href="activePreset.source" target="_blank" rel="noopener noreferrer">{{ t('comparator.presetSource') }}</a>
-      </p>
-      <p v-else class="panel-note">{{ t('comparator.presetHint') }}</p>
-    </div>
 
     <p v-if="maxReached" class="plain-panel__foot">{{ t('comparator.maxReached', { max: MAX_COMPARE }) }}</p>
     <p v-if="state.autopilot.status === 'stale'" class="plain-panel__foot">{{ t('comparator.staleScores') }}</p>
