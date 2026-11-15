@@ -3,10 +3,13 @@
 Lunar south-pole landing site navigator built for the NASA International Space
 Apps Challenge, Málaga 2026.
 
-The application lets mission planners, educators and the public compare lunar
-landing sites and dates in seconds: select a site, choose a date, and see the Sun
-and Earth relative to the local terrain horizon, with power and direct-to-Earth
-communication windows derived from real NASA data.
+L-SEA compares candidate lunar south-pole landing sites and mission dates from
+real NASA data. Select a DEM region and a curated site, or a detected landing
+zone; the autopilot ranks the zones and can search the 2026-11-01..2026-12-31
+ephemeris window for an earliest feasible mission-start date automatically
+(manual date selection remains available). The selected case shows the Sun and
+Earth against the local terrain horizon, with power and direct-to-Earth/relay
+communication windows derived from the same data.
 
 [![CI](https://github.com/rafaa-sf/l-sea-space-apps/actions/workflows/ci.yml/badge.svg)](https://github.com/rafaa-sf/l-sea-space-apps/actions/workflows/ci.yml)
 [![Live](https://img.shields.io/badge/live-rafaa--sf.github.io%2Fl--sea--space--apps-2ea44f)](https://rafaa-sf.github.io/l-sea-space-apps/)
@@ -19,16 +22,38 @@ communication windows derived from real NASA data.
 
 ## What it does
 
-Landing on the Moon's south pole means trading sunlight for power, Earth
-visibility for communications, and terrain that hides the horizon. The data lives
-in specialist tools such as JPL Horizons, Moon Trek and LROC QuickMap; L-SEA turns
-it into a single comparison workflow. At the pole the terrain, not the ephemeris
-alone, decides whether the Sun or the Earth is visible, so the tool ray-traces the
-local horizon from real LOLA elevation data before estimating power, links and
-mission feasibility.
+L-SEA is a browser-based mission-planning console for the lunar south pole. It
+combines a LOLA polar DEM, precomputed JPL Horizons topocentric Sun/Earth
+ephemerides and a mission profile into one analysis: the user selects a DEM
+region, a curated site or a detected landing zone, sets the mission start date
+(or a preset), and the application ray-traces the local terrain horizon before
+computing illumination, power and communications.
 
-The canonical feature reference — what each feature does, which modules implement
-it and why the design was chosen — is **[docs/features.md](docs/features.md)**.
+- **Terrain and hazard inputs.** LOLA polar DEMs are loaded in
+  polar-stereographic projection; slope, roughness, relief, crater hazards and
+  landing-ellipse fit are computed from the same grid, and the local horizon is
+  ray-traced for every azimuth with lunar curvature.
+- **Mission modelling.** Topocentric Sun/Earth positions feed illumination,
+  thermal equilibrium, solar/RTG power, eclipse battery sizing, direct and relay
+  communications, and the hard feasibility gate (continuous sunlight,
+  longest-eclipse battery, power margin, thermal, data).
+- **Autopilot and date search.** The autopilot is deterministic: it detects
+  contiguous flat zones from DEM slope and roughness thresholds, ray-traces the
+  local horizon for each zone, evaluates the hard feasibility gates (continuous
+  sunlight, longest-eclipse battery, power margin, thermal, data) and ranks zones
+  by the documented weighted score; it also searches 2026-11-01..2026-12-31 for
+  each zone's earliest feasible mission-start date.
+- **Outputs.** 3D and top-down 2D views with Moon Trek layers, a timeline and
+  weekly sunlight/link/relay cycle strips, a site comparator and per-site
+  analysis panels, and an exportable JSON mission brief.
+- **Boundaries.** The application is a static front end with computation in a Web
+  Worker; NASA inputs are precomputed (ephemeris 2026-11-01..2026-12-31, LOLA
+  DEMs), results are planning estimates rather than certification, and missing
+  coverage is reported instead of extrapolated.
+
+Implementation details and module contracts are in
+**[docs/architecture.md](docs/architecture.md)**; the feature reference is
+**[docs/features.md](docs/features.md)**.
 
 ## Entry points
 
