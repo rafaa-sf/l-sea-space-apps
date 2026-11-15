@@ -95,39 +95,41 @@ function openDocsIndex() {
           </div>
           <p class="landing__cta-hint">{{ t('landing.ctaHint') }}</p>
         </div>
-      </section>
 
-      <section class="landing__stats" :aria-label="t('landing.stats.data')">
-        <div class="landing__stat">
-          <strong>{{ t('landing.stats.data') }}</strong>
-          <span>{{ t('landing.stats.dataNote') }}</span>
-        </div>
-        <div class="landing__stat">
-          <strong>{{ t('landing.stats.languages') }}</strong>
-          <span>{{ t('landing.stats.languagesNote') }}</span>
-        </div>
-        <div class="landing__stat">
-          <strong>{{ t('landing.stats.tested') }}</strong>
-          <span>{{ t('landing.stats.testedNote') }}</span>
-        </div>
+        <aside class="landing__hero-aside" :aria-label="t('landing.stats.data')">
+          <div class="landing__stat">
+            <strong>{{ t('landing.stats.data') }}</strong>
+            <span>{{ t('landing.stats.dataNote') }}</span>
+          </div>
+          <div class="landing__stat">
+            <strong>{{ t('landing.stats.languages') }}</strong>
+            <span>{{ t('landing.stats.languagesNote') }}</span>
+          </div>
+          <div class="landing__stat">
+            <strong>{{ t('landing.stats.tested') }}</strong>
+            <span>{{ t('landing.stats.testedNote') }}</span>
+          </div>
+        </aside>
       </section>
 
       <section class="landing__section" :aria-label="t('landing.howto.title')">
         <h2 class="landing__h2">{{ t('landing.howto.title') }}</h2>
-        <ol class="landing__steps">
-          <li v-for="n in 3" :key="n" class="landing__step">
-            <span class="landing__step-num" aria-hidden="true">{{ n }}</span>
-            <div>
-              <h3>{{ t(`landing.howto.s${n}t`) }}</h3>
-              <p>{{ t(`landing.howto.s${n}b`) }}</p>
-            </div>
-          </li>
-        </ol>
+        <div class="landing__section-body">
+          <ol class="landing__steps">
+            <li v-for="n in 3" :key="n" class="landing__step">
+              <span class="landing__step-num" aria-hidden="true">{{ n }}</span>
+              <div>
+                <h3>{{ t(`landing.howto.s${n}t`) }}</h3>
+                <p>{{ t(`landing.howto.s${n}b`) }}</p>
+              </div>
+            </li>
+          </ol>
+        </div>
       </section>
 
       <section class="landing__section" :aria-label="t('landing.challenge.title')">
         <h2 class="landing__h2">{{ t('landing.challenge.title') }}</h2>
-        <div class="landing__two-col">
+        <div class="landing__section-body landing__two-col">
           <p class="landing__lead">{{ t('landing.challenge.body') }}</p>
           <ul class="landing__list">
             <li>{{ t('landing.challenge.p1') }}</li>
@@ -139,7 +141,7 @@ function openDocsIndex() {
 
       <section class="landing__section" :aria-label="t('landing.features.title')">
         <h2 class="landing__h2">{{ t('landing.features.title') }}</h2>
-        <div class="landing__grid landing__grid--features">
+        <div class="landing__section-body landing__grid landing__grid--features">
           <article class="landing__card">
             <span class="landing__card-icon" aria-hidden="true">◎</span>
             <h3>{{ t('landing.features.f1t') }}</h3>
@@ -165,7 +167,7 @@ function openDocsIndex() {
 
       <section class="landing__section" :aria-label="t('landing.data.title')">
         <h2 class="landing__h2">{{ t('landing.data.title') }}</h2>
-        <div class="landing__grid landing__grid--three">
+        <div class="landing__section-body landing__grid landing__grid--three">
           <article class="landing__card">
             <h3>{{ t('landing.data.d1t') }}</h3>
             <p>{{ t('landing.data.d1b') }}</p>
@@ -183,44 +185,48 @@ function openDocsIndex() {
 
       <section class="landing__section" :aria-label="t('landing.impact.title')">
         <h2 class="landing__h2">{{ t('landing.impact.title') }}</h2>
-        <div class="landing__two-col landing__two-col--cards">
-          <article class="landing__card">
-            <h3>{{ t('landing.impact.i1t') }}</h3>
-            <p>{{ t('landing.impact.i1b') }}</p>
-          </article>
-          <article class="landing__card">
-            <h3>{{ t('landing.impact.i2t') }}</h3>
-            <p>{{ t('landing.impact.i2b') }}</p>
-          </article>
+        <div class="landing__section-body">
+          <div class="landing__two-col landing__two-col--cards">
+            <article class="landing__card">
+              <h3>{{ t('landing.impact.i1t') }}</h3>
+              <p>{{ t('landing.impact.i1b') }}</p>
+            </article>
+            <article class="landing__card">
+              <h3>{{ t('landing.impact.i2t') }}</h3>
+              <p>{{ t('landing.impact.i2b') }}</p>
+            </article>
+          </div>
+          <p class="landing__section-link">
+            <a :href="docUrl('docs/scalability.md')" target="_blank" rel="noopener noreferrer">
+              {{ t('landing.impact.link') }} <span aria-hidden="true">↗</span>
+            </a>
+          </p>
         </div>
-        <p class="landing__section-link">
-          <a :href="docUrl('docs/scalability.md')" target="_blank" rel="noopener noreferrer">
-            {{ t('landing.impact.link') }} <span aria-hidden="true">↗</span>
-          </a>
-        </p>
       </section>
 
       <section class="landing__section" :aria-label="t('landing.docs.title')">
         <h2 class="landing__h2">{{ t('landing.docs.title') }}</h2>
-        <p class="landing__lead">{{ t('landing.docs.subtitle') }}</p>
-        <div class="landing__grid landing__grid--docs">
-          <a
-            v-for="doc in DOCS"
-            :key="doc.key"
-            class="landing__doc"
-            :href="docUrl(doc.path)"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span class="landing__doc-icon" aria-hidden="true">{{ doc.icon }}</span>
-            <span class="landing__doc-label">{{ t(`landing.docs.${doc.key}`) }}</span>
-          </a>
+        <div class="landing__section-body">
+          <p class="landing__lead">{{ t('landing.docs.subtitle') }}</p>
+          <div class="landing__grid landing__grid--docs">
+            <a
+              v-for="doc in DOCS"
+              :key="doc.key"
+              class="landing__doc"
+              :href="docUrl(doc.path)"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span class="landing__doc-icon" aria-hidden="true">{{ doc.icon }}</span>
+              <span class="landing__doc-label">{{ t(`landing.docs.${doc.key}`) }}</span>
+            </a>
+          </div>
+          <p class="landing__section-link">
+            <a :href="DOCS_INDEX" target="_blank" rel="noopener noreferrer">
+              {{ t('landing.docs.open') }} <span aria-hidden="true">↗</span>
+            </a>
+          </p>
         </div>
-        <p class="landing__section-link">
-          <a :href="DOCS_INDEX" target="_blank" rel="noopener noreferrer">
-            {{ t('landing.docs.open') }} <span aria-hidden="true">↗</span>
-          </a>
-        </p>
       </section>
     </main>
 
@@ -237,6 +243,7 @@ function openDocsIndex() {
 
 <style scoped>
 .landing {
+  counter-reset: landing-section;
   min-height: 100vh;
   overflow-x: hidden;
   background:
@@ -247,6 +254,7 @@ function openDocsIndex() {
   font-family: var(--font-ui);
 }
 
+/* ---------------------------------------------------------------- top bar */
 .landing__bar {
   position: sticky;
   top: 0;
@@ -255,7 +263,7 @@ function openDocsIndex() {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 10px 20px;
+  padding: 10px clamp(12px, 3vw, 24px);
   border-bottom: 1px solid var(--color-border);
   background: rgba(13, 16, 22, 0.92);
   backdrop-filter: blur(8px);
@@ -268,10 +276,18 @@ function openDocsIndex() {
   min-width: 0;
 }
 
+.landing__brand .brand-product {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .landing__bar-right {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: 0 0 auto;
 }
 
 .landing__lang {
@@ -283,12 +299,13 @@ function openDocsIndex() {
 
 .landing__lang-button {
   border: 0;
-  padding: 4px 8px;
+  padding: 6px 10px;
   background: transparent;
   color: var(--color-text-dim);
   font: inherit;
   font-size: 12px;
   cursor: pointer;
+  min-height: 28px;
 }
 
 .landing__lang-button.is-active {
@@ -296,43 +313,56 @@ function openDocsIndex() {
   color: var(--color-accent-strong);
 }
 
+/* ------------------------------------------------------------ containers */
 .landing__main {
-  width: min(1120px, 100% - 40px);
+  width: min(1180px, 100% - 32px);
   margin: 0 auto;
-  padding: 40px 0 8px;
+  padding: 20px 0 0;
 }
 
+/* ------------------------------------------------------------------ hero */
 .landing__hero {
-  padding: 24px 0 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.75fr);
+  gap: clamp(18px, 3vw, 36px);
+  align-items: start;
+  padding: 12px 0 18px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.landing__hero-text {
+  min-width: 0;
 }
 
 .landing__badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 0 0 14px;
+  gap: 6px;
+  margin: 0 0 10px;
 }
 
 .landing__title {
   margin: 0;
-  font-size: clamp(30px, 4.6vw, 52px);
-  line-height: 1.06;
+  font-size: clamp(28px, 3.6vw, 44px);
+  line-height: 1.08;
   letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
 }
 
 .landing__subtitle {
-  max-width: 62ch;
-  margin: 14px 0 0;
+  max-width: 64ch;
+  margin: 10px 0 0;
   color: var(--color-text-dim);
-  font-size: clamp(16px, 1.5vw, 18px);
+  font-size: clamp(15px, 1.1vw, 17px);
   line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 .landing__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 22px;
+  margin-top: 16px;
 }
 
 .landing__cta {
@@ -341,124 +371,225 @@ function openDocsIndex() {
 }
 
 .landing__cta-hint {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   color: var(--color-text-faint);
   font-size: 12px;
 }
 
-.landing__stats {
+.landing__hero-aside {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin: 28px 0 8px;
+  gap: 8px;
+  min-width: 0;
 }
 
 .landing__stat {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 14px 16px;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 12px;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius);
+  border-left: 2px solid var(--color-accent);
+  border-radius: var(--radius-sm);
   background: var(--color-surface);
 }
 
 .landing__stat strong {
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .landing__stat span {
   color: var(--color-text-dim);
   font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
+/* --------------------------------------------------------------- sections */
 .landing__section {
-  padding: 34px 0 6px;
+  counter-increment: landing-section;
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: clamp(14px, 2.4vw, 28px);
+  align-items: start;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .landing__h2 {
-  margin: 0 0 16px;
-  font-size: clamp(18px, 2.2vw, 24px);
-  letter-spacing: -0.01em;
-}
-
-.landing__two-col {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  gap: 22px;
-  align-items: start;
-}
-
-.landing__two-col--cards {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.landing__lead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   margin: 0;
-  color: var(--color-text-dim);
   font-size: 16px;
-  line-height: 1.6;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
 }
 
-.landing__list {
-  margin: 0;
-  padding-left: 18px;
-  color: var(--color-text-dim);
-  line-height: 1.6;
+.landing__h2::before {
+  content: counter(landing-section, decimal-leading-zero);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-accent-strong);
 }
 
-.landing__list li + li {
-  margin-top: 8px;
+.landing__section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
 }
 
+.landing__section-body > * {
+  min-width: 0;
+}
+
+/* ------------------------------------------------------------------ grids */
 .landing__grid {
   display: grid;
-  gap: 12px;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.landing__grid > * {
+  min-width: 0;
 }
 
 .landing__grid--features {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .landing__grid--three {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.landing__grid--docs {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* ------------------------------------------------------------------ cards */
 .landing__card {
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  padding: 14px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background: var(--color-surface);
 }
 
+.landing__card-icon {
+  color: var(--color-accent-strong);
+  font-size: 15px;
+}
+
 .landing__card h3 {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 14px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .landing__card p {
   margin: 0;
   color: var(--color-text-dim);
   font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.landing__two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: clamp(14px, 2.4vw, 26px);
+  align-items: start;
+}
+
+.landing__two-col--cards {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.landing__lead {
+  margin: 0;
+  color: var(--color-text-dim);
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.landing__list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--color-text-dim);
+  font-size: 14px;
   line-height: 1.55;
 }
 
-.landing__card-icon {
-  display: inline-block;
-  margin-bottom: 10px;
+.landing__list li + li {
+  margin-top: 6px;
+}
+
+/* ------------------------------------------------------------------ steps */
+.landing__steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  align-items: stretch;
+}
+
+.landing__step {
+  display: flex;
+  gap: 10px;
+  height: 100%;
+  padding: 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.landing__step-num {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-accent-soft);
   color: var(--color-accent-strong);
-  font-size: 16px;
+  font-weight: 700;
+  font-size: 12px;
 }
 
-.landing__grid--docs {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.landing__step h3 {
+  margin: 0 0 3px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
 }
 
+.landing__step p {
+  margin: 0;
+  color: var(--color-text-dim);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------------- docs */
 .landing__doc {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px;
+  min-height: 40px;
+  min-width: 0;
+  padding: 8px 10px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
@@ -466,6 +597,12 @@ function openDocsIndex() {
   font-size: 12.5px;
   text-decoration: none;
   transition: border-color 120ms ease, background 120ms ease;
+}
+
+.landing__doc-label {
+  min-width: 0;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .landing__doc:hover {
@@ -479,11 +616,12 @@ function openDocsIndex() {
 }
 
 .landing__doc-icon {
+  flex: 0 0 auto;
   color: var(--color-text-faint);
 }
 
 .landing__section-link {
-  margin: 14px 0 0;
+  margin: 0;
   font-size: 13px;
 }
 
@@ -503,16 +641,16 @@ function openDocsIndex() {
   text-decoration: underline;
 }
 
+/* ----------------------------------------------------------------- footer */
 .landing__footer {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  width: min(1120px, 100% - 40px);
-  margin: 40px auto 0;
-  padding: 18px 0 26px;
-  border-top: 1px solid var(--color-border);
+  width: min(1180px, 100% - 32px);
+  margin: 22px auto 0;
+  padding: 14px 0 24px;
   color: var(--color-text-faint);
   font-size: 12px;
 }
@@ -533,85 +671,68 @@ function openDocsIndex() {
   text-decoration: underline;
 }
 
-.landing__steps {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.landing__step {
-  display: flex;
-  gap: 12px;
-  padding: 16px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius);
-  background: var(--color-surface);
-}
-
-.landing__step-num {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--color-accent-soft);
-  color: var(--color-accent-strong);
-  font-weight: 700;
-  font-size: 14px;
-}
-
-.landing__step h3 {
-  margin: 0 0 6px;
-  font-size: 16px;
-}
-
-.landing__step p {
-  margin: 0;
-  color: var(--color-text-dim);
-  font-size: 16px;
-  line-height: 1.5;
-}
-
-@media (max-width: 1024px) {
-  .landing__grid--features,
-  .landing__grid--docs {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 720px) {
-  .landing__main {
-    width: min(1120px, 100% - 24px);
-    padding-top: 20px;
-  }
-
-  .landing__stats {
+/* ------------------------------------------------------------- responsive */
+@media (max-width: 1000px) {
+  .landing__hero {
     grid-template-columns: 1fr;
   }
 
-  .landing__two-col,
-  .landing__two-col--cards,
+  .landing__hero-aside {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .landing__section {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 16px 0;
+  }
+}
+
+@media (max-width: 820px) {
   .landing__grid--three,
+  .landing__grid--docs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .landing__steps {
     grid-template-columns: 1fr;
   }
 
+  .landing__two-col,
+  .landing__two-col--cards {
+    grid-template-columns: 1fr;
+  }
+
+  .landing__hero-aside {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .landing__main {
+    width: min(1180px, 100% - 24px);
+  }
+
   .landing__grid--features,
+  .landing__grid--three,
   .landing__grid--docs {
     grid-template-columns: 1fr;
   }
 
   .landing__bar {
-    padding: 10px 12px;
+    padding: 8px 12px;
   }
 
   .landing__bar-right .chip {
     display: none;
+  }
+
+  .landing__title {
+    font-size: 26px;
+  }
+
+  .landing__footer {
+    width: min(1180px, 100% - 24px);
   }
 }
 </style>
