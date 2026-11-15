@@ -12,7 +12,7 @@ cover, per the participant guide).
 ## Regenerate
 
 ```bash
-python3 -m pip install --user python-pptx
+python3 -m pip install --user python-pptx Pillow pyqrcode
 python3 scripts/demo/build-demo-deck.py
 ```
 
