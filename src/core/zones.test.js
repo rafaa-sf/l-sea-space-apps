@@ -490,3 +490,108 @@ describe('feasibility-first ranking', () => {
     }
   })
 })
+
+const CRATER_CENTRE_X = -1500
+
+/**
+ * Flat plain (≈22 km²) with one crater-like depression whose interior floor is
+ * flat enough to pass the slope gate, so `findCraters` detects it and crater
+ * avoidance visibly removes its footprint from the candidate zones.
+ *
+ * @returns {import('./terrain.js').Terrain}
+ */
+function makeCraterTerrain() {
+  const elevationFn = (x, y) => {
+    const r = Math.hypot(x - CRATER_CENTRE_X, y)
+    if (r <= 100) return -100 + 20 * (r / 100) ** 2
+    if (r <= 500) return -80
+    if (r <= 600) return -80 + 100 * ((r - 500) / 100)
+    if (r <= 750) return 20 - 20 * ((r - 600) / 150)
+    return 0
+  }
+  return makePlane({
+    width: 100,
+    height: 100,
+    minX: -2500,
+    maxX: 2500,
+    minY: -2500,
+    maxY: 2500,
+    elevationFn,
+  })
+}
+
+/**
+ * Planar distance from a zone centroid to the synthetic crater centre.
+ *
+ * @param {{xMeters: number, yMeters: number}} zone
+ * @returns {number} Distance in metres.
+ */
+function distanceToCrater(zone) {
+  return Math.hypot(zone.xMeters - CRATER_CENTRE_X, zone.yMeters)
+}
+
+describe('crater-aware zone detection', () => {
+  const baseOptions = { minAreaKm2: 0.1, maxRoughnessM: null }
+
+  it('defaults to the crater-free pipeline', () => {
+    const result = detectLandingZones(makeCraterTerrain(), baseOptions)
+    expect(normalizeZoneOptions({}).avoidCraters).toBe(false)
+    expect(normalizeZoneOptions({}).craterClearanceM).toBe(0)
+    expect(result.meta.options.avoidCraters).toBe(false)
+    expect(result.meta.options.craterClearanceM).toBe(0)
+    expect('cratersConsidered' in result.meta).toBe(false)
+    expect('craterCellsExcluded' in result.meta).toBe(false)
+    expect(result.zones.length).toBeGreaterThanOrEqual(2)
+    expect(result.zones.some((zone) => distanceToCrater(zone) < 200)).toBe(true)
+  })
+
+  it('excludes the crater footprint and keeps the remaining flat zones', () => {
+    const reference = detectLandingZones(makeCraterTerrain(), baseOptions)
+    const result = detectLandingZones(makeCraterTerrain(), {
+      ...baseOptions,
+      avoidCraters: true,
+      craterMinDiameterM: 500,
+    })
+    expect(result.meta.options.avoidCraters).toBe(true)
+    expect(result.meta.cratersConsidered).toBeGreaterThanOrEqual(1)
+    expect(result.meta.craterCellsExcluded).toBeGreaterThan(0)
+    expect(result.meta.zoneCount).toBeLessThan(reference.meta.zoneCount)
+    expect(result.zones.length).toBeGreaterThanOrEqual(1)
+    expect(result.zones.every((zone) => distanceToCrater(zone) > 600)).toBe(true)
+  })
+
+  it('enlarges the exclusion with craterClearanceM', () => {
+    const defaultClearance = detectLandingZones(makeCraterTerrain(), {
+      ...baseOptions,
+      avoidCraters: true,
+    })
+    const wideClearance = detectLandingZones(makeCraterTerrain(), {
+      ...baseOptions,
+      avoidCraters: true,
+      craterClearanceM: 400,
+    })
+    expect(wideClearance.meta.options.craterClearanceM).toBe(400)
+    expect(wideClearance.meta.craterCellsExcluded).toBeGreaterThan(defaultClearance.meta.craterCellsExcluded)
+    expect(wideClearance.zones.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('stays safe without a usable terrain', () => {
+    const missing = detectLandingZones(null, { avoidCraters: true })
+    expect(missing.zones).toEqual([])
+    expect(missing.meta.error).toBe('missing-terrain')
+
+    const tiny = detectLandingZones(
+      makePlane({ width: 2, height: 2, elevationFn: () => 0 }),
+      { avoidCraters: true },
+    )
+    expect(tiny.zones).toEqual([])
+    expect(tiny.meta.error).toBe('terrain-too-small')
+  })
+
+  it('is deterministic for identical inputs', () => {
+    const options = { ...baseOptions, avoidCraters: true, craterClearanceM: 200 }
+    const first = detectLandingZones(makeCraterTerrain(), options)
+    const second = detectLandingZones(makeCraterTerrain(), options)
+    expect(JSON.stringify(second)).toBe(JSON.stringify(first))
+  })
+})

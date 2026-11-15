@@ -14,6 +14,11 @@
  *    mean elevation, relief),
  * 6. keep the `maxZones` safest zones, sorted largest-and-flattest first.
  *
+ * Optionally (`avoidCraters`, `craterClearanceM`), cells inside craters detected
+ * on the same DEM (`findCraters`) are removed from the pass mask before the
+ * components are grown, so the caller can request flat zones outside craters.
+ * The option defaults to off and leaves the crater-free pipeline unchanged.
+ *
  * Large DEMs (the 2048 × 2048 high-resolution region) are downsampled for
  * detection (`maxCells`, default ~1.1 M processed cells → stride 2 for 2048²),
  * which keeps the worker task well below the UI's latency budget. The resulting
@@ -35,6 +40,7 @@ import {
   normalizeLongitude,
 } from './geometry.js'
 import {
+  findCraters,
   isPlanarTerrain,
   isLatLonTerrain,
   lonLatToXY,
@@ -51,6 +57,8 @@ export const DEFAULT_ZONE_OPTIONS = Object.freeze({
   maxZones: 12,
   maxCells: 1100000,
   downsample: null,
+  avoidCraters: false,
+  craterClearanceM: 0,
 })
 
 /**
@@ -64,12 +72,15 @@ export const DEFAULT_ZONE_OPTIONS = Object.freeze({
  *   maxZones?: number,
  *   maxCells?: number,
  *   downsample?: number|null,
+ *   avoidCraters?: boolean,
+ *   craterClearanceM?: number,
  * }} [options]
  * @returns {typeof DEFAULT_ZONE_OPTIONS}
  */
 export function normalizeZoneOptions(options = {}) {
   const merged = { ...DEFAULT_ZONE_OPTIONS, ...(options && typeof options === 'object' ? options : {}) }
   const maxRoughnessM = Number(merged.maxRoughnessM)
+  const craterClearanceM = Number(merged.craterClearanceM)
   return {
     maxSlopeDeg: clamp(Number(merged.maxSlopeDeg) || DEFAULT_ZONE_OPTIONS.maxSlopeDeg, 0.5, 45),
     maxRoughnessM: Number.isFinite(maxRoughnessM) && maxRoughnessM > 0 ? maxRoughnessM : null,
@@ -81,6 +92,8 @@ export function normalizeZoneOptions(options = {}) {
       Number.isFinite(Number(merged.downsample)) && Number(merged.downsample) >= 1
         ? Math.round(Number(merged.downsample))
         : null,
+    avoidCraters: merged.avoidCraters === true,
+    craterClearanceM: Number.isFinite(craterClearanceM) && craterClearanceM >= 0 ? craterClearanceM : 0,
   }
 }
 
@@ -120,7 +133,9 @@ export function zoneSuitability(zone, maxSlopeDeg) {
  * Detect flat landing zones on a DEM.
  *
  * @param {import('./terrain.js').Terrain|null} terrain Loaded DEM region.
- * @param {Object} [options] See {@link DEFAULT_ZONE_OPTIONS}.
+ * @param {Object} [options] See {@link DEFAULT_ZONE_OPTIONS}; `avoidCraters` and
+ *   `craterClearanceM` enable the optional crater exclusion, and
+ *   `craterMinDiameterM` (default 500 m) is forwarded to `findCraters`.
  * @returns {{
  *   zones: Array<{
  *     id: string,
@@ -139,6 +154,9 @@ export function zoneSuitability(zone, maxSlopeDeg) {
  *   }>,
  *   meta: Object,
  * }} Detected zones (empty when no DEM or no flat area passes the filters).
+ * When `avoidCraters` is enabled, `meta.cratersConsidered` counts the detected
+ * craters that fall on the terrain and `meta.craterCellsExcluded` counts the
+ * pass cells removed from the mask. The option defaults off.
  */
 export function detectLandingZones(terrain, options = {}) {
   const opts = normalizeZoneOptions(options)
@@ -255,6 +273,112 @@ export function detectLandingZones(terrain, options = {}) {
       }
 
       passMask[index] = 1
+    }
+  }
+
+  // Optional crater exclusion: drop pass cells that fall inside craters
+  // detected on the same DEM, so the caller can request flat zones outside
+  // craters. Cells are tested at their centre, in the same projected-grid
+  // geometry used for the zone centroids, and only inside each crater's
+  // bounding box (the distance check is a strict `< radius` test with
+  // `radius = diameterM / 2 + craterClearanceM`).
+  let cratersConsidered = 0
+  let craterCellsExcluded = 0
+  if (opts.avoidCraters) {
+    const requestedMinDiameterM = Number(options.craterMinDiameterM)
+    const minCraterDiameterM =
+      Number.isFinite(requestedMinDiameterM) && requestedMinDiameterM > 0 ? requestedMinDiameterM : 500
+    const craters = findCraters(terrain, { minDiameterM: minCraterDiameterM })
+    const clearanceM = opts.craterClearanceM
+    const basePixelM = Math.max(Number(terrain.pixelSizeM) || 0, 1e-6)
+    const lat0 = Number(terrain.lat0)
+    const lon0 = Number(terrain.lon0)
+    const stepLat = kind === 'latlon' ? (terrain.lat1 - terrain.lat0) / (height - 1) : 0
+    const stepLon = kind === 'latlon' ? (terrain.lon1 - terrain.lon0) / (width - 1) : 0
+
+    for (const crater of craters) {
+      const lat = Number(crater?.lat)
+      const lon = Number(crater?.lon)
+      const diameterM = Number(crater?.diameterM)
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue
+      const radiusM = diameterM / 2 + clearanceM
+      if (!(Number.isFinite(radiusM) && radiusM > 0)) continue
+
+      let centreX
+      let centreY
+      let rowMin
+      let rowMax
+      let colMin
+      let colMax
+      if (kind === 'planar') {
+        const projected = lonLatToXY(lat, lon, referenceRadiusM)
+        centreX = projected.x
+        centreY = projected.y
+        if (
+          centreX < Number(terrain.minX) ||
+          centreX > Number(terrain.maxX) ||
+          centreY < Number(terrain.minY) ||
+          centreY > Number(terrain.maxY)
+        ) {
+          continue
+        }
+        colMin = Math.ceil(((centreX - radiusM - Number(terrain.minX)) / basePixelM - 0.5) / stride)
+        colMax = Math.floor(((centreX + radiusM - Number(terrain.minX)) / basePixelM - 0.5) / stride)
+        rowMin = Math.ceil(((Number(terrain.maxY) - (centreY + radiusM)) / basePixelM - 0.5) / stride)
+        rowMax = Math.floor(((Number(terrain.maxY) - (centreY - radiusM)) / basePixelM - 0.5) / stride)
+      } else {
+        const rowAt = (lat - lat0) / stepLat
+        let deltaLon = normalizeLongitude(lon - lon0)
+        if (stepLon < 0 && deltaLon > 0) deltaLon -= 360
+        const colAt = deltaLon / stepLon
+        if (rowAt < 0 || rowAt > height - 1 || colAt < 0 || colAt > width - 1) continue
+        const latSpanDeg = radiusM / (DEG * referenceRadiusM)
+        const lonSpanDeg = latSpanDeg / Math.max(Math.cos(lat * DEG), 1e-6)
+        const halfCols = Math.abs(lonSpanDeg / (stepLon * stride))
+        const halfRows = Math.abs(latSpanDeg / (stepLat * stride))
+        rowMin = Math.ceil(rowAt / stride - halfRows)
+        rowMax = Math.floor(rowAt / stride + halfRows)
+        colMin = Math.ceil(colAt / stride - halfCols)
+        colMax = Math.floor(colAt / stride + halfCols)
+      }
+
+      colMin = Math.max(1, colMin)
+      colMax = Math.min(cols - 2, colMax)
+      rowMin = Math.max(1, rowMin)
+      rowMax = Math.min(rows - 2, rowMax)
+      if (colMax < colMin || rowMax < rowMin) continue
+      cratersConsidered += 1
+
+      if (kind === 'planar') {
+        for (let row = rowMin; row <= rowMax; row += 1) {
+          const dy = Number(terrain.maxY) - (row * stride + 0.5) * basePixelM - centreY
+          for (let col = colMin; col <= colMax; col += 1) {
+            const index = row * cols + col
+            if (!passMask[index]) continue
+            const dx = Number(terrain.minX) + (col * stride + 0.5) * basePixelM - centreX
+            if (Math.hypot(dx, dy) < radiusM) {
+              passMask[index] = 0
+              craterCellsExcluded += 1
+            }
+          }
+        }
+      } else {
+        for (let row = rowMin; row <= rowMax; row += 1) {
+          const cellLat = lat0 + stepLat * row * stride
+          const dy = (cellLat - lat) * DEG * referenceRadiusM
+          for (let col = colMin; col <= colMax; col += 1) {
+            const index = row * cols + col
+            if (!passMask[index]) continue
+            const cellLon = normalizeLongitude(lon0 + stepLon * col * stride)
+            const dx =
+              normalizeLongitude(cellLon - lon) * DEG * referenceRadiusM * Math.max(Math.cos(cellLat * DEG), 1e-6)
+            if (Math.hypot(dx, dy) < radiusM) {
+              passMask[index] = 0
+              craterCellsExcluded += 1
+            }
+          }
+        }
+      }
     }
   }
 
@@ -409,6 +533,7 @@ export function detectLandingZones(terrain, options = {}) {
     minAreaKm2: opts.minAreaKm2,
     maxSlopeDeg: opts.maxSlopeDeg,
     maxRoughnessM: opts.maxRoughnessM,
+    ...(opts.avoidCraters ? { cratersConsidered, craterCellsExcluded } : {}),
   })
 }
 
