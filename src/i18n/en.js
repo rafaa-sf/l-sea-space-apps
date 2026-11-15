@@ -1,4 +1,5 @@
 export default {
+  scrollRail: { label: 'Page scroll', up: 'Scroll up', down: 'Scroll down' },
   app: {
     productName: 'Lunar Landing Site Navigator',
     centerLabel: 'Lunar south-pole viewport and mission timeline',

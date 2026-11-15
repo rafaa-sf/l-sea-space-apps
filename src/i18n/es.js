@@ -1,4 +1,5 @@
 export default {
+  scrollRail: { label: 'Desplazamiento de la página', up: 'Subir', down: 'Bajar' },
   app: {
     productName: 'Navegador de sitios de aterrizaje lunares',
     centerLabel: 'Visor del polo sur lunar y línea temporal de misión',

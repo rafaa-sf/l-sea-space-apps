@@ -12,6 +12,7 @@ import { onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import HeaderBar from './components/HeaderBar.vue'
 import FooterBar from './components/FooterBar.vue'
+import ScrollRail from './components/ui/ScrollRail.vue'
 import SitesSurface from './components/SitesSurface.vue'
 import AnalysisSurface from './components/AnalysisSurface.vue'
 import ViewportPanel from './components/ViewportPanel.vue'
@@ -332,5 +333,6 @@ onBeforeUnmount(() => {
     </div>
 
     <div v-if="toast" class="toast" role="alert">{{ toast }}</div>
+    <ScrollRail />
   </div>
 </template>
