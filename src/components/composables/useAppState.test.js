@@ -46,24 +46,24 @@ describe('stored mission sanitisation', () => {
     expect(sanitizeStoredMission({ missionDays: 'abc' }).missionDays).toBe(DEFAULT_MISSION.missionDays)
   })
 
-  it('keeps the stored crater-avoidance flag and defaults it to false', () => {
-    expect(DEFAULT_MISSION.avoidCraters).toBe(false)
-    expect(sanitizeStoredMission({ avoidCraters: true }).avoidCraters).toBe(true)
-    expect(sanitizeStoredMission({ avoidCraters: false }).avoidCraters).toBe(false)
-    expect(sanitizeStoredMission({}).avoidCraters).toBe(false)
-    expect(sanitizeStoredMission({ avoidCraters: undefined }).avoidCraters).toBe(false)
-    expect(sanitizeStoredMission({ avoidCraters: null }).avoidCraters).toBe(false)
+  it('drops the removed crater-avoidance flag from stored missions', () => {
+    expect(Object.prototype.hasOwnProperty.call(DEFAULT_MISSION, 'avoidCraters')).toBe(false)
+    expect('avoidCraters' in sanitizeStoredMission({ avoidCraters: true })).toBe(false)
+    expect('avoidCraters' in sanitizeStoredMission({ avoidCraters: false })).toBe(false)
+    expect('avoidCraters' in sanitizeStoredMission({})).toBe(false)
+    expect('avoidCraters' in sanitizeStoredMission({ avoidCraters: undefined })).toBe(false)
+    expect('avoidCraters' in sanitizeStoredMission({ avoidCraters: null })).toBe(false)
   })
 })
 
 describe('landing-zone detection options', () => {
-  it('forwards only a real mission crater-avoidance flag', () => {
-    expect(landingZoneDetectionOptions({ avoidCraters: true })).toEqual({ avoidCraters: true })
-    expect(landingZoneDetectionOptions({ avoidCraters: false })).toEqual({ avoidCraters: false })
-    expect(landingZoneDetectionOptions({})).toEqual({ avoidCraters: false })
-    expect(landingZoneDetectionOptions(undefined)).toEqual({ avoidCraters: false })
-    expect(landingZoneDetectionOptions(null)).toEqual({ avoidCraters: false })
-    expect(landingZoneDetectionOptions({ avoidCraters: 'yes' })).toEqual({ avoidCraters: false })
+  it('ignores the removed mission crater-avoidance flag', () => {
+    expect(landingZoneDetectionOptions({ avoidCraters: true })).toEqual({})
+    expect(landingZoneDetectionOptions({ avoidCraters: false })).toEqual({})
+    expect(landingZoneDetectionOptions({})).toEqual({})
+    expect(landingZoneDetectionOptions(undefined)).toEqual({})
+    expect(landingZoneDetectionOptions(null)).toEqual({})
+    expect(landingZoneDetectionOptions({ avoidCraters: 'yes' })).toEqual({})
   })
 })
 

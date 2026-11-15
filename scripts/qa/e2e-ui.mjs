@@ -437,7 +437,7 @@ text = await bodyText()
 await click('Autopilot', true)
 await sleep(800)
 text = await bodyText()
-report.ranking = (text.match(/#1[^\n]*\n?[^\n]*/) || [])[0]?.replace(/\n/g, ' ') ?? 'MISSING'
+report.ranking = await evaluate(`document.querySelector('[data-testid="landing-zone-row"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? 'MISSING'`)
 report.zoneRows = await evaluate(`document.querySelectorAll('[data-testid="landing-zone-row"]').length`)
 report.zoneFirst = await evaluate(`document.querySelector('[data-testid="landing-zone-row"]')?.textContent ?? null`)
 report.zoneClick = await evaluate(`(() => { const row=document.querySelector('[data-testid="landing-zone-row"]'); const el=row?.querySelector('button'); if(!el) return false; el.click(); return true; })()`)

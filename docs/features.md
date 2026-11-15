@@ -227,21 +227,6 @@ Companion documents: [architecture.md](architecture.md) (contracts), [data.md](d
   0.20, safety 0.15, thermal 0.10, logistics 0.05, science 0.05 and applies
   `feasibility.*` gates (power deficit, battery, illumination, RTG, thermal,
   data), capping infeasible scores.
-- **Crater avoidance (opt-in).** `avoidCraters` (default `false`) drops pass
-  cells inside craters detected by `findCraters()` on the same DEM before
-  connected components, so no zone covers a crater floor; `craterMinDiameterM`
-  (500 m fallback) sets the detection floor and `craterClearanceM` (default
-  0 m) widens each excluded circle to `diameter / 2 + clearance`. When on,
-  `meta.cratersConsidered` and `meta.craterCellsExcluded` report the effect, and
-  the `AutopilotPanel.vue` toggle (`autopilot.avoidCraters`, hint
-  `autopilot.avoidCratersHint`) feeds `landingZoneDetectionOptions()` in
-  `useAppState.js`, which the worker payload and main-thread fallback both pass
-  unchanged. The landing-zone `inputSignature` covers these detection options
-  (`avoidCraters`, `craterClearanceM`, `craterMinDiameterM`), so it changes when
-  the toggle changes and confirms the zones were recomputed for the current
-  options. Conservative by design: `findCraters()` estimates the footprint,
-  not the true rim (≤0.8% stereographic scale error), so the flat crater floor
-  is excluded rather than risk an unmodelled hazard.
 - **Why.** Spacecraft land on flat areas, not named pins, so DEM detection finds
   candidates the catalogue lacks; gates separate "cannot work" from "works
   worse".
@@ -292,7 +277,7 @@ Companion documents: [architecture.md](architecture.md) (contracts), [data.md](d
 
 - **What.** Unit/contract tests, a seeded Monte Carlo bench, a 51-viewport
   device matrix, an end-to-end viewer check and live data spot-checks.
-- **How.** `npm test` runs 241 tests in 16 files (plus 8 MCP tests); `qa/logic/`
+- **How.** `npm test` runs 246 tests in 17 files (plus 8 MCP tests); `qa/logic/`
   runs 13 invariants over 20,000 seeded cases (one real terrain-boundary defect,
   now fixed with a regression test); `qa/ui/` emulates 51 viewports plus the
   no-WebGL fallback; `scripts/qa/e2e-ui.mjs` asserts canvases, scale parity,

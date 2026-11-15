@@ -645,8 +645,6 @@ export default {
     feasible: 'FEASIBLE',
     notFeasible: 'NOT FEASIBLE',
     noFeasibleZone: 'No fully feasible landing zone for this mission profile — the ranked zones are conditional and require mission changes.',
-    avoidCraters: 'Avoid craters',
-    avoidCratersHint: 'Only keeps flat zones whose cells fall outside detected craters. Crater footprints are approximations, so verify the site before relying on it.',
     feasibleCount: '{count} of {total} zones feasible',
     dataBudgetOfNeed: '{value}x of need',
     violations: {

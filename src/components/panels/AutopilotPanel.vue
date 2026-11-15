@@ -723,16 +723,6 @@ const ranking = computed(() => state.scores)
       }) }}
     </p>
 
-    <label class="field field--inline" :title="t('autopilot.avoidCratersHint')">
-      <input
-        type="checkbox"
-        data-testid="ap-avoid-craters"
-        :checked="state.mission.avoidCraters === true"
-        @change="actions.updateMission({ avoidCraters: $event.target.checked })"
-      />
-      <span>{{ t('autopilot.avoidCraters') }}</span>
-    </label>
-
     <p v-if="noFeasibleZone" class="feasibility-alert" role="status">
       {{ t('autopilot.noFeasibleZone') }}
     </p>
@@ -775,7 +765,6 @@ const ranking = computed(() => state.scores)
             data-testid="landing-zone-selected"
           >{{ t('autopilot.zoneSelected') }}</span>
           <button type="button" class="rank-item__head" @click="actions.selectLandingZone(entry)">
-            <span class="rank-item__rank">#{{ entry.rank }}</span>
             <span class="rank-item__name">{{ t('autopilot.zoneLabel', { lat: formatLat(entry.zone.lat), lon: formatLon(entry.zone.lon) }) }}</span>
             <span
               v-if="feasibilityBadge(entry)"
@@ -862,7 +851,6 @@ const ranking = computed(() => state.scores)
     <ol v-if="!landingAvailable && ranking.length" class="rank-list" :aria-label="t('autopilot.rankingLabel')">
       <li v-for="entry in ranking" :key="entry.siteId" class="rank-item" :class="{ 'is-selected': entry.siteId === state.selectedSiteId }">
         <button type="button" class="rank-item__head" @click="selectSite(entry.siteId)">
-          <span class="rank-item__rank">#{{ entry.rank }}</span>
           <span class="rank-item__name">{{ siteDisplayName(t, te, entry.site) }}</span>
           <span class="rank-item__score">{{ entry.score.toFixed(1) }}</span>
         </button>
