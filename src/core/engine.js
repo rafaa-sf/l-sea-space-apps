@@ -25,6 +25,7 @@
 
 import {
   MOON_RADIUS_M,
+  clamp,
   normalizeLongitude,
   destinationPoint,
   elevationAngleDeg,
@@ -42,8 +43,32 @@ import {
 /** Default maximum horizon search distance in meters. */
 export const DEFAULT_MAX_DISTANCE_M = 350000
 
+/** Safe azimuth sampling range for a horizon profile (audit SEC-04). */
+export const MIN_HORIZON_STEP_DEG = 0.5
+export const MAX_HORIZON_STEP_DEG = 10
+
+/**
+ * Safe range for the horizontal sampling step of a horizon scan, in meters.
+ * A tiny step would make the range-walk loop effectively unbounded.
+ */
+export const MIN_HORIZON_STEP_METERS = 1
+export const MAX_HORIZON_STEP_METERS = 50000
+
 /** Horizon profile cache keyed by terrain object, then by site/options signature. */
 let horizonProfileCache = new WeakMap()
+
+/**
+ * Resolve a requested horizontal sampling step to a finite, bounded value.
+ *
+ * @param {unknown} value Requested step in meters.
+ * @param {number} fallback Step used when the request is missing or invalid.
+ * @returns {number} Step in meters, within the SEC-04 safety range.
+ */
+function resolveHorizonStepMeters(value, fallback) {
+  const step = Number(value)
+  if (!Number.isFinite(step) || step <= 0) return fallback
+  return clamp(step, MIN_HORIZON_STEP_METERS, MAX_HORIZON_STEP_METERS)
+}
 
 /**
  * Geometric state of a site used by the horizon scanner.
@@ -101,18 +126,19 @@ export function horizonAngle(terrain, site, azimuthDeg, options = {}) {
   const azimuth = normalizeLongitude(azimuthDeg)
   if (!Number.isFinite(azimuth)) return -90
 
+  const opts = options && typeof options === 'object' ? options : {}
   const radius = geometry.referenceRadiusM
   const cell = terrainCellSizeM(terrain, site.lat)
-  const stepMeters =
-    Number(options.stepMeters) > 0
-      ? Number(options.stepMeters)
-      : Math.max(Math.max(cell.eastM, cell.northM), 20)
+  const stepMeters = resolveHorizonStepMeters(
+    opts.stepMeters,
+    Math.max(Math.max(cell.eastM, cell.northM), 20),
+  )
   const extent = terrainExtentM(terrain, site)
   const maxDistance = Math.min(
-    Number(options.maxDistanceM) > 0 ? Number(options.maxDistanceM) : DEFAULT_MAX_DISTANCE_M,
+    Number(opts.maxDistanceM) > 0 ? Number(opts.maxDistanceM) : DEFAULT_MAX_DISTANCE_M,
     extent > 0 ? extent : DEFAULT_MAX_DISTANCE_M,
   )
-  const start = Number(options.startDistanceM) > 0 ? Number(options.startDistanceM) : stepMeters
+  const start = Number(opts.startDistanceM) > 0 ? Number(opts.startDistanceM) : stepMeters
 
   let maxAngle = -90
   let distance = start
@@ -152,10 +178,30 @@ export function horizonAngle(terrain, site, azimuthDeg, options = {}) {
  * @returns {HorizonProfile} Profile (`angles` all `-90` when no terrain).
  */
 export function horizonProfile(terrain, site, options = {}) {
-  const stepDeg = Number(options.stepDeg) > 0 ? Number(options.stepDeg) : 1
-  const count = Math.max(1, Math.round(360 / stepDeg))
+  const opts = options && typeof options === 'object' ? options : {}
+  // Clamp the azimuth sampling step so a hostile/malformed option cannot
+  // allocate a multi-billion-entry Float32Array (SEC-04). 0.5 deg = 720
+  // samples maximum.
+  const requestedStepDeg = Number(opts.stepDeg)
+  const stepDeg =
+    Number.isFinite(requestedStepDeg) && requestedStepDeg > 0
+      ? clamp(requestedStepDeg, MIN_HORIZON_STEP_DEG, MAX_HORIZON_STEP_DEG)
+      : 1
+  const count = Math.max(1, Math.min(720, Math.round(360 / stepDeg)))
+  // Clamp the horizontal step once as well: it drives the per-azimuth range
+  // walk, where a tiny value would make the scan effectively unbounded.
+  const effectiveOptions = { ...opts }
+  const requestedStepMeters = Number(opts.stepMeters)
+  if (Number.isFinite(requestedStepMeters) && requestedStepMeters > 0) {
+    effectiveOptions.stepMeters = resolveHorizonStepMeters(
+      requestedStepMeters,
+      requestedStepMeters,
+    )
+  } else {
+    delete effectiveOptions.stepMeters
+  }
   const siteKey = site ? `${Number(site.lat).toFixed(5)},${Number(site.lon).toFixed(5)}` : 'none'
-  const optionsKey = `${stepDeg}|${options.stepMeters ?? ''}|${options.maxDistanceM ?? ''}`
+  const optionsKey = `${stepDeg}|${effectiveOptions.stepMeters ?? ''}|${effectiveOptions.maxDistanceM ?? ''}`
   const cacheKey = `${siteKey}|${optionsKey}`
 
   const terrainKey = terrain && typeof terrain === 'object' ? terrain : null
@@ -169,7 +215,9 @@ export function horizonProfile(terrain, site, options = {}) {
   const angles = new Float32Array(count)
   const extent = terrain && geometry ? terrainExtentM(terrain, site) : 0
   const maxDistanceM = Math.min(
-    Number(options.maxDistanceM) > 0 ? Number(options.maxDistanceM) : DEFAULT_MAX_DISTANCE_M,
+    Number(effectiveOptions.maxDistanceM) > 0
+      ? Number(effectiveOptions.maxDistanceM)
+      : DEFAULT_MAX_DISTANCE_M,
     extent > 0 ? extent : DEFAULT_MAX_DISTANCE_M,
   )
 
@@ -177,7 +225,7 @@ export function horizonProfile(terrain, site, options = {}) {
     angles.fill(-90)
   } else {
     for (let index = 0; index < count; index += 1) {
-      angles[index] = horizonAngle(terrain, site, index * stepDeg, options)
+      angles[index] = horizonAngle(terrain, site, index * stepDeg, effectiveOptions)
     }
   }
 

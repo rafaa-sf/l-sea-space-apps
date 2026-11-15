@@ -17,8 +17,21 @@
  * @module workers/tasks
  */
 
-import { normalizeTerrain, findCraters, areaStatistics } from '../core/terrain.js'
-import { horizonProfile, evaluateBodyVisibility } from '../core/engine.js'
+import {
+  normalizeTerrain,
+  findCraters,
+  areaStatistics,
+  MAX_AREA_RADIUS_M,
+} from '../core/terrain.js'
+import {
+  horizonProfile,
+  evaluateBodyVisibility,
+  DEFAULT_MAX_DISTANCE_M,
+  MIN_HORIZON_STEP_DEG,
+  MAX_HORIZON_STEP_DEG,
+  MIN_HORIZON_STEP_METERS,
+  MAX_HORIZON_STEP_METERS,
+} from '../core/engine.js'
 import {
   normalizeEphemerisDataset,
   visibilityWindows,
@@ -34,6 +47,66 @@ import { computeMissionCycles } from '../core/cycles.js'
 import { loadSites } from '../services/sites.js'
 import { loadEphemeris, loadEphemerisMap } from '../services/horizons.js'
 import { loadTerrain, loadTerrainForSite, loadTerrainRegions } from '../services/lola.js'
+
+/** Smallest horizon distance accepted from a worker payload, in meters. */
+const MIN_TASK_DISTANCE_M = 1000
+
+/** Area-statistics defaults and floor, mirroring the core function. */
+const DEFAULT_AREA_RADIUS_M = 200
+const MIN_AREA_RADIUS_M = 1
+
+/**
+ * Clamp the worker options that drive core sampling loops (audit SEC-04).
+ *
+ * The core functions clamp too; validating at the worker boundary keeps a
+ * malformed or hostile message from reaching the heavy loops at all. Values
+ * that are missing or non-finite fall back to the documented defaults.
+ *
+ * @param {unknown} options Raw `payload.options`.
+ * @returns {Record<string, unknown>} A new, clamped options object.
+ */
+export function sanitizeTaskOptions(options) {
+  const input = options && typeof options === 'object' ? options : {}
+  const out = { ...input }
+
+  if ('stepDeg' in out) {
+    const value = Number(out.stepDeg)
+    out.stepDeg =
+      Number.isFinite(value) && value > 0
+        ? Math.min(MAX_HORIZON_STEP_DEG, Math.max(MIN_HORIZON_STEP_DEG, value))
+        : 1
+  }
+
+  if ('maxDistanceM' in out) {
+    const value = Number(out.maxDistanceM)
+    out.maxDistanceM =
+      Number.isFinite(value) && value > 0
+        ? Math.min(DEFAULT_MAX_DISTANCE_M, Math.max(MIN_TASK_DISTANCE_M, value))
+        : DEFAULT_MAX_DISTANCE_M
+  }
+
+  if ('radiusM' in out) {
+    const value = Number(out.radiusM)
+    out.radiusM =
+      Number.isFinite(value) && value > 0
+        ? Math.min(MAX_AREA_RADIUS_M, Math.max(MIN_AREA_RADIUS_M, value))
+        : DEFAULT_AREA_RADIUS_M
+  }
+
+  if ('stepMeters' in out) {
+    const value = Number(out.stepMeters)
+    if (Number.isFinite(value) && value > 0) {
+      out.stepMeters = Math.min(
+        MAX_HORIZON_STEP_METERS,
+        Math.max(MIN_HORIZON_STEP_METERS, value),
+      )
+    } else {
+      delete out.stepMeters
+    }
+  }
+
+  return out
+}
 
 /** Supported task types. */
 export const TASK_TYPES = Object.freeze([
@@ -285,7 +358,7 @@ export async function runTask(type, payload = {}) {
 
     case 'horizonProfile': {
       const terrain = ensureTerrain(payload.terrain)
-      const profile = horizonProfile(terrain, payload.site, payload.options ?? {})
+      const profile = horizonProfile(terrain, payload.site, sanitizeTaskOptions(payload.options))
       return {
         profile: {
           stepDeg: profile.stepDeg,
@@ -306,7 +379,7 @@ export async function runTask(type, payload = {}) {
 
     case 'terrainStats': {
       const terrain = ensureTerrain(payload.terrain)
-      return { stats: areaStatistics(terrain, payload.site, payload.options ?? {}) }
+      return { stats: areaStatistics(terrain, payload.site, sanitizeTaskOptions(payload.options)) }
     }
 
     case 'power': {

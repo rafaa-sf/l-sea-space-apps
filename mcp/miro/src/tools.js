@@ -52,6 +52,7 @@ export const tools = [
   {
     name: 'miro_list_boards',
     title: 'List Miro boards',
+    readOnly: true,
     description:
       'List the Miro boards the current user has access to. Supports pagination with cursor.',
     inputSchema: {
@@ -68,6 +69,7 @@ export const tools = [
   {
     name: 'miro_get_board',
     title: 'Get Miro board',
+    readOnly: true,
     description: 'Get the metadata of a single Miro board by board id.',
     inputSchema: {
       boardId: z.string().min(1).describe('Miro board id'),
@@ -77,6 +79,7 @@ export const tools = [
   {
     name: 'miro_create_board',
     title: 'Create Miro board',
+    readOnly: false,
     description: 'Create a new Miro board with a name and optional description.',
     inputSchema: {
       name: z.string().min(1).describe('Board name'),
@@ -88,6 +91,7 @@ export const tools = [
   {
     name: 'miro_list_items',
     title: 'List board items',
+    readOnly: true,
     description:
       'List items on a board (sticky notes, shapes, texts, frames, cards, connectors...). Use type to filter.',
     inputSchema: {
@@ -101,6 +105,7 @@ export const tools = [
   {
     name: 'miro_get_item',
     title: 'Get board item',
+    readOnly: true,
     description: 'Get a single item from a board by item id.',
     inputSchema: {
       boardId: z.string().min(1),
@@ -111,6 +116,7 @@ export const tools = [
   {
     name: 'miro_create_sticky_note',
     title: 'Create sticky note',
+    readOnly: false,
     description:
       'Create a sticky note on a board at a board coordinate (x, y in board units).',
     inputSchema: {
@@ -144,6 +150,7 @@ export const tools = [
   {
     name: 'miro_create_text',
     title: 'Create text',
+    readOnly: false,
     description: 'Create a text item on a board.',
     inputSchema: {
       boardId: z.string().min(1),
@@ -170,6 +177,7 @@ export const tools = [
   {
     name: 'miro_create_shape',
     title: 'Create shape',
+    readOnly: false,
     description:
       'Create a shape (rectangle, circle, triangle...) with optional text content on a board.',
     inputSchema: {
@@ -232,6 +240,7 @@ export const tools = [
   {
     name: 'miro_create_frame',
     title: 'Create frame',
+    readOnly: false,
     description: 'Create a frame (a container area) on a board.',
     inputSchema: {
       boardId: z.string().min(1),
@@ -259,6 +268,7 @@ export const tools = [
   {
     name: 'miro_create_connector',
     title: 'Create connector',
+    readOnly: false,
     description: 'Connect two items on a board with a connector.',
     inputSchema: {
       boardId: z.string().min(1),
@@ -283,6 +293,8 @@ export const tools = [
   {
     name: 'miro_update_item',
     title: 'Update item',
+    readOnly: false,
+    destructiveHint: true,
     description:
       'Update data, style or position of an existing item. itemType must match the item type (e.g. sticky_note, text, shape, frame).',
     inputSchema: {
@@ -304,6 +316,9 @@ export const tools = [
   {
     name: 'miro_delete_item',
     title: 'Delete item',
+    readOnly: false,
+    destructiveHint: true,
+    destructive: true,
     description: 'Delete an item from a board. itemType selects the API endpoint.',
     inputSchema: {
       boardId: z.string().min(1),
@@ -316,6 +331,7 @@ export const tools = [
   {
     name: 'miro_list_members',
     title: 'List board members',
+    readOnly: true,
     description: 'List the members of a board.',
     inputSchema: {
       boardId: z.string().min(1),

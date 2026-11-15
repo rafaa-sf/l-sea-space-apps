@@ -21,6 +21,7 @@ import {
   slopeAtXY,
   findCraters,
   areaStatistics,
+  MAX_AREA_RADIUS_M,
   terrainKind,
   terrainCellSizeM,
   terrainExtentM,
@@ -303,6 +304,21 @@ describe('terrain statistics and synthetic fallback', () => {
     expect(stats).not.toBeNull()
     expect(stats.meanSlopeDeg).toBeCloseTo((Math.atan(0.001) * 180) / Math.PI, 1)
     expect(stats.validCount).toBeGreaterThan(0)
+  })
+
+  it('bounds radiusM/stepMeters so hostile options cannot exhaust memory (SEC-04)', () => {
+    const grid = makePlanarGrid({
+      width: 65,
+      height: 65,
+      boundsM: 32000,
+      elevationFn: (x) => 0.001 * x,
+    })
+    const stats = areaStatistics(grid, { lat: -89.5, lon: 0 }, { radiusM: 1e12, stepMeters: 1e-9 })
+    expect(stats).not.toBeNull()
+    expect(stats.radiusM).toBeLessThanOrEqual(MAX_AREA_RADIUS_M)
+    expect(stats.sampleCount).toBeGreaterThan(0)
+    expect(stats.sampleCount).toBeLessThan(1000000)
+    expect(Number.isFinite(stats.meanSlopeDeg)).toBe(true)
   })
 
   it('creates a deterministic synthetic fallback grid', () => {

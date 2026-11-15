@@ -57,6 +57,10 @@ import {
   offsetLatLon,
 } from './geometry.js'
 
+/** Hard bounds for the area-statistics sampling grid (audit SEC-04). */
+export const MAX_AREA_RADIUS_M = 100000
+const MAX_AREA_SAMPLES_PER_AXIS = 250
+
 /** Reference radius of the Moon used by the LOLA products, in meters. */
 export const DEFAULT_REFERENCE_RADIUS_M = MOON_RADIUS_M
 
@@ -885,11 +889,22 @@ export function terrainExtentM(terrain, site) {
  */
 export function areaStatistics(terrain, site, options = {}) {
   if (!terrain || !site || !Number.isFinite(site.lat) || !Number.isFinite(site.lon)) return null
+  const opts = options && typeof options === 'object' ? options : {}
   const radius = terrainReferenceRadiusM(terrain)
   const cell = terrainCellSizeM(terrain, site.lat)
-  const requestedRadius = Number(options.radiusM) > 0 ? Number(options.radiusM) : 200
-  const sampledRadius = Math.max(requestedRadius, 3 * Math.max(cell.eastM, cell.northM, 1))
-  const step = Number(options.stepMeters) > 0 ? Number(options.stepMeters) : Math.max(10, sampledRadius / 6)
+  // Clamp hostile/malformed sampling options: a huge radius or a tiny step
+  // would otherwise build an unbounded O(n^2) grid (SEC-04).
+  const requestedRadius = Number(opts.radiusM)
+  const baseRadius =
+    Number.isFinite(requestedRadius) && requestedRadius > 0 ? requestedRadius : 200
+  const clampedRadius = clamp(baseRadius, 1, MAX_AREA_RADIUS_M)
+  const sampledRadius = Math.max(clampedRadius, 3 * Math.max(cell.eastM, cell.northM, 1))
+  const minStepM = Math.max(1, sampledRadius / MAX_AREA_SAMPLES_PER_AXIS)
+  const requestedStep = Number(opts.stepMeters)
+  const step =
+    Number.isFinite(requestedStep) && requestedStep > 0
+      ? Math.max(requestedStep, minStepM)
+      : Math.max(10, sampledRadius / 6)
 
   const elevations = []
   const slopes = []
@@ -922,13 +937,13 @@ export function areaStatistics(terrain, site, options = {}) {
     ? slopes.reduce((sum, value) => sum + (value - meanSlope) * (value - meanSlope), 0) / slopes.length
     : 0
   const slopeStd = Math.sqrt(slopeVariance)
-  const flatGate = Number(options.flatSlopeDeg)
+  const flatGate = Number(opts.flatSlopeDeg)
   const flatFraction = Number.isFinite(flatGate) && slopes.length
     ? slopes.filter((value) => value <= flatGate).length / slopes.length
     : 1
 
   return {
-    radiusM: requestedRadius,
+    radiusM: clampedRadius,
     sampledRadiusM: sampledRadius,
     sampleCount: elevations.length + slopes.length,
     validCount: elevations.length,

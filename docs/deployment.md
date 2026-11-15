@@ -34,14 +34,16 @@ documented production target and needs no runtime quota or secrets.
 ### Automatic (recommended)
 
 1. Push to `main`. The **Deploy GitHub Pages** workflow:
-   - checks out the commit and installs the locked dependencies (`npm ci`);
+   - checks out the commit and installs the locked dependencies
+     (`npm ci --ignore-scripts`);
    - builds with the Pages base path
      (`npm run build -- --base=/l-sea-space-apps/`);
    - writes `dist/404.html` (copy of the app shell for hash routing);
    - uploads the artifact and deploys it with `actions/deploy-pages`.
-2. The workflow reports the deployment URL; no tokens or secrets are needed
-   (the workflow uses the repository `GITHUB_TOKEN` with `pages: write` and
-   `id-token: write`).
+2. The workflow reports the deployment URL; no tokens or secrets are needed.
+   The build job only has `contents: read`; the deploy job holds the
+   `pages: write` and `id-token: write` permissions used by
+   `actions/configure-pages` and `actions/deploy-pages`.
 
 ### Manual dispatch
 
@@ -64,15 +66,26 @@ gh api -X POST repos/rafaa-sf/l-sea-space-apps/pages -f build_type=workflow
 ## 3. Build output
 
 `npm run build` produces the static site in `dist/`: `index.html`,
-`favicon.svg`, hashed JavaScript and CSS bundles with sourcemaps, and a
-verbatim copy of `public/data/` (POIs, ephemerides, layers, terrain and the AI
-usage declaration) under `dist/data/`. No API keys are embedded: Vite only
-exposes `VITE_*` variables and the application reads pre-computed datasets
-instead of calling NASA APIs at runtime.
+`favicon.svg`, hashed JavaScript and CSS bundles, and a verbatim copy of
+`public/data/` (POIs, ephemerides, layers, terrain and the AI usage
+declaration) under `dist/data/`. Production source maps are not published
+(security audit item SEC-10); set `VITE_SOURCEMAP=true` for a local debugging
+build only. No API keys are embedded: Vite only exposes `VITE_*` variables and
+the application reads pre-computed datasets instead of calling NASA APIs at
+runtime.
 
 For GitHub Pages the build uses `--base=/l-sea-space-apps/`, so asset and data
 URLs are prefixed with the repository path. Local preview and any other host at
 a domain root build with the default `/` base.
+
+### Local development bind address
+
+Both `npm run dev` and `npm run preview` bind to `127.0.0.1` by default
+(security audit item SEC-06), so they are not reachable from the local network.
+For a deliberate LAN or on-device demo, opt in explicitly with
+`npm run dev -- --host` or `npm run preview -- --host`; Vite prints the LAN URL.
+Close the server when the demo ends. Never expose `.env` or the development
+server to an untrusted network.
 
 ## 4. Pre-deploy checklist
 
@@ -81,7 +94,7 @@ dirty working tree.
 
 - [ ] Working tree clean: `git status --short` shows nothing.
 - [ ] Release commit recorded: `git rev-parse --short HEAD`.
-- [ ] `npm ci` installs the locked dependency tree without errors.
+- [ ] `npm ci --ignore-scripts` installs the locked dependency tree without errors.
 - [ ] `npm test` is green and CI is green on `main`.
 - [ ] `npm run build -- --base=/l-sea-space-apps/` succeeds.
 - [ ] `dist/index.html`, `dist/404.html`, `dist/data/` and `dist/assets/` exist.

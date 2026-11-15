@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --host",
+    "preview": "vite preview",
     "test": "vitest run",
     "data:lola": "node scripts/nasa/download-lola.mjs",
     "verify:horizons": "node scripts/nasa/verify-ephemeris.mjs"

@@ -120,6 +120,52 @@ describe('horizonAngle', () => {
   })
 })
 
+describe('horizon profile option hardening (SEC-04)', () => {
+  const terrain = makePlanarGrid({
+    width: 65,
+    height: 65,
+    boundsM: 32000,
+    elevationFn: () => 0,
+  })
+  const site = { lat: -89.5, lon: 0, elevationM: 0 }
+
+  it('clamps a tiny stepDeg to the documented minimum without huge allocations', () => {
+    const profile = horizonProfile(terrain, site, { stepDeg: 1e-7 })
+    expect(profile.stepDeg).toBeGreaterThanOrEqual(0.5)
+    expect(profile.count).toBeLessThanOrEqual(720)
+    expect(profile.count).toBe(profile.angles.length)
+    expect(Array.from(profile.angles).every(Number.isFinite)).toBe(true)
+  })
+
+  it('clamps an absurd stepDeg to the documented maximum and keeps the profile usable', () => {
+    const profile = horizonProfile(terrain, site, { stepDeg: 10000 })
+    expect(profile.stepDeg).toBeLessThanOrEqual(10)
+    expect(profile.count).toBeGreaterThanOrEqual(36)
+    expect(profile.angles.length).toBe(profile.count)
+  })
+
+  it('clamps a tiny stepMeters so the range walk cannot loop unbounded', () => {
+    const profile = horizonProfile(terrain, site, {
+      stepDeg: 10,
+      stepMeters: 1e-9,
+      maxDistanceM: 500,
+    })
+    expect(profile.count).toBe(36)
+    expect(profile.angles.length).toBe(36)
+    expect(Array.from(profile.angles).every(Number.isFinite)).toBe(true)
+  })
+
+  it('clamps a tiny stepMeters in the raw horizon angle scan', () => {
+    const angle = horizonAngle(terrain, site, 0, { stepMeters: 1e-9, maxDistanceM: 500 })
+    expect(Number.isFinite(angle)).toBe(true)
+  })
+
+  it('tolerates a null options object', () => {
+    expect(() => horizonProfile(terrain, site, null)).not.toThrow()
+    expect(Number.isFinite(horizonAngle(terrain, site, 0, null))).toBe(true)
+  })
+})
+
 describe('horizon profiles', () => {
   it('builds a full-azimuth profile and indexes it with interpolation', () => {
     const terrain = makePlanarGrid({

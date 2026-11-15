@@ -4,7 +4,8 @@
  * Docs: https://developers.miro.com/reference (REST API v2)
  */
 
-const DEFAULT_BASE_URL = 'https://api.miro.com'
+/** The only API origin this client will send a Miro token to. */
+export const DEFAULT_MIRO_BASE_URL = 'https://api.miro.com'
 const DEFAULT_TIMEOUT_MS = 20_000
 const DEFAULT_MAX_RETRIES = 3
 const DEFAULT_RETRY_BASE_MS = 1_000
@@ -24,6 +25,46 @@ export class MiroApiError extends Error {
 }
 
 /**
+ * Validate and normalise `MIRO_API_BASE_URL`.
+ *
+ * The access token is sent in an `Authorization` header, so the base URL is a
+ * security boundary: only the Miro HTTPS API origin is accepted (audit SEC-03).
+ * Anything else is rejected before a request (and therefore before the token)
+ * can leave the process.
+ *
+ * @param {unknown} value
+ * @returns {string} The canonical Miro API origin.
+ * @throws {MiroApiError} With code `invalid_base_url` for any other origin.
+ */
+export function normalizeMiroBaseUrl(value = DEFAULT_MIRO_BASE_URL) {
+  let url
+  try {
+    url = new URL(String(value).trim())
+  } catch {
+    throw new MiroApiError('MIRO_API_BASE_URL must be exactly https://api.miro.com', {
+      code: 'invalid_base_url',
+    })
+  }
+
+  const allowed =
+    url.protocol === 'https:' &&
+    url.hostname === 'api.miro.com' &&
+    url.port === '' &&
+    (url.pathname === '/' || url.pathname === '') &&
+    !url.username &&
+    !url.password &&
+    !url.search &&
+    !url.hash
+
+  if (!allowed) {
+    throw new MiroApiError('MIRO_API_BASE_URL must be exactly https://api.miro.com', {
+      code: 'invalid_base_url',
+    })
+  }
+  return DEFAULT_MIRO_BASE_URL
+}
+
+/**
  * @param {unknown} value
  * @returns {string}
  */
@@ -37,6 +78,9 @@ function encodeId(value) {
  * Authentication uses a Miro access token (OAuth 2.0). The token is read from
  * `MIRO_ACCESS_TOKEN` unless passed explicitly. Never commit tokens.
  *
+ * `baseUrl` (or `MIRO_API_BASE_URL`) is validated by
+ * {@link normalizeMiroBaseUrl}; a non-Miro origin fails before any request.
+ *
  * @param {{
  *   accessToken?: string,
  *   baseUrl?: string,
@@ -47,8 +91,10 @@ function encodeId(value) {
  * }} [options]
  */
 export function createMiroClient(options = {}) {
-  const accessToken = options.accessToken ?? process.env.MIRO_ACCESS_TOKEN
-  const baseUrl = (options.baseUrl ?? process.env.MIRO_API_BASE_URL ?? DEFAULT_BASE_URL).replace(/\/$/, '')
+  const accessToken = String(options.accessToken ?? process.env.MIRO_ACCESS_TOKEN ?? '').trim()
+  const baseUrl = normalizeMiroBaseUrl(
+    options.baseUrl ?? process.env.MIRO_API_BASE_URL ?? DEFAULT_MIRO_BASE_URL,
+  )
   const fetchImpl = options.fetchImpl ?? globalThis.fetch
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES
@@ -98,6 +144,9 @@ export function createMiroClient(options = {}) {
           },
           body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
           signal: controller.signal,
+          // Do not follow redirects: a redirect must never carry the token to
+          // another origin (audit SEC-03).
+          redirect: 'error',
         })
       } catch (error) {
         clearTimeout(timer)
