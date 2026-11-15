@@ -1156,6 +1156,19 @@ body.is-resizing-panes * {
   border-bottom: 0;
 }
 
+.compare-table__row:not(.compare-table__head) {
+  cursor: pointer;
+}
+
+.compare-table__row:not(.compare-table__head):hover {
+  background: var(--color-surface-2);
+}
+
+.compare-table__row.is-selected {
+  background: var(--color-accent-soft);
+  box-shadow: inset 2px 0 0 var(--color-accent);
+}
+
 .compare-table__head {
   background: var(--color-surface-2);
   color: var(--color-text-faint);

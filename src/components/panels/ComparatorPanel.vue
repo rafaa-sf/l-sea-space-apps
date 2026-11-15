@@ -35,6 +35,11 @@ function scoreOf(id) {
   return scoreBySite.value.get(id) ?? null
 }
 
+function selectRow(id) {
+  if (!id) return
+  actions.selectSite(id)
+}
+
 function updatePerimeter(id, value) {
   actions.updateSite(id, { perimeterM: Math.max(1, Number(value) || 1) })
 }
@@ -86,9 +91,17 @@ function rankText(value) {
           <span role="columnheader">{{ t('comparator.site') }}</span>
           <span role="columnheader">{{ t('comparator.score') }}</span>
         </div>
-        <div v-for="row in rows" :key="row.id" class="compare-table__row" role="row">
+        <div
+          v-for="row in rows"
+          :key="row.id"
+          class="compare-table__row"
+          :class="{ 'is-selected': row.id === state.selectedSiteId }"
+          role="row"
+          :title="t('comparator.selectRow', { site: siteDisplayName(t, te, row) })"
+          @click="selectRow(row.id)"
+        >
           <span class="compare-table__site" role="cell">
-            <button type="button" class="link-button" @click="actions.selectSite(row.id)">
+            <button type="button" class="link-button" @click.stop="actions.selectSite(row.id)">
               {{ siteDisplayName(t, te, row) }}
             </button>
             <span class="compare-table__meta">
