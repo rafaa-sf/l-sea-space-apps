@@ -602,7 +602,7 @@ def main() -> None:
     add_card(slide, Inches(6.72), Inches(3.85), Inches(5.95), Inches(2.1),
              "Reproducible by design",
              "Deterministic scoring with documented weights, reasons and an input "
-             "signature; 269 tests in 19 files guard the contracts.", PURPLE,
+             "signature; 275 tests in 19 files guard the contracts.", PURPLE,
              title_size=16, body_size=12.5)
     add_panel(slide, Inches(0.65), Inches(6.2), Inches(12.02), Inches(0.45),
               color=PANEL_ALT)
@@ -651,7 +651,7 @@ def main() -> None:
     add_panel(slide, Inches(0.65), Inches(4.5), Inches(5.85), Inches(2.25))
     add_text(slide, "Quality evidence", Inches(0.88), Inches(4.65), Inches(5.4),
              Inches(0.3), size=14, bold=True, color=TEXT)
-    add_text(slide, "269 tests in 19 files, all passing",
+    add_text(slide, "275 tests in 19 files, all passing",
              Inches(0.88), Inches(5.02), Inches(5.4), Inches(0.3), size=13, bold=True,
              color=OK)
     add_text(slide, "Terrain validation: 2 regions + 4 presets, 0 failures",
@@ -678,7 +678,7 @@ def main() -> None:
              size=8.8, color=DIM)
     add_notes(slide,
               "NASA data: LOLA terrain, Horizons Sun/Earth, Moon Trek's 33 verified layers "
-              "and QuickMap links. Quality: 269 tests in 19 files, terrain validation with "
+              "and QuickMap links. Quality: 275 tests in 19 files, terrain validation with "
               "2 source regions plus 4 area presets and 0 failures, and a 480/480 Horizons "
               "spot-check. Be explicit about the limits: the two-month ephemeris window, DEM "
               "resolution, heuristic crater detection that can miss large complex craters, "
