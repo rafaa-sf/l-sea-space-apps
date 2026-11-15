@@ -304,6 +304,7 @@ body.is-resizing-panes * {
 /* -------------------------------------------------------------------------- */
 
 .app-header {
+  position: relative;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
@@ -414,6 +415,25 @@ body.is-resizing-panes * {
   align-items: center;
   gap: 8px;
   flex: 0 0 auto;
+}
+
+.app-header .header-menu-toggle {
+  display: none;
+}
+
+.header-menu-toggle svg,
+.header-export__icon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.header-export__label {
+  white-space: nowrap;
 }
 
 .header-tools {
@@ -2734,23 +2754,61 @@ body.is-resizing-panes * {
   }
 }
 
-/* Phones: keep the console header usable without expanding the document. */
+/* Phones: compact header (icon export + tools menu), no horizontal scroll. */
 @media (max-width: 720px) {
   .app-header {
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
+    gap: 6px;
+    padding: 0 8px;
+    overflow: visible;
   }
 
-  .app-header::-webkit-scrollbar {
+  .app-header__actions {
+    gap: 6px;
+  }
+
+  .app-header .header-menu-toggle {
+    display: inline-flex;
+    width: 40px;
+    height: 40px;
+  }
+
+  .header-tools {
     display: none;
   }
 
-  .app-header > *,
-  .header-tools,
-  .locale-switcher,
-  .app-header__actions .button {
-    flex: 0 0 auto;
+  .app-header__actions.is-menu-open .header-tools {
+    display: flex;
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 8px;
+    z-index: 40;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    min-width: 180px;
+    padding: 6px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-drawer);
+  }
+
+  .app-header__actions.is-menu-open .header-tools .button {
+    width: 100%;
+    justify-content: flex-start;
+    min-height: 44px;
+    padding: 6px 10px;
+  }
+
+  .header-export {
+    width: 40px;
+    min-width: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .header-export__label {
+    display: none;
   }
 }
 
