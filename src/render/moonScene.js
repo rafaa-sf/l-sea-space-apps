@@ -34,6 +34,11 @@ const COLOR_EARTH = 0x7fd1ff
 const COLOR_SUN_DIM = 0x6b5a2a
 const COLOR_EARTH_DIM = 0x2f4c5e
 
+// Selected-site marker: an inverted cone whose tip sits on the terrain. The
+// marker origin itself stays lifted (arrow origin), the cone uses the surface.
+const MARKER_LIFT = 0.25
+const CONE_TIP_EPSILON = 0.005
+
 /** Recursively release geometries, materials and textures. */
 function disposeObject(object) {
   if (!object || typeof object.traverse !== 'function') return
@@ -49,6 +54,36 @@ function disposeObject(object) {
       material.dispose()
     }
   })
+}
+
+/** Camera-facing inverted-cone marker with the tip anchored at the bottom. */
+function createConeMarkerSprite(THREE, color) {
+  const canvas = document.createElement('canvas')
+  canvas.width = 128
+  canvas.height = 160
+  const context = canvas.getContext('2d')
+  const base = new THREE.Color(color)
+  const gradient = context.createLinearGradient(0, 30, 0, 160)
+  gradient.addColorStop(0, '#d9fbff')
+  gradient.addColorStop(0.35, `#${base.getHexString()}`)
+  gradient.addColorStop(1, '#2aa9c9')
+  context.beginPath()
+  context.moveTo(64, 160)
+  context.lineTo(16, 44)
+  context.quadraticCurveTo(64, 26, 112, 44)
+  context.closePath()
+  context.fillStyle = gradient
+  context.fill()
+  context.lineWidth = 4
+  context.strokeStyle = 'rgba(255, 255, 255, 0.9)'
+  context.stroke()
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false })
+  const sprite = new THREE.Sprite(material)
+  sprite.center.set(0.5, 0) // anchor the tip, not the middle
+  sprite.scale.set(0.62, 0.78, 1)
+  return sprite
 }
 
 /** Build a text label sprite (used for Sun/Earth indicators). */
@@ -141,6 +176,7 @@ export async function createMoonScene(canvas, options = {}) {
   let rayInfo = null
 
   const pickables = []
+  const surfaceRaycaster = new THREE.Raycaster()
 
   const sunArrow = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), 4, COLOR_SUN, 1.1, 0.55)
   const earthArrow = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 0), 3.4, COLOR_EARTH, 0.9, 0.45)
@@ -306,10 +342,27 @@ export async function createMoonScene(canvas, options = {}) {
     return 0
   }
 
-  function sitePosition(site) {
-    if (!site || !projection) return new THREE.Vector3(0, 0.2, 0)
+  function siteSurfacePosition(site) {
+    if (!site || !projection) return new THREE.Vector3(0, 0, 0)
     const point = projection.project(site.lat, site.lon, sampleElevation(site.lat, site.lon))
-    return new THREE.Vector3(point.x, point.y + 0.25, point.z)
+    return new THREE.Vector3(point.x, point.y, point.z)
+  }
+
+  function sitePosition(site) {
+    const surface = siteSurfacePosition(site)
+    return new THREE.Vector3(surface.x, surface.y + MARKER_LIFT, surface.z)
+  }
+
+  /** Exact terrain surface under a site, refined against the rendered mesh. */
+  function siteSurfacePoint(site) {
+    const fallback = siteSurfacePosition(site)
+    if (!terrainMesh) return fallback
+    surfaceRaycaster.set(
+      new THREE.Vector3(fallback.x, fallback.y + 50, fallback.z),
+      new THREE.Vector3(0, -1, 0),
+    )
+    const hits = surfaceRaycaster.intersectObject(terrainMesh, false)
+    return hits.length ? hits[0].point.clone() : fallback
   }
 
   function updateHelpers() {
@@ -641,23 +694,25 @@ export async function createMoonScene(canvas, options = {}) {
       const isCompared = compareIds.includes(site.id)
       const position = sitePosition(site)
       const color = isSelected ? COLOR_SELECTED : isCompared ? COLOR_COMPARE : COLOR_SITE
-      const radius = isSelected ? 0.14 : 0.09
-      const geometry = new THREE.OctahedronGeometry(radius, 0)
-      const material = new THREE.MeshBasicMaterial({ color })
-      const marker = new THREE.Mesh(geometry, material)
-      marker.position.copy(position)
-      marker.userData.pickSiteId = site.id
-      markerGroup.add(marker)
-      pickables.push(marker)
 
       if (isSelected) {
-        const ringGeometry = new THREE.RingGeometry(0.19, 0.25, 40)
-        const ringMaterial = new THREE.MeshBasicMaterial({ color: COLOR_SELECTED, transparent: true, opacity: 0.8, side: THREE.DoubleSide })
-        const ring = new THREE.Mesh(ringGeometry, ringMaterial)
-        ring.rotation.x = -Math.PI / 2
-        ring.position.copy(position).add(new THREE.Vector3(0, -0.12, 0))
-        markerGroup.add(ring)
-
+        // Camera-facing inverted cone: the tip touches the sampled/raycast
+        // terrain surface exactly, and the shape stays readable from above.
+        const surface = siteSurfacePoint(site)
+        const marker = createConeMarkerSprite(THREE, color)
+        marker.position.set(surface.x, surface.y + CONE_TIP_EPSILON, surface.z)
+        marker.userData.pickSiteId = site.id
+        markerGroup.add(marker)
+        pickables.push(marker)
+      } else {
+        const radius = 0.09
+        const geometry = new THREE.OctahedronGeometry(radius, 0)
+        const material = new THREE.MeshBasicMaterial({ color })
+        const marker = new THREE.Mesh(geometry, material)
+        marker.position.copy(position)
+        marker.userData.pickSiteId = site.id
+        markerGroup.add(marker)
+        pickables.push(marker)
       }
     }
     updateHelpers()

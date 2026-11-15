@@ -198,7 +198,9 @@ a:hover {
 }
 
 .center-map {
-  flex: 0 0 auto;
+  /* The map gives up a few pixels when the timeline needs them, so the center
+     stack never overflows short desktop viewports (e.g. 1440x900). */
+  flex: 0 1 auto;
   width: 100%;
   height: var(--viewport-height, 520px);
   min-width: 0;
