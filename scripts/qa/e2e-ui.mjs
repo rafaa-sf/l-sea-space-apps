@@ -369,18 +369,65 @@ report.presetRestored = await evaluate(`(() => {
 })()`)
 await sleep(3500)
 
-report.toggle2d = await click('2D', true)
-await sleep(3000)
-text = await bodyText()
-report.fallbackBanner = section(text, '2D fallback', 180)
+// 3D vs top-down 2D are camera presets on the same Three.js scene; the Canvas
+// 2D renderer is only the automatic no-WebGL fallback (hidden, not selectable).
+report.webglAvailable = await evaluate(`(() => {
+  try {
+    const probe = document.createElement('canvas');
+    return Boolean(probe.getContext('webgl2') || probe.getContext('webgl'));
+  } catch (error) {
+    return false;
+  }
+})()`)
+const viewModeButton = (label) => evaluate(`(() => {
+  const button = [...document.querySelectorAll('button')].find((candidate) => (candidate.textContent || '').trim() === ${JSON.stringify(label)});
+  return button ? button.getAttribute('aria-pressed') ?? 'no-aria-pressed' : 'NOT_FOUND';
+})()`)
 
-report.canvas2d = await waitForCanvas()
-report.scale2d = await waitForScaleLabel()
-await wheelZoom()
-report.scale2dAfterZoom = await waitForScaleLabel()
+if (report.webglAvailable) {
+  report.toggle2d = await click('2D', true)
+  await sleep(2500)
+  report.viewModeControlVisible = await evaluate(`Boolean(document.querySelector('[data-testid="view-mode-toggle"]'))`)
+  report.viewMode2dPressed = await viewModeButton('2D')
+  report.viewMode3dPressed = await viewModeButton('3D')
+  text = await bodyText()
+  report.fallbackBanner = section(text, '2D fallback', 180)
 
-report.toggle3d = await click('3D', true)
-await sleep(1500)
+  report.canvas2d = await waitForCanvas()
+  report.scale2d = await waitForScaleLabel()
+  await wheelZoom()
+  report.scale2dAfterZoom = await waitForScaleLabel()
+
+  // Ten rapid toggles must only move the camera; rebuilding the renderer/canvas
+  // here used to raise "existing context of a different type" errors.
+  for (let index = 0; index < 10; index += 1) {
+    await click(index % 2 === 0 ? '3D' : '2D', true)
+    await sleep(250)
+  }
+  await sleep(1200)
+  report.rapidToggleConsoleErrors = consoleErrors.slice(0, 10)
+  report.rapidToggleContextRace = consoleErrors.some((entry) =>
+    /existing context of a different type|2D fallback failed/i.test(entry),
+  )
+  report.toggle3d = await click('3D', true)
+  await sleep(1500)
+} else {
+  // No WebGL: the app renders the automatic Canvas 2D fallback, the 2D toggle
+  // is hidden, and the toggle step is recorded as skipped instead of failing.
+  report.toggle2d = 'SKIPPED_NO_WEBGL'
+  report.viewModeControlVisible = await evaluate(`Boolean(document.querySelector('[data-testid="view-mode-toggle"]'))`)
+  await sleep(500)
+  text = await bodyText()
+  report.fallbackBanner = section(text, '2D fallback', 180)
+
+  report.canvas2d = await waitForCanvas()
+  report.scale2d = await waitForScaleLabel()
+  await wheelZoom()
+  report.scale2dAfterZoom = await waitForScaleLabel()
+  report.rapidToggleConsoleErrors = []
+  report.rapidToggleContextRace = false
+  report.toggle3d = 'SKIPPED_NO_WEBGL'
+}
 report.runRanking = await click('Run ranking')
 await sleep(6000)
 text = await bodyText()
@@ -842,7 +889,7 @@ const failed =
   report.terrain?.layout !== 'rectangular' ||
   !report.terrain?.extent ||
   report.terrain?.markersAnchored !== 'true' ||
-  !scaleParity ||
+  (report.webglAvailable && !scaleParity) ||
   !(report.railLeftAfterDrag > report.railLeftBefore + 20) ||
   Math.abs((report.railLeftAfterDrag ?? 0) - (report.railLeftAfterReload ?? -999)) > 2 ||
   !report.nowClicked || !report.nowPaused || report.nowLabel !== 'Play' ||
@@ -855,6 +902,19 @@ const failed =
   !/\bW\b/.test(report.zoneMetricsText ?? '') || !/Wh/.test(report.zoneMetricsText ?? '') ||
   !/°C/.test(report.zoneMetricsText ?? '') || !/%/.test(report.zoneMetricsText ?? '') ||
   !report.powerInputChanged || !report.zoneRecomputed ||
+  (report.webglAvailable
+    ? report.viewModeControlVisible !== true ||
+      report.viewMode2dPressed !== 'true' ||
+      report.viewMode3dPressed !== 'false' ||
+      report.fallbackBanner !== 'MISSING' ||
+      !report.canvas2d?.clientWidth ||
+      !report.scale2d?.label ||
+      !report.rapidToggleConsoleErrors || report.rapidToggleConsoleErrors.length > 0 ||
+      report.rapidToggleContextRace
+    : report.viewModeControlVisible !== false ||
+      !/2D fallback/.test(report.fallbackBanner ?? '') ||
+      !report.canvas2d?.clientWidth ||
+      !report.scale2d?.label) ||
   !report.defaultFeasible || !Array.isArray(report.zoneDuplicateLabels) || report.zoneDuplicateLabels.length > 0 ||
   !report.infeasibleState || !report.infeasibleBadge || !report.infeasibleAlert ||
   !report.restorePower || !report.restoredFeasible ||

@@ -58,13 +58,17 @@ export const DEFAULT_MISSION = Object.freeze({
   dateSearchStepHours: 12,
 })
 
-/** View mode requested through `?mode=2d|3d|auto` (handy for demos/tests). */
+/**
+ * View mode requested through `?mode=2d|3d` (handy for demos/tests).
+ * `2d` is the top-down view of the same Three.js scene; legacy `auto` maps to
+ * `3d`, which is also the default.
+ */
 function initialViewMode() {
   try {
     const requested = new URLSearchParams(window.location.search).get('mode')
-    return ['auto', '3d', '2d'].includes(requested) ? requested : 'auto'
+    return requested === '2d' ? '2d' : '3d'
   } catch {
-    return 'auto'
+    return '3d'
   }
 }
 
@@ -537,8 +541,9 @@ export function setWebglStatus(status) {
   state.system.webgl = status
 }
 
+/** Normalize a requested view mode: only `2d` is special, everything else is 3D. */
 export function setViewMode(mode) {
-  state.system.viewMode = ['auto', '3d', '2d'].includes(mode) ? mode : 'auto'
+  state.system.viewMode = mode === '2d' ? '2d' : '3d'
 }
 
 export function setRenderer(kind) {

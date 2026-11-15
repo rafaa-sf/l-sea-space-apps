@@ -40,7 +40,13 @@ const workerLabel = computed(() => {
   }
 })
 
-const rendererLabel = computed(() => (state.system.renderer === '2d' ? t('viewport.mode.twoD') : t('viewport.mode.threeD')))
+const rendererLabel = computed(() => {
+  if (state.system.renderer === '2d') return t('viewport.mode.twoD')
+  if (state.system.renderer === '3d') {
+    return state.system.viewMode === '2d' ? t('viewport.mode.twoD') : t('viewport.mode.threeD')
+  }
+  return t('common.loading')
+})
 
 const sunsetLabel = computed(() =>
   state.analysis.sunSet ? formatDuration(state.analysis.sunSet.remainingSeconds) : t('timeline.noEvent'),

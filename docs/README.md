@@ -55,7 +55,7 @@ documentation:
 | Asset | Content |
 | --- | --- |
 | [app-3d.png](screenshots/app-3d.png) | Application in 3D mode with the rectangular LOLA terrain |
-| [app-2d-es.png](screenshots/app-2d-es.png) | Spanish interface in the no-WebGL 2D fallback |
+| [app-2d-es.png](screenshots/app-2d-es.png) | Spanish interface with the top-down 2D view |
 | [layer-coverage-3d.png](screenshots/layer-coverage-3d.png) | Moon Trek layer with its coverage footprint and per-layer zoom |
 | [custom-extent-3d.png](screenshots/custom-extent-3d.png) | Custom rectangular LOLA DEM extent with a Moon Trek layer draped in 3D |
 | [area-presets-3d.png](screenshots/area-presets-3d.png) | LOLA area preset (300 km) selected from the DEM area dropdown |

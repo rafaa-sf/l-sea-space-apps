@@ -73,7 +73,7 @@ exported as a JSON mission brief with links back to NASA tools.
 | Layer | Technology and method |
 | --- | --- |
 | UI | Vue 3 (Composition API), mission-control shell with 14 panel components on tabbed Sites, Analysis and Tools surfaces, English and Spanish |
-| 3D view | Three.js scene, with a Canvas 2D fallback when WebGL is unavailable |
+| 3D view | Three.js scene with two camera presets: tilted 3D and top-down 2D (north up); automatic Canvas 2D fallback when WebGL is unavailable or the 3D scene fails to start |
 | Domain core | Plain JavaScript ES modules: terrain, horizon and ray tracing, ephemeris, power, communications, autopilot |
 | Compute | Single Web Worker for horizon and scoring work, keeping the UI responsive |
 | Build | Vite static build (`dist/`), deployed on GitHub Pages |

@@ -18,7 +18,7 @@ Levels:
 | L1 Data integrity | The shipped LOLA DEMs and NASA JSON files are structurally valid, mutually consistent and match their metadata | independent Node decoder, Python, curl |
 | L2 Unit and contract tests | Pure functions and module contracts: transforms, sampling, interpolation, power, communications, autopilot, schema builders | Vitest |
 | L3 Integration | Services load the real data; the worker protocol returns results; main-thread and worker results agree | Vitest, real datasets |
-| L4 UI and end-to-end | The demo flow works in a real browser: worker, site selection, comparator, 2D fallback, autopilot, JSON export | headless Chrome 139 through the Chrome DevTools Protocol (`scripts/qa/e2e-ui.mjs`) |
+| L4 UI and end-to-end | The demo flow works in a real browser: worker, site selection, comparator, 3D and top-down 2D views, autopilot, JSON export | headless Chrome for Testing 157.0.8103.78 through the Chrome DevTools Protocol (`scripts/qa/e2e-ui.mjs`) |
 | L5 Internationalisation | English and Spanish catalogues are complete and switchable | Vitest, browser checks |
 | L6 Export interoperability | The JSON mission brief is valid and complete, with NASA links and no secrets | Vitest, browser download |
 | L7 Resilience | Missing or corrupted data degrades gracefully; the no-WebGL fallback works; the worker failure path is handled | browser checks |
@@ -187,12 +187,13 @@ production bundle end to end. Observed in the running application:
 | Initial load | Worker badge "Worker OK"; initial autopilot completed by the background worker in about 2 s |
 | Site selection | Selected `de-gerlache-rim-1`; LOLA panel showed 88.68S, 292.07E, LOLA altitude 1,782 m, slope 4.5 degrees, aspect 98 degrees, distance from pole 40.0 km |
 | Comparator | Site added to the comparator (1 of 3 selected) |
-| 2D fallback | Manual 2D view active with the fallback banner and the map controls |
+| 2D top view | Same Three.js scene seen from directly above (north up, rotation locked, pan/zoom); without WebGL the automatic Canvas 2D fallback is shown instead, with the same map controls |
 | Autopilot | Ranking returned `#1 Connecting Ridge` |
 | JSON export | Downloaded `lsea-brief-2026-11-14-11-45-33Z.json`, schema `lsea.mission-brief/1`, 10 sites |
 
 Screenshots of the running application are stored in `docs/screenshots/` (`app-3d.png`,
-`app-2d-es.png`).
+the tilted 3D view, and `app-2d-es.png`, the Spanish interface with the top-down 2D
+view).
 
 ## 7. Feature coverage
 
@@ -221,12 +222,21 @@ the caveats noted.
 
 The end-to-end script also asserts the viewer geometry and the map scale:
 
-- **Square canvases, no stretching.** The 3D and the 2D canvases are checked to be
-  genuinely square: `canvas.clientWidth === canvas.clientHeight` and the drawing
-  buffer matches the CSS size (`canvas.width === canvas.height`), in both renderers.
-- **Live scale bar.** The scale bar is present and updates when zooming: the 3D
-  label changes from `100 km` (1 px = 823 m) to `50 km` (1 px = 728 m) on a wheel
-  zoom, and the 2D fallback from `100 km` (1 px = 808 m) to `50 km` (1 px = 564 m).
+- **Square canvases, no stretching.** The viewport canvas in the 3D view, the
+  top-down 2D view and the Canvas 2D fallback is checked for square pixels: the
+  drawing buffer ratio matches the CSS size ratio, so the map is never stretched.
+- **Live scale bar.** The scale bar is present and updates on a wheel zoom in the
+  3D view, in the top-down 2D view and in the no-WebGL fallback. The script also
+  asserts metres-per-pixel parity between the 3D view and the top-down 2D view
+  (within 3 %), since both are camera presets of the same scene.
+- **View modes.** The headless shell used here (Chrome for Testing 157.0.8103.78
+  with `--disable-gpu`) still exposes software WebGL, so the default
+  `.cache/run-e2e.sh` run exercises the WebGL branch: the 2D button is pressed, no
+  fallback banner appears, the canvas and scale bar stay visible, and ten rapid
+  3D↔2D toggles raise no console errors. The no-WebGL branch is exercised
+  explicitly by launching Chrome with `--disable-webgl --disable-webgl2`
+  (`.cache/run-e2e-nowebgl.sh`): the 2D toggle is recorded as `SKIPPED_NO_WEBGL`,
+  the automatic fallback banner is asserted and the fallback controls stay usable.
 - **Regression gate.** `scripts/qa/e2e-ui.mjs` exits non-zero if a canvas is not
   square or if the scale label/caption does not change on zoom, so aspect-ratio and
   scale regressions fail QA instead of passing silently.

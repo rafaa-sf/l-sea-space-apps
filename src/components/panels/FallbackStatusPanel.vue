@@ -26,9 +26,15 @@ const reasonLabel = computed(() => {
   return te(key) ? t(key) : reason
 })
 
+/**
+ * Label for what the viewport is actually showing: the Canvas 2D fallback when
+ * the renderer is the fallback, otherwise the selected 3D/2D view preset.
+ */
 const rendererLabel = computed(() => {
   if (state.system.renderer === '2d') return t('viewport.mode.twoD')
-  if (state.system.renderer === '3d') return t('viewport.mode.threeD')
+  if (state.system.renderer === '3d') {
+    return state.system.viewMode === '2d' ? t('viewport.mode.twoD') : t('viewport.mode.threeD')
+  }
   return t('common.loading')
 })
 

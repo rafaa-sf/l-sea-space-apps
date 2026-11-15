@@ -473,9 +473,15 @@ answered with `{ zones, meta }`:
 ## UI interfaces (ui)
 
 - `src/render/moonScene.js` — `createMoonScene(canvas, options)` returns
-  `{ setTerrain, setSites, setSunDirection, setEarthDirection, setLayers, dispose }`.
+  `{ setTerrain, setSites, setViewPreset, setSunDirection, setEarthDirection, setLayers, resetView, resize, dispose }`.
+  One Three.js scene serves both view modes: `setViewPreset('perspective')` is the
+  tilted 3D view and `setViewPreset('top')` looks straight down with north up
+  (rotation locked, pan and zoom kept). Switching modes only moves the camera;
+  the renderer and canvas are never rebuilt.
 - `src/render/fallback2d.js` — `createFallback2D(canvas)` with the same setters
-  (map view, sun azimuth indicator, site markers).
+  (map view, sun azimuth indicator, site markers); used only as the automatic
+  fallback when WebGL is unavailable or the 3D scene fails to start, never as a
+  manually selectable mode.
 - Feature panels are Vue components under `src/components/`.
 - i18n catalogues in `src/i18n/en.js` and `src/i18n/es.js`; every visible string
   must exist in both languages.

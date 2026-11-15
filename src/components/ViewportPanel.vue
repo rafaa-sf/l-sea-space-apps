@@ -1,8 +1,9 @@
 <script setup>
 /**
- * Main viewport: renders the moon scene in 3D (lazy-loaded Three.js) or the
- * Canvas 2D fallback, with the mode switcher, data-source badges, layer status
- * and a keyboard/screen-reader friendly wrapper.
+ * Main viewport: renders the moon scene in 3D (lazy-loaded Three.js) or its
+ * top-down 2D camera preset, with the automatic Canvas 2D fallback when WebGL
+ * is unavailable, data-source badges, layer status and a keyboard/screen-reader
+ * friendly wrapper.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -131,16 +132,23 @@ const demRegions = computed(() => {
 const selectedName = computed(() => siteDisplayName(t, te, selectedSite.value) || t('common.none'))
 
 const modeOptions = computed(() => [
-  { value: 'auto', label: t('viewport.mode.auto') },
   { value: '3d', label: t('viewport.mode.threeD') },
   { value: '2d', label: t('viewport.mode.twoD') },
 ])
 
+/** Badge reflects the selected view mode on the Three.js scene, not the preset id. */
+const rendererBadge = computed(() => {
+  if (mode.value === '3d') return state.system.viewMode === '2d' ? t('viewport.mode.twoD') : t('viewport.mode.threeD')
+  if (mode.value === '2d') return t('viewport.mode.twoD')
+  return t('common.loading')
+})
+
 const fallbackReason = computed(() => {
+  // The banner only exists for the automatic Canvas 2D fallback (no WebGL or a
+  // failed 3D creation); the top-down 2D view is not a fallback.
   if (mode.value !== '2d') return null
-  if (state.system.viewMode === '2d') return t('viewport.fallback.manual')
   if (webgl.value && webgl.value.ok === false) return t(`viewport.fallback.reason.${webgl.value.reason === 'no-context' ? 'noContext' : 'unavailable'}`)
-  return note.value ? t('viewport.fallback.reason.error') : t('viewport.fallback.reason.auto')
+  return note.value ? t('viewport.fallback.reason.error') : null
 })
 
 const terrainBadge = computed(() => t(sourceLabelKey(state.data.terrainSource, 'terrain')))
@@ -304,11 +312,12 @@ async function createRenderer() {
   const canvas = canvasRef.value
   if (!canvas) return
 
-  const want3d = state.system.viewMode === 'auto' ? Boolean(webgl.value?.ok) : state.system.viewMode === '3d'
+  // The Three.js scene always renders when WebGL is available; the 2D view is a
+  // camera preset on that same scene, never a second renderer.
   let created = null
   let threeAttempted = false
 
-  if (want3d && webgl.value?.ok) {
+  if (webgl.value?.ok) {
     threeAttempted = true
     try {
       const { createMoonScene } = await import('../render/moonScene.js')
@@ -359,8 +368,21 @@ async function createRenderer() {
   api = created
   mode.value = created.kind
   actions.setRenderer(created.kind)
+  if (created.kind === '3d') applyViewPreset()
   initializing.value = false
   pushAll()
+}
+
+/** Apply the selected view mode to the live 3D scene (camera only, no rebuild). */
+function applyViewPreset() {
+  const preset = state.system.viewMode === '2d' ? 'top' : 'perspective'
+  if (api?.setViewPreset) {
+    api.setViewPreset(preset)
+    return
+  }
+  // Canvas 2D fallback already shows the whole map, so nothing to do; with no
+  // renderer at all, retry the creation so the selected mode is applied.
+  if (!api) createRenderer()
 }
 
 function setupWatchers() {
@@ -402,7 +424,7 @@ function setupWatchers() {
     ),
     watch(
       () => state.system.viewMode,
-      () => createRenderer(),
+      () => applyViewPreset(),
     ),
   )
 }
@@ -474,8 +496,8 @@ onBeforeUnmount(() => {
       <p class="sr-only">{{ t('viewport.keyboardHint') }}</p>
 
       <div class="viewport__badges">
-        <span class="toolbar-badge" :class="mode === '3d' ? 'is-ok' : 'is-warn'">
-          {{ mode === '3d' ? t('viewport.mode.threeD') : mode === '2d' ? t('viewport.mode.twoD') : t('common.loading') }}
+        <span class="toolbar-badge" :class="mode === '3d' || state.system.renderer === '3d' ? 'is-ok' : 'is-warn'">
+          {{ rendererBadge }}
         </span>
         <span class="toolbar-badge" :title="t('viewport.terrainBadgeHint')">{{ terrainBadge }}</span>
         <span class="toolbar-badge" :title="t('viewport.ephemerisBadgeHint')">{{ ephemerisBadge }}</span>
@@ -497,7 +519,13 @@ onBeforeUnmount(() => {
           </select>
           <span id="dem-region-hint" class="sr-only">{{ t('dem.hint') }}</span>
         </label>
-        <div class="segmented" role="group" :aria-label="t('viewport.modeLabel')">
+        <div
+          v-if="webgl?.ok !== false"
+          class="segmented"
+          role="group"
+          data-testid="view-mode-toggle"
+          :aria-label="t('viewport.modeLabel')"
+        >
           <button
             v-for="option in modeOptions"
             :key="option.value"

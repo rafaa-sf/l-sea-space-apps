@@ -144,7 +144,6 @@ export default {
     keyboardHint: 'Pulsa Flecha arriba o Flecha abajo para cambiar el sitio seleccionado. También puedes seleccionar sitios desde la lista.',
     modeLabel: 'Modo del visor',
     mode: {
-      auto: 'Auto',
       threeD: '3D',
       twoD: '2D',
     },
@@ -163,9 +162,7 @@ export default {
       try3d: 'Probar 3D de nuevo',
     },
     fallback: {
-      manual: 'El mapa 2D se ha seleccionado manualmente.',
       reason: {
-        auto: 'WebGL no está disponible — mapa 2D automático.',
         noContext: 'No se ha podido crear un contexto WebGL.',
         unavailable: 'WebGL no está disponible en este navegador.',
         error: 'El renderizador 3D ha fallado — mapa 2D automático.',
@@ -729,18 +726,18 @@ export default {
     autopilotZonesIdle: 'Zonas de aterrizaje',
   },
   fallback: {
-    switchHint: 'Cambia entre 3D y 2D desde la barra de herramientas del visor.',
+    switchHint: 'Cambia entre la vista 3D y la vista 2D cenital desde la barra de herramientas del visor.',
     title: 'Estado del renderizador y datos',
     webgl: 'WebGL',
     webglOk: 'Disponible',
     webglUnavailable: 'No disponible',
-    reasonLabel: 'Motivo del modo 2D',
+    reasonLabel: 'Motivo del fallback',
     renderer: 'Renderizador',
     terrain: 'Terreno',
     ephemeris: 'Efemérides',
     layers: 'Capas',
     note: 'Sin WebGL: la aplicación renderiza un mapa 2D en Canvas con los mismos controles y análisis.',
-    webglNote: 'WebGL está disponible; el modo 2D puede seleccionarse en cualquier momento.',
+    webglNote: 'WebGL está disponible; la vista 2D muestra la misma escena desde arriba.',
     reason: {
       noDom: 'Sin DOM disponible',
       noApi: 'Falta la API WebGL',

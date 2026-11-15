@@ -144,7 +144,6 @@ export default {
     keyboardHint: 'Press Arrow Up or Arrow Down to change the selected site. Sites can also be selected from the site list.',
     modeLabel: 'Viewport mode',
     mode: {
-      auto: 'Auto',
       threeD: '3D',
       twoD: '2D',
     },
@@ -163,9 +162,7 @@ export default {
       try3d: 'Try 3D again',
     },
     fallback: {
-      manual: 'The 2D map was selected manually.',
       reason: {
-        auto: 'WebGL is unavailable — automatic 2D map fallback.',
         noContext: 'A WebGL context could not be created.',
         unavailable: 'WebGL is not available in this browser.',
         error: 'The 3D renderer failed — automatic 2D map fallback.',
@@ -735,7 +732,7 @@ export default {
     autopilotZonesIdle: 'Landing zones',
   },
   fallback: {
-    switchHint: 'Switch between 3D and 2D from the viewport toolbar.',
+    switchHint: 'Switch between the 3D view and the top-down 2D view from the viewport toolbar.',
     title: 'Renderer & data status',
     webgl: 'WebGL',
     webglOk: 'Available',
@@ -746,7 +743,7 @@ export default {
     ephemeris: 'Ephemeris',
     layers: 'Layers',
     note: 'No WebGL: the app renders a Canvas 2D map with the same controls and analysis.',
-    webglNote: 'WebGL is available; the 2D fallback can be selected at any time.',
+    webglNote: 'WebGL is available; the 2D view shows the same scene from directly above.',
     reason: {
       noDom: 'No DOM available',
       noApi: 'WebGL API missing',

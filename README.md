@@ -29,8 +29,9 @@ L-SEA turns that data into a single comparison workflow:
 
 - 10 curated south-pole sites (nine Artemis III candidate regions plus
   Shackleton crater rim), custom coordinates, or a map pointer.
-- Real LOLA terrain rendered in 3D, with a Canvas 2D fallback when WebGL is not
-  available.
+- Real LOLA terrain rendered in 3D, with a top-down 2D view of the same scene and
+  an automatic Canvas 2D fallback when WebGL is unavailable or the 3D scene fails
+  to start.
 - Sun and Earth positions from pre-computed JPL Horizons ephemerides.
 - A ray-traced terrain horizon with lunar curvature, sunset and Earthset
   countdowns, power estimates and communication windows.
@@ -81,7 +82,7 @@ src/
   services/    Data adapters (NASA datasets, Moon Trek, export, storage, worker client)
   workers/     Background compute worker
   components/  Vue interface (panels, primitives, composables)
-  render/      Three.js scene and Canvas 2D fallback
+  render/      Three.js scene (3D and top-down 2D presets) and Canvas 2D fallback
   i18n/        English and Spanish messages
 public/data/   Pre-computed NASA datasets and terrain grids
 scripts/       Data pipeline, deployment verification, QA and demo tooling

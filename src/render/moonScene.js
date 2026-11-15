@@ -4,7 +4,7 @@
  * Public API (see docs/architecture.md):
  *   createMoonScene(canvas, options) -> Promise<{
  *     setTerrain, setSites, setSunDirection, setEarthDirection, setLayers,
- *     setRay, setLabels, setSelectedSite, resetView, resize, dispose
+ *     setRay, setLabels, setSelectedSite, setViewPreset, resetView, resize, dispose
  *   }>
  *
  * `three` is imported dynamically so the main bundle stays small and machines
@@ -122,7 +122,9 @@ export async function createMoonScene(canvas, options = {}) {
 
   let projection = null
   let planarView = null
-  let homeCamera = { x: 0, y: 34, z: 2 }
+  // 'perspective' is the tilted 3D view; 'top' looks straight down from above
+  // the centre of the map with north up (the 2D view of the same scene).
+  let viewPreset = 'perspective'
   let terrainMesh = null
   let terrainGeometry = null
   let terrainNormals = null
@@ -212,22 +214,52 @@ export async function createMoonScene(canvas, options = {}) {
     }
   }
 
-  function frameCamera() {
-    if (!projection) return
-    // Exact-fit perspective: the larger horizontal extent maps to the viewport
-    // height at the target plane, so the 3D scale matches the 2D map scale.
+  /** Distance from the target at which the full map fits the current viewport. */
+  function fitCameraDistance() {
     const tanHalf = Math.tan((camera.fov * Math.PI) / 360)
     const aspect = Math.max(0.2, camera.aspect || 1)
     const mapWidth = projection.widthM * projection.unitsPerMeter
     const mapHeight = projection.heightM * projection.unitsPerMeter
-    // Fit the full rectangular map inside the dynamic canvas (letterboxed).
-    const distance = Math.max(mapHeight / 2 / tanHalf, mapWidth / 2 / (tanHalf * aspect))
-    // Near-top-down (small southward offset keeps north up on screen).
-    homeCamera = { x: 0, y: distance, z: distance * 0.04 }
-    camera.position.set(homeCamera.x, homeCamera.y, homeCamera.z)
+    // Exact-fit perspective: the larger horizontal extent maps to the viewport
+    // height at the target plane, so the 3D scale matches the 2D map scale.
+    return Math.max(mapHeight / 2 / tanHalf, mapWidth / 2 / (tanHalf * aspect))
+  }
+
+  /** Place the camera for the active view preset (tilted 3D or top-down 2D). */
+  function applyViewPreset(force = true) {
+    if (!projection) return
+    const distance = fitCameraDistance()
+    if (viewPreset === 'top') {
+      // Straight down on the map centre; camera-relative "up" is world -Z so
+      // north stays up on screen. Rotation is locked, pan/zoom keep working.
+      camera.up.set(0, 0, -1)
+      camera.position.set(0, distance, 0)
+      controls.enableRotate = false
+    } else {
+      // Near-top-down tilt: a small southward offset reads as 3D depth.
+      camera.up.set(0, 1, 0)
+      camera.position.set(0, distance, distance * 0.04)
+      controls.enableRotate = true
+    }
     controls.target.set(0, 0, 0)
     controls.update()
-    notifyViewChange(true)
+    if (force) notifyViewChange(true)
+  }
+
+  /**
+   * Switch view preset ('perspective' | 'top'). Unknown values are ignored.
+   * Only moves the camera; the scene/canvas is never rebuilt.
+   */
+  function setViewPreset(preset) {
+    if (preset !== 'perspective' && preset !== 'top') return viewPreset
+    viewPreset = preset
+    applyViewPreset(true)
+    return viewPreset
+  }
+
+  function frameCamera() {
+    if (!projection) return
+    applyViewPreset(true)
   }
 
   function computeViewInfo() {
@@ -893,10 +925,7 @@ export async function createMoonScene(canvas, options = {}) {
   }
 
   function resetView() {
-    camera.position.set(homeCamera.x, homeCamera.y, homeCamera.z)
-    controls.target.set(0, 0, 0)
-    controls.update()
-    notifyViewChange(true)
+    applyViewPreset(true)
   }
 
   /* ------------------------------ interaction ----------------------------- */
@@ -1006,6 +1035,7 @@ export async function createMoonScene(canvas, options = {}) {
     setLayers,
     setRay,
     setLabels,
+    setViewPreset,
     resetView,
     resize: cameraFrame,
     dispose,
