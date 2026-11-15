@@ -141,6 +141,12 @@ export async function createMoonScene(canvas, options = {}) {
   camera.position.set(0, 28, 7)
 
   const controls = new OrbitControls(camera, canvas)
+  // Phones use the on-screen zoom bar; disable pinch/scroll zoom there so the
+  // gesture cannot fight the page scroll. Desktop keeps the normal controls.
+  const phoneLayout = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(max-width: 720px)').matches
+    : false
+  if (phoneLayout) controls.enableZoom = false
   // One-finger vertical swipes scroll the page on phones; two fingers still
   // rotate/zoom the map (OrbitControls defaults to touch-action: none).
   canvas.style.touchAction = 'pan-y'
@@ -1079,6 +1085,28 @@ export async function createMoonScene(canvas, options = {}) {
   }
   animate()
 
+  function cameraDistance() {
+    return camera.position.distanceTo(controls.target)
+  }
+
+  function getZoom() {
+    const span = Math.max(0.0001, controls.maxDistance - controls.minDistance)
+    return Math.min(1, Math.max(0, 1 - (cameraDistance() - controls.minDistance) / span))
+  }
+
+  function setZoom(ratio) {
+    const clamped = Math.min(1, Math.max(0, Number(ratio) || 0))
+    const distance = controls.maxDistance - clamped * (controls.maxDistance - controls.minDistance)
+    const direction = camera.position.clone().sub(controls.target).normalize()
+    camera.position.copy(controls.target).add(direction.multiplyScalar(distance))
+    controls.update()
+    notifyViewChange(true)
+  }
+
+  function zoomBy(step) {
+    setZoom(getZoom() + Number(step || 0))
+  }
+
   function dispose() {
     layerToken += 1
     if (frameId) cancelAnimationFrame(frameId)
@@ -1104,6 +1132,9 @@ export async function createMoonScene(canvas, options = {}) {
     setRay,
     setLabels,
     setViewPreset,
+    getZoom,
+    setZoom,
+    zoomBy,
     resetView,
     resize: cameraFrame,
     dispose,
