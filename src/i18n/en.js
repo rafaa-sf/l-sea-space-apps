@@ -96,6 +96,7 @@ export default {
     yes: 'Yes',
     no: 'No',
     add: 'Add',
+    selectRow: 'Select {site} on the map',
     remove: 'Remove',
     reset: 'Reset',
     close: 'Close',
