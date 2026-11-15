@@ -60,8 +60,9 @@ export async function loadEphemerisIndex(options = {}) {
 }
 
 /**
- * Load the precomputed ephemeris for one site. Results are cached (including
- * missing files, to avoid repeated failing requests).
+ * Load the precomputed ephemeris for one site. Successful results are cached;
+ * failed loads (`null`, e.g. a network error or HTTP failure) are evicted so the
+ * next call retries instead of caching the failure for the whole session.
  *
  * @param {string} siteId Site identifier / file name.
  * @param {{dataRoot?: string, fetchImpl?: typeof fetch, signal?: AbortSignal, force?: boolean}} [options]
@@ -85,6 +86,14 @@ export function loadEphemeris(siteId, options = {}) {
   })()
 
   ephemerisCache.set(key, promise)
+  promise.then(
+    (dataset) => {
+      if (!dataset && ephemerisCache.get(key) === promise) ephemerisCache.delete(key)
+    },
+    () => {
+      if (ephemerisCache.get(key) === promise) ephemerisCache.delete(key)
+    },
+  )
   return promise
 }
 

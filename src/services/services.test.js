@@ -4,7 +4,7 @@
  * the storage fallback.
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { appBaseUrl, dataRootUrl, dataUrl } from './dataUrl.js'
 import {
   parseSitesPayload,
@@ -22,6 +22,8 @@ import {
   buildMoonTrekViewerUrl,
   getLayerById,
   layerAttribution,
+  loadLayerCatalogue,
+  clearLayersCache,
   MOON_TREK_URL,
 } from './moontrek.js'
 import { buildBrief, briefToJson, briefFilename, downloadBrief, briefSummaryText, BRIEF_SCHEMA } from './export.js'
@@ -33,7 +35,16 @@ import {
   clearState,
   isStorageAvailable,
 } from './storage.js'
-import { buildHorizonsQuery, parseHorizonsTable, parseHorizonsJson, mergeLiveBodies, toHorizonsDate } from './horizons.js'
+import {
+  buildHorizonsQuery,
+  parseHorizonsTable,
+  parseHorizonsJson,
+  mergeLiveBodies,
+  toHorizonsDate,
+  loadEphemeris,
+  clearEphemerisCache,
+} from './horizons.js'
+import { loadTerrainIndex, clearTerrainCache } from './lola.js'
 import { createComputeClient } from './computeClient.js'
 
 const LAYER = {
@@ -407,5 +418,88 @@ describe('Horizons helpers', () => {
     expect(dataset.samples.length).toBe(1)
     expect(dataset.samples[0].sun.el).toBe(1)
     expect(dataset.samples[0].earth.el).toBe(2)
+  })
+})
+
+describe('service load retries', () => {
+  let warnSpy
+
+  beforeEach(() => {
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    clearEphemerisCache()
+    clearTerrainCache()
+    clearLayersCache()
+    warnSpy.mockRestore()
+  })
+
+  it('retries the ephemeris load after a transient fetch failure and caches the success', async () => {
+    const payload = {
+      site: { lat: -89.9, lon: 0 },
+      samples: [
+        { time: '2026-11-01T00:00:00Z', sun: { az: 10, el: 1 }, earth: { az: 20, el: 2 } },
+        { time: '2026-11-01T00:30:00Z', sun: { az: 11, el: 1.5 }, earth: { az: 21, el: 2.5 } },
+      ],
+    }
+    let calls = 0
+    const fetchImpl = async () => {
+      calls += 1
+      if (calls === 1) throw new Error('transient network error')
+      return { ok: true, status: 200, json: async () => payload }
+    }
+
+    expect(await loadEphemeris('demo', { fetchImpl })).toBeNull()
+    const dataset = await loadEphemeris('demo', { fetchImpl })
+    expect(dataset).not.toBeNull()
+    expect(dataset.siteId).toBe('demo')
+    expect(dataset.samples.length).toBe(2)
+    expect(calls).toBe(2)
+
+    // The successful retry is cached: no third request.
+    expect(await loadEphemeris('demo', { fetchImpl })).toBe(dataset)
+    expect(calls).toBe(2)
+  })
+
+  it('retries the terrain index after a transient fetch failure and caches the success', async () => {
+    const payload = {
+      referenceRadiusM: 1737400,
+      regions: [
+        { id: 'r1', boundsM: { minX: -1, maxX: 1, minY: -1, maxY: 1 }, pixelSizeM: 1, width: 2, height: 2 },
+      ],
+    }
+    let calls = 0
+    const fetchImpl = async () => {
+      calls += 1
+      if (calls === 1) throw new Error('transient network error')
+      return { ok: true, status: 200, json: async () => payload }
+    }
+
+    expect(await loadTerrainIndex({ fetchImpl })).toBeNull()
+    const index = await loadTerrainIndex({ fetchImpl })
+    expect(index).not.toBeNull()
+    expect(index.regions.map((region) => region.id)).toEqual(['r1'])
+    expect(calls).toBe(2)
+
+    expect(await loadTerrainIndex({ fetchImpl })).toBe(index)
+    expect(calls).toBe(2)
+  })
+
+  it('retries the layer catalogue after a transient fetch failure and caches the success', async () => {
+    let calls = 0
+    const fetchImpl = async () => {
+      calls += 1
+      if (calls === 1) throw new Error('transient network error')
+      return { ok: true, status: 200, json: async () => ({ layers: [{ id: 'l1' }] }) }
+    }
+
+    expect((await loadLayerCatalogue({ fetchImpl })).layers).toEqual([])
+    const catalogue = await loadLayerCatalogue({ fetchImpl })
+    expect(catalogue.layers.map((layer) => layer.id)).toEqual(['l1'])
+    expect(calls).toBe(2)
+
+    expect(await loadLayerCatalogue({ fetchImpl })).toBe(catalogue)
+    expect(calls).toBe(2)
   })
 })

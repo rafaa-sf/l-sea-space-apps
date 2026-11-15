@@ -33,7 +33,9 @@ export const MOON_TREK_ATTRIBUTION =
 let cataloguePromise = null
 
 /**
- * Load and cache `public/data/layers.json`. Never throws.
+ * Load and cache `public/data/layers.json`. Never throws. A successful
+ * catalogue (even an empty one) stays cached; a catalogue that could only be
+ * built from a fetch error is evicted so the next call retries.
  *
  * @param {{dataRoot?: string, fetchImpl?: typeof fetch, force?: boolean}} [options]
  * @returns {Promise<{
@@ -48,13 +50,15 @@ export async function loadLayerCatalogue(options = {}) {
   if (cataloguePromise && !options.force) return cataloguePromise
   const fetchImpl = options.fetchImpl ?? globalThis.fetch
   const url = dataUrl(LAYERS_PATH, options.dataRoot)
-  cataloguePromise = (async () => {
+  const state = { failed: false }
+  const promise = (async () => {
     const empty = { layers: [], projection: null, attribution: MOON_TREK_ATTRIBUTION, source: null, generated: null }
     if (typeof fetchImpl !== 'function') return empty
     try {
       const response = await fetchImpl(url, { cache: 'no-cache' })
       if (!response || !response.ok) {
         console.warn(`[moontrek] could not load ${url}: HTTP ${response?.status ?? 'error'}`)
+        state.failed = true
         return empty
       }
       const payload = await response.json()
@@ -68,10 +72,20 @@ export async function loadLayerCatalogue(options = {}) {
       }
     } catch (error) {
       console.warn(`[moontrek] could not load ${url}: ${error instanceof Error ? error.message : String(error)}`)
+      state.failed = true
       return empty
     }
   })()
-  return cataloguePromise
+  cataloguePromise = promise
+  promise.then(
+    () => {
+      if (state.failed && cataloguePromise === promise) cataloguePromise = null
+    },
+    () => {
+      if (cataloguePromise === promise) cataloguePromise = null
+    },
+  )
+  return promise
 }
 
 /**

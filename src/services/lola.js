@@ -36,7 +36,9 @@ let indexPromise = null
 const regionCache = new Map()
 
 /**
- * Load and cache `terrain/index.json`.
+ * Load and cache `terrain/index.json`. Successful loads stay cached; a failed
+ * load (`null`, e.g. a network error or HTTP failure) is evicted so the next
+ * call retries instead of caching the failure for the whole session.
  *
  * @param {{dataRoot?: string, fetchImpl?: typeof fetch}} [options]
  * @returns {Promise<{referenceRadiusM: number, defaultRegionId: string|null, regions: Array<Object>, attribution: string}|null>}
@@ -47,7 +49,7 @@ export async function loadTerrainIndex(options = {}) {
   if (typeof fetchImpl !== 'function') return null
   const url = dataUrl(TERRAIN_INDEX_PATH, options.dataRoot)
 
-  indexPromise = (async () => {
+  const promise = (async () => {
     try {
       const response = await fetchImpl(url, { cache: 'no-cache' })
       if (!response || !response.ok) {
@@ -71,7 +73,16 @@ export async function loadTerrainIndex(options = {}) {
       return null
     }
   })()
-  return indexPromise
+  indexPromise = promise
+  promise.then(
+    (index) => {
+      if (!index && indexPromise === promise) indexPromise = null
+    },
+    () => {
+      if (indexPromise === promise) indexPromise = null
+    },
+  )
+  return promise
 }
 
 /**
@@ -166,7 +177,8 @@ async function fetchRegion(entry, options = {}) {
 }
 
 /**
- * Load one terrain region by id (cached).
+ * Load one terrain region by id. Successful regions stay cached; a failed load
+ * (`null`) is evicted so a later call retries after a transient failure.
  *
  * @param {string} regionId Region id from `terrain/index.json`.
  * @param {Object} [options] See {@link fetchRegion}.
@@ -188,6 +200,14 @@ export function loadRegion(regionId, options = {}) {
     })
   })()
   regionCache.set(key, promise)
+  promise.then(
+    (region) => {
+      if (!region && regionCache.get(key) === promise) regionCache.delete(key)
+    },
+    () => {
+      if (regionCache.get(key) === promise) regionCache.delete(key)
+    },
+  )
   return promise
 }
 
