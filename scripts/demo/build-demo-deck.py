@@ -327,7 +327,7 @@ def main() -> None:
     add_text(slide, "Verified", Inches(1.0), Inches(1.95), Inches(5.1), Inches(0.4),
              size=18, bold=True, color=OK)
     add_bullets(slide, [
-        "104 automated tests pass; CI green on main.",
+        "226 automated tests pass; CI green on main.",
         "Sun/Earth values cross-checked against JPL Horizons datasets.",
         "Terrain horizon includes lunar curvature and the real LOLA topography.",
         "Works without WebGL (Canvas-2D fallback) and keeps the UI responsive "
