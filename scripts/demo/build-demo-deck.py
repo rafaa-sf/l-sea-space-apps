@@ -637,7 +637,7 @@ def main() -> None:
              "JPL Horizons", "Topocentric Sun/Earth; 30-min steps; Nov–Dec 2026.",
              ACCENT, title_size=12.5, body_size=9.5)
     add_card(slide, Inches(0.65), Inches(2.8), Inches(3.55), Inches(1.22),
-             "NASA Moon Trek", "33 verified south-pole layers: illumination, Earth "
+             "NASA Moon Trek", "32 verified south-pole layers: illumination, Earth "
              "visibility, PSR, temperature, rock abundance.", WARN,
              title_size=12.5, body_size=9.5)
     add_card(slide, Inches(4.35), Inches(2.8), Inches(3.55), Inches(1.22),
@@ -683,7 +683,7 @@ def main() -> None:
              Inches(6.93), Inches(6.42), Inches(5.45), Inches(0.22),
              size=8.0, color=DIM)
     add_notes(slide,
-              "NASA data: LOLA terrain, Horizons Sun/Earth, Moon Trek's 33 verified layers "
+              "NASA data: LOLA terrain, Horizons Sun/Earth, Moon Trek's 32 verified layers "
               "and QuickMap links. Quality: 275 tests in 19 files, terrain validation with "
               "2 source regions plus 4 area presets and 0 failures, and a 480/480 Horizons "
               "spot-check. Be explicit about the limits: the two-month ephemeris window, DEM "

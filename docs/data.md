@@ -165,8 +165,8 @@ writing `public/data/layers.json`.
 
 | Item | Result |
 | --- | --- |
-| Layers defined | 33 |
-| Verified (capabilities + real tile + image content type) | 33 of 33 |
+| Layers defined | 32 |
+| Verified (capabilities + real tile + image content type) | 32 of 32 |
 | CORS header present on every tile probe | yes (`*`) |
 | Known unavailable label tried | `PSR_SP` returns HTTP 404; the PSR raster is served as `LRO_LOLA_Illumination_SPole65S_240m`, which is verified and included |
 | Artemis III named-region outline | `A3_Named_regions_SP` is a catalog item, not a WMTS layer (capabilities 404), so it is not in the catalogue |
@@ -399,7 +399,7 @@ Every test used `Origin: http://localhost:5173`.
 | Path | What it is | Size |
 | --- | --- | --- |
 | `public/data/pois.json` | 10 curated lunar south-pole sites of interest | about 8 KB |
-| `public/data/layers.json` | 33 verified Moon Trek WMTS layers | about 61 KB |
+| `public/data/layers.json` | 32 verified Moon Trek WMTS layers | about 59 KB |
 | `public/data/ephemeris/` | 10 files x 2,928 topocentric Sun/Earth samples, plus index and schema | about 2.8 MB |
 | `public/data/terrain/` | 7 LOLA polar-stereographic int16 grids (2 standard regions + 4 area presets: 100, 200, 300 and 400 km at 1024 px + the 608 km @ 2048 px wide-area grid), plus index | about 27 MB |
 | `public/data/ai-usage.md` | AI use declaration served by the application | about 7 KB |
@@ -485,7 +485,7 @@ NAC photogrammetry DEMs were merged.
 
 ### Layers (Moon Trek)
 
-33 WMTS layers, each verified live (capabilities, real tile, image content type, CORS
+32 WMTS layers, each verified live (capabilities, real tile, image content type, CORS
 header). See section 3 for the service details and `public/data/layers.json` for the
 per-layer record.
 

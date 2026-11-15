@@ -134,7 +134,7 @@ and validation claims must be bounded and disclosed.
 - **Contract-first parallel work:** the architecture contract lets coder, UI, data and
   commercial workstreams run in parallel with low merge friction.
 - **Conventions and CI:** Conventional Commits, short-lived branches, English-only
-  repository and automated checks. Current state: the application suite passes (246
+  repository and automated checks. Current state: the application suite passes (275
   tests in 17 files) plus 8 MCP tests, and CI is green; the remaining scale gap is
   a full accuracy-validation campaign against reference ephemerides (the sampled
   `npm run verify:horizons` spot-check passes) and expanded end-to-end coverage.

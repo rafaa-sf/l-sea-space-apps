@@ -39,7 +39,7 @@ educators and the public.
 | Resource | Link | Use in this project |
 | --- | --- | --- |
 | QuickMap (LROC/ASU) | <https://quickmap.lroc.asu.edu/> | Cross-check landing-site locations and terrain; deep links in the JSON brief |
-| Moon Trek | <https://trek.nasa.gov/moon/> | Imagery, slope, illumination and temperature layers (33 verified WMTS layers) |
+| Moon Trek | <https://trek.nasa.gov/moon/> | Imagery, slope, illumination and temperature layers (32 verified WMTS layers) |
 | JPL Horizons | <https://ssd.jpl.nasa.gov/horizons/> | Topocentric Sun and Earth azimuth/elevation (pre-computed datasets) |
 | LOLA (via PDS Geosciences) | <https://pds-geosciences.wustl.edu/> | Real south-pole digital elevation models for terrain and horizon calculations |
 | CSA Moon Exploration | <https://www.asc-csa.gc.ca/eng/astronomy/moon-exploration/> | Reference for lunar exploration context and the CSA "Moon Explorer" site list |
@@ -65,7 +65,7 @@ educators and the public.
 - **LOLA polar DEMs (PDS Geosciences)** - `LDEM_875S_20M` (74 m/px web grid) and
   `LDEM_80S_80M` (594 m/px wide area), polar stereographic, metres relative to
   R = 1,737,400 m.
-- **Moon Trek WMTS** - 33 verified south-pole layers (LOLA relief and slope, LROC
+- **Moon Trek WMTS** - 32 verified south-pole layers (LOLA relief and slope, LROC
   imagery, illumination percentage, Earth visibility, permanently shadowed regions,
   Diviner temperature).
 - **QuickMap** - deep links for cross-checking site locations and terrain.

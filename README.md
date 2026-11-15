@@ -79,7 +79,7 @@ Full grouped index: **[docs/README.md](docs/README.md)**. Feature reference:
 | --- | --- |
 | [JPL Horizons](https://ssd.jpl.nasa.gov/horizons/) (DE441) | Topocentric Sun and Earth azimuth/elevation for 10 sites, 30-minute steps, 2026-11-01 to 2026-12-31 |
 | [LOLA polar DEMs](https://pds-geosciences.wustl.edu/) (PDS Geosciences) | Real south-pole terrain, converted to 74 m and 594 m polar-stereographic grids |
-| [NASA Moon Trek](https://trek.nasa.gov/moon/) | 33 verified south-pole WMTS layers (relief, slope masks and roughness, NAC imagery 0.67–3.5 m/px, PSR mosaic, illumination, Earth/sky visibility, temperature, rock abundance) |
+| [NASA Moon Trek](https://trek.nasa.gov/moon/) | 32 verified south-pole WMTS layers (relief, slope masks and roughness, NAC imagery 0.67–3.5 m/px, PSR mosaic, illumination, Earth/sky visibility, temperature, rock abundance) |
 | [LROC QuickMap](https://quickmap.lroc.asu.edu/) | Cross-checks and deep links exported with the mission brief |
 
 The data pipeline, verification evidence and attribution are documented in
