@@ -189,7 +189,6 @@ export default {
  
     altitudeTitle: 'Altitud del punto',
     selectedAltitude: 'Punto seleccionado',
-    elevationLegend: 'Elevación',
     scaleBar: 'Barra de escala',
     metersPerPixel: '1 px = {value} m',
     canvasTitle: 'Pulsa un marcador para seleccionar un sitio. Pulsa el terreno para capturar coordenadas.',

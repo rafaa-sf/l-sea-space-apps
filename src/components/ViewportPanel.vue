@@ -14,7 +14,6 @@ import { lonLatToPlanarMeters } from '../render/geo.js'
 import { detectWebgl } from '../render/webgl.js'
 import { siteDisplayName, sourceLabelKey } from './composables/labels.js'
 import { formatNumber } from './composables/format.js'
-import { hypsometricCssGradient } from '../render/geo.js'
 
 const { t, te, locale } = useI18n()
 
@@ -164,7 +163,6 @@ const markersAnchored = computed(() => (state.analysis.ready && state.selectedSi
 const demRegionId = computed(() => state.data.terrainRegionId ?? demRegions.value[0]?.id ?? '')
 const ephemerisBadge = computed(() => t(sourceLabelKey(state.data.ephemerisSource, 'ephemeris')))
 
-const legendGradient = hypsometricCssGradient()
 /** Altitude of the selected point and, when comparing, of each compared site. */
 const altitudeEntries = computed(() => {
   const selected = selectedSite.value
@@ -201,13 +199,6 @@ const altitudeEntries = computed(() => {
   return rows.filter((row) => row.elevationM !== null)
 })
 
-const elevationStats = computed(() => state.data.terrainStats)
-const elevationMaxLabel = computed(() =>
-  elevationStats.value ? `${formatNumber(elevationStats.value.maxM, 0, locale.value)} m` : '',
-)
-const elevationMinLabel = computed(() =>
-  elevationStats.value ? `${formatNumber(elevationStats.value.minM, 0, locale.value)} m` : '',
-)
 
 function niceScaleMeters(target) {
   const safe = Math.max(1, target)
@@ -645,32 +636,20 @@ onBeforeUnmount(() => {
         {{ t('viewport.sitesOutside', { count: sitesOutsideCount }) }}
       </p>
 
-      <div class="map-legend-stack">
-        <div v-if="elevationStats" class="map-legend" data-testid="elevation-legend" :aria-label="t('viewport.elevationLegend')">
-          <span class="map-legend__title">{{ t('viewport.elevationLegend') }}</span>
-          <span class="map-legend__body">
-            <span class="map-legend__bar" :style="{ background: legendGradient }" aria-hidden="true" />
-            <span class="map-legend__ticks">
-              <span>{{ elevationMaxLabel }}</span>
-              <span>{{ elevationMinLabel }}</span>
-            </span>
-          </span>
-        </div>
-        <div
-          v-if="altitudeEntries.length"
-          class="map-altitude"
-          data-testid="map-altitude"
-          role="status"
-          aria-live="polite"
-          :aria-label="t('viewport.altitudeTitle')"
-        >
-          <span class="map-altitude__title">{{ t('viewport.altitudeTitle') }}</span>
-          <span v-for="entry in altitudeEntries" :key="entry.id" class="map-altitude__row">
-            <span class="map-altitude__dot" :style="{ background: entry.color }" aria-hidden="true" />
-            <span class="map-altitude__name" :title="entry.label">{{ entry.name }}</span>
-            <span class="map-altitude__value">{{ formatNumber(entry.elevationM, 0) }} m</span>
-          </span>
-        </div>
+      <div
+        v-if="altitudeEntries.length"
+        class="map-altitude"
+        data-testid="map-altitude"
+        role="status"
+        aria-live="polite"
+        :aria-label="t('viewport.altitudeTitle')"
+      >
+        <span class="map-altitude__title">{{ t('viewport.altitudeTitle') }}</span>
+        <span v-for="entry in altitudeEntries" :key="entry.id" class="map-altitude__row">
+          <span class="map-altitude__dot" :style="{ background: entry.color }" aria-hidden="true" />
+          <span class="map-altitude__name" :title="entry.label">{{ entry.name }}</span>
+          <span class="map-altitude__value">{{ formatNumber(entry.elevationM, 0) }} m</span>
+        </span>
       </div>
 
       <div v-if="scaleInfo" class="map-scale" :aria-label="t('viewport.scaleBar')" data-testid="scale-bar">
