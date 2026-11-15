@@ -61,6 +61,10 @@ function onDate(event) {
 function onTime(event) {
   apply(dateValue.value, event.target.value)
 }
+
+function onSpeedChange(event) {
+  actions.setPlaybackSpeed(Number(event.target.value))
+}
 </script>
 
 <template>
@@ -75,6 +79,18 @@ function onTime(event) {
         <button type="button" class="button button--secondary button--tiny" @click="actions.setNow()">{{ t('timeline.now') }}</button>
         <button type="button" class="button button--quiet button--tiny" @click="actions.shiftTime(60)">+1 h</button>
       </div>
+      <select
+        class="input dem-select__control"
+        :value="state.playback.speedMinutes"
+        data-testid="playback-speed"
+        :aria-label="t('timeline.speed', { minutes: state.playback.speedMinutes })"
+        :title="t('timeline.speed', { minutes: state.playback.speedMinutes })"
+        @change="onSpeedChange"
+      >
+        <option :value="5">5</option>
+        <option :value="20">20</option>
+        <option :value="60">60</option>
+      </select>
     </div>
 
     <div class="timeline__datetime">

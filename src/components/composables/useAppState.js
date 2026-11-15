@@ -578,6 +578,20 @@ export function togglePlayback() {
   else startPlayback()
 }
 
+/** Advances per playback tick, in mission minutes. */
+const PLAYBACK_SPEEDS = Object.freeze([5, 20, 60])
+
+/**
+ * Change how many mission minutes one playback tick advances.
+ * Anything outside the supported set is ignored; `state.time` and the running
+ * clock are left untouched, so a speed change applies from the next tick.
+ */
+export function setPlaybackSpeed(minutes) {
+  const value = Number(minutes)
+  if (!Number.isInteger(value) || !PLAYBACK_SPEEDS.includes(value)) return
+  state.playback.speedMinutes = value
+}
+
 /* -------------------------------------------------------------------------- */
 /* Analysis                                                                   */
 /* -------------------------------------------------------------------------- */
@@ -1219,6 +1233,7 @@ export const actions = {
   startPlayback,
   stopPlayback,
   togglePlayback,
+  setPlaybackSpeed,
   runAutopilot,
   runLandingZones,
   selectLandingZone,
