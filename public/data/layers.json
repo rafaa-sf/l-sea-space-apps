@@ -1,8 +1,8 @@
 {
-  "generated": "2026-11-14T10:37:49.550Z",
+  "generated": "2026-11-15T11:10:56.456Z",
   "source": "NASA Moon Trek WMTS API (trek.nasa.gov)",
   "serviceDocs": "https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=moon",
-  "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+  "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
   "note": "All layers are south-polar-stereographic WMTS (Moon Trek projection IAU2000:30120). Tiles are live requests to NASA servers; CORS is enabled (access-control-allow-origin: *). The static app can display them directly in the browser.",
   "projection": {
     "type": "south_polar_stereographic",
@@ -45,11 +45,11 @@
         "lower": "-75840.0 -75840.0",
         "upper": "75840.0 75840.0"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_LOLA_ClrShade_SPole875_5mp_v04/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:33.178Z",
+        "checkedAt": "2026-11-15T11:10:27.271Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -88,11 +88,11 @@
         "lower": "-75840.0 -75840.0",
         "upper": "75840.0 75840.0"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_LOLA_Shade_SPole875_5mp_v04/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:33.921Z",
+        "checkedAt": "2026-11-15T11:10:28.028Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -131,11 +131,11 @@
         "lower": "-75840.0 -75840.0",
         "upper": "75840.0 75840.0"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_LOLA_Gray_SPole875_5mp_v04/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:34.667Z",
+        "checkedAt": "2026-11-15T11:10:28.789Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -174,11 +174,11 @@
         "lower": "-457440.0 -457440.0",
         "upper": "457440.0 457440.0"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_LOLA_ClrShade_SPole75_30mp_v04/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:35.918Z",
+        "checkedAt": "2026-11-15T11:10:30.055Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -217,11 +217,11 @@
         "lower": "-1095930.0 -1095930.0",
         "upper": "1095930.0 1095930.0"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_LOLA_ClrShade_SPole45_100mp_v04/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:36.831Z",
+        "checkedAt": "2026-11-15T11:10:31.155Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -260,11 +260,11 @@
         "lower": "-457440.000 -457440.000",
         "upper": "457440.000 457440.000"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_LOLA_ClrSlope_SPole75S_120m/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:37.742Z",
+        "checkedAt": "2026-11-15T11:10:32.244Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -303,11 +303,11 @@
         "lower": "-1095700.0 -1095600.0",
         "upper": "1095600.0 1095700.0"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_WAC_Mosaic_SPole60_100m_v02/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:38.487Z",
+        "checkedAt": "2026-11-15T11:10:32.991Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -346,11 +346,11 @@
         "lower": "-136716.373 -136875.424",
         "upper": "136862.627 136745.576"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_NAC_Mosaic_1mpp_SP/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:39.227Z",
+        "checkedAt": "2026-11-15T11:10:33.909Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -389,11 +389,11 @@
         "lower": "-151740.0 -151800.0",
         "upper": "151740.0 151740.0"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/ClrAVGVISIB_85S_060M_201608_EARTH_SP/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:40.138Z",
+        "checkedAt": "2026-11-15T11:10:35.175Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -432,11 +432,11 @@
         "lower": "-60884.204 -61186.798",
         "upper": "61115.796 61213.202"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/WAC_POLE_ILL_PCT_SOUTH_100M/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:40.880Z",
+        "checkedAt": "2026-11-15T11:10:35.927Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -475,11 +475,11 @@
         "lower": "-770160.000 -770640.000",
         "upper": "770640.000 770160.000"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_LOLA_Illumination_SPole65S_240m/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:41.623Z",
+        "checkedAt": "2026-11-15T11:10:36.844Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -518,11 +518,11 @@
         "lower": "-304000.000 -304000.000",
         "upper": "304000.000 304000.000"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_Diviner_Temp_Avg_Clr_SPole80_135mp/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:42.871Z",
+        "checkedAt": "2026-11-15T11:10:38.110Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -561,11 +561,11 @@
         "lower": "-19000.0 -20000.0",
         "upper": "-3000.0 -4000.0"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/Site01_final_adj_5mpp_ColorHillshade/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:43.616Z",
+        "checkedAt": "2026-11-15T11:10:38.867Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -604,11 +604,11 @@
         "lower": "-9000.0 -15235.0",
         "upper": "7000.0 1000.0"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/Site04_final_adj_5mpp_ColorHillshade/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:44.359Z",
+        "checkedAt": "2026-11-15T11:10:39.615Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -647,11 +647,11 @@
         "lower": "22000.0 -28000.0",
         "upper": "38000.0 -12000.0"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/Site07_final_adj_5mpp_ColorHillshade/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:45.099Z",
+        "checkedAt": "2026-11-15T11:10:40.370Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -690,11 +690,11 @@
         "lower": "-45000.0 7000.0",
         "upper": "-29000.0 23000.0"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/Site11_final_adj_5mpp_ColorHillshade/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:45.843Z",
+        "checkedAt": "2026-11-15T11:10:41.126Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -733,11 +733,11 @@
         "lower": "-11000.0 111000.0",
         "upper": "10000.0 132000.0"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/Site23_final_adj_5mpp_ColorHillshade/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:46.585Z",
+        "checkedAt": "2026-11-15T11:10:41.878Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -776,11 +776,11 @@
         "lower": "-52900.0 75600.0",
         "upper": "-23100.0 105400.0"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/Haworth_final_adj_5mpp_ColorHillshade/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:47.325Z",
+        "checkedAt": "2026-11-15T11:10:42.633Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -819,11 +819,11 @@
         "lower": "65000.0 110000.0",
         "upper": "81000.0 126000.0"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/Site20_final_adj_5mpp_ClrHillshade_SP/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:48.067Z",
+        "checkedAt": "2026-11-15T11:10:43.391Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -862,11 +862,11 @@
         "lower": "147000.0 85000.0",
         "upper": "167000.0 105000.0"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/DM2_final_adj_5mpp_ColorHillshade/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:48.810Z",
+        "checkedAt": "2026-11-15T11:10:44.138Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
@@ -905,16 +905,532 @@
         "lower": "74000.0 100000.0",
         "upper": "94000.0 120000.0"
       },
-      "attribution": "NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams",
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
       "viewerUrl": "https://trek.nasa.gov/moon/",
       "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/Site06_final_adj_5mpp_ColorHillshade/1.0.0/WMTSCapabilities.xml",
       "verified": {
-        "checkedAt": "2026-11-14T10:37:49.550Z",
+        "checkedAt": "2026-11-15T11:10:44.894Z",
         "httpStatus": 200,
         "cors": "*",
         "contentType": "image/png",
         "bytes": 4785,
         "probeUrl": "https://trek.nasa.gov/tiles/Moon/SP/Site06_final_adj_5mpp_ColorHillshade/1.0.0/default/default028mm/4/7/8.png",
+        "probeZoom": 4
+      }
+    },
+    {
+      "id": "lola-color-slope-5m",
+      "name": "LOLA 87.5S 5 m/px — color slope",
+      "description": "Colorized slope map derived from the high-resolution LOLA 87.5S-90S DEM; finer hazard screening than the 120 m slope layer.",
+      "kind": "hazard",
+      "type": "wmts",
+      "label": "ColorSlope_LRO_LOLA_DEM_SPole875_5mp_v04",
+      "url": "https://trek.nasa.gov/tiles/Moon/SP/ColorSlope_LRO_LOLA_DEM_SPole875_5mp_v04/1.0.0/default/default028mm/{z}/{y}/{x}.png",
+      "template": "https://trek.nasa.gov/tiles/Moon/SP/ColorSlope_LRO_LOLA_DEM_SPole875_5mp_v04/1.0.0/default/default028mm/{TileMatrix}/{TileRow}/{TileCol}.png",
+      "urlPlaceholders": {
+        "z": "TileMatrix",
+        "x": "TileCol",
+        "y": "TileRow"
+      },
+      "tileMatrixSet": "default028mm",
+      "format": "image/png",
+      "minZoom": 0,
+      "maxZoom": 10,
+      "projection": {
+        "type": "south_polar_stereographic",
+        "latitudeOfOriginDeg": -90,
+        "centralMeridianDeg": 0,
+        "referenceRadiusM": 1737400,
+        "note": "Moon Trek SP (south polar) tiles; not an equirectangular lat/lon grid."
+      },
+      "boundsM": {
+        "crs": "urn:ogc:def:crs:EPSG::0",
+        "lower": "-75840.0 -75840.0",
+        "upper": "75840.0 75840.0"
+      },
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
+      "viewerUrl": "https://trek.nasa.gov/moon/",
+      "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/ColorSlope_LRO_LOLA_DEM_SPole875_5mp_v04/1.0.0/WMTSCapabilities.xml",
+      "verified": {
+        "checkedAt": "2026-11-15T11:10:45.990Z",
+        "httpStatus": 200,
+        "cors": "*",
+        "contentType": "image/png",
+        "bytes": 60657,
+        "probeUrl": "https://trek.nasa.gov/tiles/Moon/SP/ColorSlope_LRO_LOLA_DEM_SPole875_5mp_v04/1.0.0/default/default028mm/4/8/8.png",
+        "probeZoom": 4
+      }
+    },
+    {
+      "id": "lola-slope-below-5deg-5m",
+      "name": "LOLA 87.5S 5 m/px — slope below 5 degrees",
+      "description": "Binary colorized mask of terrain with slope below 5 degrees in the inner polar region.",
+      "kind": "hazard",
+      "type": "wmts",
+      "label": "ColorSlope_05below_LRO_LOLA_DEM_SPole875_5m",
+      "url": "https://trek.nasa.gov/tiles/Moon/SP/ColorSlope_05below_LRO_LOLA_DEM_SPole875_5m/1.0.0/default/default028mm/{z}/{y}/{x}.png",
+      "template": "https://trek.nasa.gov/tiles/Moon/SP/ColorSlope_05below_LRO_LOLA_DEM_SPole875_5m/1.0.0/default/default028mm/{TileMatrix}/{TileRow}/{TileCol}.png",
+      "urlPlaceholders": {
+        "z": "TileMatrix",
+        "x": "TileCol",
+        "y": "TileRow"
+      },
+      "tileMatrixSet": "default028mm",
+      "format": "image/png",
+      "minZoom": 0,
+      "maxZoom": 10,
+      "projection": {
+        "type": "south_polar_stereographic",
+        "latitudeOfOriginDeg": -90,
+        "centralMeridianDeg": 0,
+        "referenceRadiusM": 1737400,
+        "note": "Moon Trek SP (south polar) tiles; not an equirectangular lat/lon grid."
+      },
+      "boundsM": {
+        "crs": "urn:ogc:def:crs:EPSG::0",
+        "lower": "-75840.0 -75840.0",
+        "upper": "75840.0 75840.0"
+      },
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
+      "viewerUrl": "https://trek.nasa.gov/moon/",
+      "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/ColorSlope_05below_LRO_LOLA_DEM_SPole875_5m/1.0.0/WMTSCapabilities.xml",
+      "verified": {
+        "checkedAt": "2026-11-15T11:10:47.085Z",
+        "httpStatus": 200,
+        "cors": "*",
+        "contentType": "image/png",
+        "bytes": 58554,
+        "probeUrl": "https://trek.nasa.gov/tiles/Moon/SP/ColorSlope_05below_LRO_LOLA_DEM_SPole875_5m/1.0.0/default/default028mm/4/8/8.png",
+        "probeZoom": 4
+      }
+    },
+    {
+      "id": "lola-slope-below-10deg-5m",
+      "name": "LOLA 87.5S 5 m/px — slope below 10 degrees",
+      "description": "Binary colorized mask of terrain with slope below 10 degrees in the inner polar region.",
+      "kind": "hazard",
+      "type": "wmts",
+      "label": "ColorSlope_10below_LRO_LOLA_DEM_SPole875_5m",
+      "url": "https://trek.nasa.gov/tiles/Moon/SP/ColorSlope_10below_LRO_LOLA_DEM_SPole875_5m/1.0.0/default/default028mm/{z}/{y}/{x}.png",
+      "template": "https://trek.nasa.gov/tiles/Moon/SP/ColorSlope_10below_LRO_LOLA_DEM_SPole875_5m/1.0.0/default/default028mm/{TileMatrix}/{TileRow}/{TileCol}.png",
+      "urlPlaceholders": {
+        "z": "TileMatrix",
+        "x": "TileCol",
+        "y": "TileRow"
+      },
+      "tileMatrixSet": "default028mm",
+      "format": "image/png",
+      "minZoom": 0,
+      "maxZoom": 10,
+      "projection": {
+        "type": "south_polar_stereographic",
+        "latitudeOfOriginDeg": -90,
+        "centralMeridianDeg": 0,
+        "referenceRadiusM": 1737400,
+        "note": "Moon Trek SP (south polar) tiles; not an equirectangular lat/lon grid."
+      },
+      "boundsM": {
+        "crs": "urn:ogc:def:crs:EPSG::0",
+        "lower": "-75840.0 -75840.0",
+        "upper": "75840.0 75840.0"
+      },
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
+      "viewerUrl": "https://trek.nasa.gov/moon/",
+      "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/ColorSlope_10below_LRO_LOLA_DEM_SPole875_5m/1.0.0/WMTSCapabilities.xml",
+      "verified": {
+        "checkedAt": "2026-11-15T11:10:48.181Z",
+        "httpStatus": 200,
+        "cors": "*",
+        "contentType": "image/png",
+        "bytes": 70329,
+        "probeUrl": "https://trek.nasa.gov/tiles/Moon/SP/ColorSlope_10below_LRO_LOLA_DEM_SPole875_5m/1.0.0/default/default028mm/4/8/8.png",
+        "probeZoom": 4
+      }
+    },
+    {
+      "id": "lola-roughness-240m",
+      "name": "LOLA 75S-90S 240 m/px — color roughness",
+      "description": "Colorized terrain roughness for the south polar region, from LOLA topography.",
+      "kind": "hazard",
+      "type": "wmts",
+      "label": "LRO_LOLA_ClrRoughness_SPole75S_240m",
+      "url": "https://trek.nasa.gov/tiles/Moon/SP/LRO_LOLA_ClrRoughness_SPole75S_240m/1.0.0/default/default028mm/{z}/{y}/{x}.png",
+      "template": "https://trek.nasa.gov/tiles/Moon/SP/LRO_LOLA_ClrRoughness_SPole75S_240m/1.0.0/default/default028mm/{TileMatrix}/{TileRow}/{TileCol}.png",
+      "urlPlaceholders": {
+        "z": "TileMatrix",
+        "x": "TileCol",
+        "y": "TileRow"
+      },
+      "tileMatrixSet": "default028mm",
+      "format": "image/png",
+      "minZoom": 0,
+      "maxZoom": 3,
+      "projection": {
+        "type": "south_polar_stereographic",
+        "latitudeOfOriginDeg": -90,
+        "centralMeridianDeg": 0,
+        "referenceRadiusM": 1737400,
+        "note": "Moon Trek SP (south polar) tiles; not an equirectangular lat/lon grid."
+      },
+      "boundsM": {
+        "crs": "urn:ogc:def:crs:EPSG::0",
+        "lower": "-457440.000 -457440.000",
+        "upper": "457440.000 457440.000"
+      },
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
+      "viewerUrl": "https://trek.nasa.gov/moon/",
+      "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_LOLA_ClrRoughness_SPole75S_240m/1.0.0/WMTSCapabilities.xml",
+      "verified": {
+        "checkedAt": "2026-11-15T11:10:49.568Z",
+        "httpStatus": 200,
+        "cors": "*",
+        "contentType": "image/png",
+        "bytes": 222626,
+        "probeUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_LOLA_ClrRoughness_SPole75S_240m/1.0.0/default/default028mm/3/4/4.png",
+        "probeZoom": 3
+      }
+    },
+    {
+      "id": "diviner-rock-abundance-171m",
+      "name": "Diviner rock abundance ~171 m/px",
+      "description": "Average rock abundance from the Diviner Lunar Radiometer; colorized.",
+      "kind": "derived",
+      "type": "wmts",
+      "label": "Diviner_avg_RockAbundance_SP",
+      "url": "https://trek.nasa.gov/tiles/Moon/SP/Diviner_avg_RockAbundance_SP/1.0.0/default/default028mm/{z}/{y}/{x}.png",
+      "template": "https://trek.nasa.gov/tiles/Moon/SP/Diviner_avg_RockAbundance_SP/1.0.0/default/default028mm/{TileMatrix}/{TileRow}/{TileCol}.png",
+      "urlPlaceholders": {
+        "z": "TileMatrix",
+        "x": "TileCol",
+        "y": "TileRow"
+      },
+      "tileMatrixSet": "default028mm",
+      "format": "image/png",
+      "minZoom": 0,
+      "maxZoom": 5,
+      "projection": {
+        "type": "south_polar_stereographic",
+        "latitudeOfOriginDeg": -90,
+        "centralMeridianDeg": 0,
+        "referenceRadiusM": 1737400,
+        "note": "Moon Trek SP (south polar) tiles; not an equirectangular lat/lon grid."
+      },
+      "boundsM": {
+        "crs": "urn:ogc:def:crs:EPSG::0",
+        "lower": "-931069.854 -931042.395",
+        "upper": "931042.395 931069.854"
+      },
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
+      "viewerUrl": "https://trek.nasa.gov/moon/",
+      "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/Diviner_avg_RockAbundance_SP/1.0.0/WMTSCapabilities.xml",
+      "verified": {
+        "checkedAt": "2026-11-15T11:10:50.320Z",
+        "httpStatus": 200,
+        "cors": "*",
+        "contentType": "image/png",
+        "bytes": 334,
+        "probeUrl": "https://trek.nasa.gov/tiles/Moon/SP/Diviner_avg_RockAbundance_SP/1.0.0/default/default028mm/4/7/7.png",
+        "probeZoom": 4
+      }
+    },
+    {
+      "id": "lroc-nac-color-hillshade-3_5m-landing-site",
+      "name": "LROC NAC 3.5 m/px — color hillshade (landing site)",
+      "description": "3.5 m/px NAC color hillshade mosaic at a candidate landing site.",
+      "kind": "imagery",
+      "type": "wmts",
+      "label": "LRO_NAC_ColorHillshade_3_5mpp_IM_1_LandingSite_SP",
+      "url": "https://trek.nasa.gov/tiles/Moon/SP/LRO_NAC_ColorHillshade_3_5mpp_IM_1_LandingSite_SP/1.0.0/default/default028mm/{z}/{y}/{x}.png",
+      "template": "https://trek.nasa.gov/tiles/Moon/SP/LRO_NAC_ColorHillshade_3_5mpp_IM_1_LandingSite_SP/1.0.0/default/default028mm/{TileMatrix}/{TileRow}/{TileCol}.png",
+      "urlPlaceholders": {
+        "z": "TileMatrix",
+        "x": "TileCol",
+        "y": "TileRow"
+      },
+      "tileMatrixSet": "default028mm",
+      "format": "image/png",
+      "minZoom": 0,
+      "maxZoom": 10,
+      "projection": {
+        "type": "south_polar_stereographic",
+        "latitudeOfOriginDeg": -90,
+        "centralMeridianDeg": 0,
+        "referenceRadiusM": 1737400,
+        "note": "Moon Trek SP (south polar) tiles; not an equirectangular lat/lon grid."
+      },
+      "boundsM": {
+        "crs": "urn:ogc:def:crs:EPSG::0",
+        "lower": "4826.538 297223.431",
+        "upper": "10202.538 302662.431"
+      },
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
+      "viewerUrl": "https://trek.nasa.gov/moon/",
+      "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_NAC_ColorHillshade_3_5mpp_IM_1_LandingSite_SP/1.0.0/WMTSCapabilities.xml",
+      "verified": {
+        "checkedAt": "2026-11-15T11:10:51.075Z",
+        "httpStatus": 200,
+        "cors": "*",
+        "contentType": "image/png",
+        "bytes": 989,
+        "probeUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_NAC_ColorHillshade_3_5mpp_IM_1_LandingSite_SP/1.0.0/default/default028mm/4/5/8.png",
+        "probeZoom": 4
+      }
+    },
+    {
+      "id": "lroc-nac-mosaic-0_67m-malapert",
+      "name": "LROC NAC 0.67 m/px — Malapert Massif mosaic",
+      "description": "Sub-metre NAC image mosaic of the Malapert Massif candidate region.",
+      "kind": "imagery",
+      "type": "wmts",
+      "label": "LRO_NAC_Mosaic_0_67mpp_Malapert_Massif_SP",
+      "url": "https://trek.nasa.gov/tiles/Moon/SP/LRO_NAC_Mosaic_0_67mpp_Malapert_Massif_SP/1.0.0/default/default028mm/{z}/{y}/{x}.png",
+      "template": "https://trek.nasa.gov/tiles/Moon/SP/LRO_NAC_Mosaic_0_67mpp_Malapert_Massif_SP/1.0.0/default/default028mm/{TileMatrix}/{TileRow}/{TileCol}.png",
+      "urlPlaceholders": {
+        "z": "TileMatrix",
+        "x": "TileCol",
+        "y": "TileRow"
+      },
+      "tileMatrixSet": "default028mm",
+      "format": "image/png",
+      "minZoom": 0,
+      "maxZoom": 13,
+      "projection": {
+        "type": "south_polar_stereographic",
+        "latitudeOfOriginDeg": -90,
+        "centralMeridianDeg": 0,
+        "referenceRadiusM": 1737400,
+        "note": "Moon Trek SP (south polar) tiles; not an equirectangular lat/lon grid."
+      },
+      "boundsM": {
+        "crs": "urn:ogc:def:crs:EPSG::0",
+        "lower": "-11000.096 119699.654",
+        "upper": "10000.384 132000.184"
+      },
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
+      "viewerUrl": "https://trek.nasa.gov/moon/",
+      "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_NAC_Mosaic_0_67mpp_Malapert_Massif_SP/1.0.0/WMTSCapabilities.xml",
+      "verified": {
+        "checkedAt": "2026-11-15T11:10:51.836Z",
+        "httpStatus": 200,
+        "cors": "*",
+        "contentType": "image/png",
+        "bytes": 835,
+        "probeUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_NAC_Mosaic_0_67mpp_Malapert_Massif_SP/1.0.0/default/default028mm/4/7/7.png",
+        "probeZoom": 4
+      }
+    },
+    {
+      "id": "lroc-nac-slope-3m-malapert",
+      "name": "LROC DEM 3 m/px — Malapert slope",
+      "description": "Slope map at 3 m/px derived from the LROC stereo DEM around Malapert (86S 356E).",
+      "kind": "hazard",
+      "type": "wmts",
+      "label": "LRO_NAC_Slope_86S356E_3mp",
+      "url": "https://trek.nasa.gov/tiles/Moon/SP/LRO_NAC_Slope_86S356E_3mp/1.0.0/default/default028mm/{z}/{y}/{x}.png",
+      "template": "https://trek.nasa.gov/tiles/Moon/SP/LRO_NAC_Slope_86S356E_3mp/1.0.0/default/default028mm/{TileMatrix}/{TileRow}/{TileCol}.png",
+      "urlPlaceholders": {
+        "z": "TileMatrix",
+        "x": "TileCol",
+        "y": "TileRow"
+      },
+      "tileMatrixSet": "default028mm",
+      "format": "image/png",
+      "minZoom": 0,
+      "maxZoom": 10,
+      "projection": {
+        "type": "south_polar_stereographic",
+        "latitudeOfOriginDeg": -90,
+        "centralMeridianDeg": 0,
+        "referenceRadiusM": 1737400,
+        "note": "Moon Trek SP (south polar) tiles; not an equirectangular lat/lon grid."
+      },
+      "boundsM": {
+        "crs": "urn:ogc:def:crs:EPSG::0",
+        "lower": "-23314.5 84778.5",
+        "upper": "655.5 162406.5"
+      },
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
+      "viewerUrl": "https://trek.nasa.gov/moon/",
+      "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_NAC_Slope_86S356E_3mp/1.0.0/WMTSCapabilities.xml",
+      "verified": {
+        "checkedAt": "2026-11-15T11:10:52.590Z",
+        "httpStatus": 200,
+        "cors": "*",
+        "contentType": "image/png",
+        "bytes": 7365,
+        "probeUrl": "https://trek.nasa.gov/tiles/Moon/SP/LRO_NAC_Slope_86S356E_3mp/1.0.0/default/default028mm/4/7/7.png",
+        "probeZoom": 4
+      }
+    },
+    {
+      "id": "lroc-nac-psr-20m",
+      "name": "LROC NAC PSR mosaic 20 m/px",
+      "description": "Contrast-stretched NAC image mosaic of the south-polar permanently shadowed regions.",
+      "kind": "imagery",
+      "type": "wmts",
+      "label": "NAC_POLE_PSR_SOUTH_STRETCH",
+      "url": "https://trek.nasa.gov/tiles/Moon/SP/NAC_POLE_PSR_SOUTH_STRETCH/1.0.0/default/default028mm/{z}/{y}/{x}.png",
+      "template": "https://trek.nasa.gov/tiles/Moon/SP/NAC_POLE_PSR_SOUTH_STRETCH/1.0.0/default/default028mm/{TileMatrix}/{TileRow}/{TileCol}.png",
+      "urlPlaceholders": {
+        "z": "TileMatrix",
+        "x": "TileCol",
+        "y": "TileRow"
+      },
+      "tileMatrixSet": "default028mm",
+      "format": "image/png",
+      "minZoom": 0,
+      "maxZoom": 8,
+      "projection": {
+        "type": "south_polar_stereographic",
+        "latitudeOfOriginDeg": -90,
+        "centralMeridianDeg": 0,
+        "referenceRadiusM": 1737400,
+        "note": "Moon Trek SP (south polar) tiles; not an equirectangular lat/lon grid."
+      },
+      "boundsM": {
+        "crs": "urn:ogc:def:crs:EPSG::0",
+        "lower": "-304010.0 -320470.0",
+        "upper": "304010.0 304010.0"
+      },
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
+      "viewerUrl": "https://trek.nasa.gov/moon/",
+      "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/NAC_POLE_PSR_SOUTH_STRETCH/1.0.0/WMTSCapabilities.xml",
+      "verified": {
+        "checkedAt": "2026-11-15T11:10:53.338Z",
+        "httpStatus": 200,
+        "cors": "*",
+        "contentType": "image/png",
+        "bytes": 6643,
+        "probeUrl": "https://trek.nasa.gov/tiles/Moon/SP/NAC_POLE_PSR_SOUTH_STRETCH/1.0.0/default/default028mm/4/8/8.png",
+        "probeZoom": 4
+      }
+    },
+    {
+      "id": "average-earth-visibility-120m",
+      "name": "Average Earth visibility 120 m/px",
+      "description": "Fraction of time the Earth is visible above the local horizon, from LOLA topography.",
+      "kind": "derived",
+      "type": "wmts",
+      "label": "ClrAVGVISIB_75S_120M_201608_EARTH_SP",
+      "url": "https://trek.nasa.gov/tiles/Moon/SP/ClrAVGVISIB_75S_120M_201608_EARTH_SP/1.0.0/default/default028mm/{z}/{y}/{x}.png",
+      "template": "https://trek.nasa.gov/tiles/Moon/SP/ClrAVGVISIB_75S_120M_201608_EARTH_SP/1.0.0/default/default028mm/{TileMatrix}/{TileRow}/{TileCol}.png",
+      "urlPlaceholders": {
+        "z": "TileMatrix",
+        "x": "TileCol",
+        "y": "TileRow"
+      },
+      "tileMatrixSet": "default028mm",
+      "format": "image/png",
+      "minZoom": 0,
+      "maxZoom": 5,
+      "projection": {
+        "type": "south_polar_stereographic",
+        "latitudeOfOriginDeg": -90,
+        "centralMeridianDeg": 0,
+        "referenceRadiusM": 1737400,
+        "note": "Moon Trek SP (south polar) tiles; not an equirectangular lat/lon grid."
+      },
+      "boundsM": {
+        "crs": "urn:ogc:def:crs:EPSG::0",
+        "lower": "-457440.0 -457440.0",
+        "upper": "457560.0 457440.0"
+      },
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
+      "viewerUrl": "https://trek.nasa.gov/moon/",
+      "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/ClrAVGVISIB_75S_120M_201608_EARTH_SP/1.0.0/WMTSCapabilities.xml",
+      "verified": {
+        "checkedAt": "2026-11-15T11:10:54.599Z",
+        "httpStatus": 200,
+        "cors": "*",
+        "contentType": "image/png",
+        "bytes": 148857,
+        "probeUrl": "https://trek.nasa.gov/tiles/Moon/SP/ClrAVGVISIB_75S_120M_201608_EARTH_SP/1.0.0/default/default028mm/4/8/8.png",
+        "probeZoom": 4
+      }
+    },
+    {
+      "id": "sky-visibility-240m",
+      "name": "Sky visibility 240 m/px",
+      "description": "Sky visibility fraction over the south-polar terrain, derived from LOLA topography.",
+      "kind": "derived",
+      "type": "wmts",
+      "label": "ClrSKYV_65S_240M_SP",
+      "url": "https://trek.nasa.gov/tiles/Moon/SP/ClrSKYV_65S_240M_SP/1.0.0/default/default028mm/{z}/{y}/{x}.png",
+      "template": "https://trek.nasa.gov/tiles/Moon/SP/ClrSKYV_65S_240M_SP/1.0.0/default/default028mm/{TileMatrix}/{TileRow}/{TileCol}.png",
+      "urlPlaceholders": {
+        "z": "TileMatrix",
+        "x": "TileCol",
+        "y": "TileRow"
+      },
+      "tileMatrixSet": "default028mm",
+      "format": "image/png",
+      "minZoom": 0,
+      "maxZoom": 4,
+      "projection": {
+        "type": "south_polar_stereographic",
+        "latitudeOfOriginDeg": -90,
+        "centralMeridianDeg": 0,
+        "referenceRadiusM": 1737400,
+        "note": "Moon Trek SP (south polar) tiles; not an equirectangular lat/lon grid."
+      },
+      "boundsM": {
+        "crs": "urn:ogc:def:crs:EPSG::0",
+        "lower": "-931069.854 -931090.146",
+        "upper": "931090.146 931069.854"
+      },
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
+      "viewerUrl": "https://trek.nasa.gov/moon/",
+      "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/ClrSKYV_65S_240M_SP/1.0.0/WMTSCapabilities.xml",
+      "verified": {
+        "checkedAt": "2026-11-15T11:10:55.699Z",
+        "httpStatus": 200,
+        "cors": "*",
+        "contentType": "image/png",
+        "bytes": 111599,
+        "probeUrl": "https://trek.nasa.gov/tiles/Moon/SP/ClrSKYV_65S_240M_SP/1.0.0/default/default028mm/4/8/8.png",
+        "probeZoom": 4
+      }
+    },
+    {
+      "id": "artemis-site-shoemaker",
+      "name": "Artemis III site mosaic — Shoemaker (5 m/px)",
+      "description": "5 m/px LOLA color hillshade over the Shoemaker candidate region.",
+      "kind": "site",
+      "type": "wmts",
+      "label": "Shoemaker_final_adj_5mpp_ColorHillshade",
+      "url": "https://trek.nasa.gov/tiles/Moon/SP/Shoemaker_final_adj_5mpp_ColorHillshade/1.0.0/default/default028mm/{z}/{y}/{x}.png",
+      "template": "https://trek.nasa.gov/tiles/Moon/SP/Shoemaker_final_adj_5mpp_ColorHillshade/1.0.0/default/default028mm/{TileMatrix}/{TileRow}/{TileCol}.png",
+      "urlPlaceholders": {
+        "z": "TileMatrix",
+        "x": "TileCol",
+        "y": "TileRow"
+      },
+      "tileMatrixSet": "default028mm",
+      "format": "image/png",
+      "minZoom": 0,
+      "maxZoom": 10,
+      "projection": {
+        "type": "south_polar_stereographic",
+        "latitudeOfOriginDeg": -90,
+        "centralMeridianDeg": 0,
+        "referenceRadiusM": 1737400,
+        "note": "Moon Trek SP (south polar) tiles; not an equirectangular lat/lon grid."
+      },
+      "boundsM": {
+        "crs": "urn:ogc:def:crs:EPSG::0",
+        "lower": "66000.0 29000.0",
+        "upper": "86000.0 49000.0"
+      },
+      "attribution": "NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers",
+      "viewerUrl": "https://trek.nasa.gov/moon/",
+      "capabilitiesUrl": "https://trek.nasa.gov/tiles/Moon/SP/Shoemaker_final_adj_5mpp_ColorHillshade/1.0.0/WMTSCapabilities.xml",
+      "verified": {
+        "checkedAt": "2026-11-15T11:10:56.455Z",
+        "httpStatus": 200,
+        "cors": "*",
+        "contentType": "image/png",
+        "bytes": 4868,
+        "probeUrl": "https://trek.nasa.gov/tiles/Moon/SP/Shoemaker_final_adj_5mpp_ColorHillshade/1.0.0/default/default028mm/4/7/8.png",
         "probeZoom": 4
       }
     }

@@ -103,7 +103,7 @@ Companion documents: [architecture.md](architecture.md) (contracts), [data.md](d
 
 ## 8. Moon Trek layers
 
-- **What.** 21 verified NASA Moon Trek south-polar raster layers draped in 3D
+- **What.** 33 verified NASA Moon Trek south-polar raster layers draped in 3D
   and 2D, with coverage and zoom information; link-type entries open on Moon
   Trek.
 - **How.** `public/data/layers.json`; `src/services/moontrek.js` builds tile/WMS
@@ -277,7 +277,7 @@ Companion documents: [architecture.md](architecture.md) (contracts), [data.md](d
 
 - **What.** Unit/contract tests, a seeded Monte Carlo bench, a 51-viewport
   device matrix, an end-to-end viewer check and live data spot-checks.
-- **How.** `npm test` runs 246 tests in 17 files (plus 8 MCP tests); `qa/logic/`
+- **How.** `npm test` runs 261 tests in 19 files (plus 24 MCP tests); `qa/logic/`
   runs 13 invariants over 20,000 seeded cases (one real terrain-boundary defect,
   now fixed with a regression test); `qa/ui/` emulates 51 viewports plus the
   no-WebGL fallback; `scripts/qa/e2e-ui.mjs` asserts canvases, scale parity,

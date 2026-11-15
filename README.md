@@ -79,7 +79,7 @@ Full grouped index: **[docs/README.md](docs/README.md)**. Feature reference:
 | --- | --- |
 | [JPL Horizons](https://ssd.jpl.nasa.gov/horizons/) (DE441) | Topocentric Sun and Earth azimuth/elevation for 10 sites, 30-minute steps, 2026-11-01 to 2026-12-31 |
 | [LOLA polar DEMs](https://pds-geosciences.wustl.edu/) (PDS Geosciences) | Real south-pole terrain, converted to 74 m and 594 m polar-stereographic grids |
-| [NASA Moon Trek](https://trek.nasa.gov/moon/) | 21 verified south-pole WMTS layers (relief, slope, imagery, illumination, Earth visibility, temperature) |
+| [NASA Moon Trek](https://trek.nasa.gov/moon/) | 33 verified south-pole WMTS layers (relief, slope masks and roughness, NAC imagery 0.67–3.5 m/px, PSR mosaic, illumination, Earth/sky visibility, temperature, rock abundance) |
 | [LROC QuickMap](https://quickmap.lroc.asu.edu/) | Cross-checks and deep links exported with the mission brief |
 
 The data pipeline, verification evidence and attribution are documented in
@@ -132,8 +132,8 @@ and [`docs/decisions.md`](docs/decisions.md).
 
 ## Quality and verification
 
-- **Unit and contract tests** — 246 Vitest tests in 17 files for the scientific
-  core and the data services (`npm test`), plus 8 tests for the Miro MCP package.
+- **Unit and contract tests** — 261 Vitest tests in 19 files for the scientific
+  core and the data services (`npm test`), plus 24 tests for the Miro MCP package.
 - **Monte Carlo logic bench** — seeded randomised site/date/mission scenarios over
   the real core with 13 invariants. A 20,000-case run found one real
   terrain-boundary defect, fixed with a regression test.

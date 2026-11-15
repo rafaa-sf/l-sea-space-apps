@@ -5,7 +5,7 @@ links and evidence the team submits. Everything below is in English, as required
 
 > **Status (2026-11-15):** application implemented, tested, merged on `main` and
 > deployed. Live application: <https://rafaa-sf.github.io/l-sea-space-apps>. Automated tests:
-> 246 application tests in 17 files plus 8 MCP tests, all passing; CI green; production
+> 261 application tests in 19 files plus 24 MCP tests, all passing; CI green; production
 > build green. The only outstanding item before **Submit for Judging** is inserting the
 > published **Project Demo link** in the Project page.
 
@@ -39,8 +39,8 @@ links and evidence the team submits. Everything below is in English, as required
 > for machines without WebGL. The prototype is implemented and merged on `main`: a
 > mission-control interface, a terrain and horizon engine, ephemeris-driven Sun and
 > Earth visibility, power and communications metrics, a site comparator, autopilot
-> scoring, JSON export and a no-WebGL 2D fallback; 246 app tests in 17 files plus
-> 8 MCP tests pass and CI is green.
+> scoring, JSON export and a no-WebGL 2D fallback; 261 app tests in 19 files plus
+> 24 MCP tests pass and CI is green.
 
 Word count: 200 (limit 50-200). Re-count after any edit with `wc -w`.
 
@@ -78,7 +78,7 @@ exported as a JSON mission brief with links back to NASA tools.
 | Domain core | Plain JavaScript ES modules: terrain, horizon and ray tracing, ephemeris, power, communications, autopilot |
 | Compute | Single Web Worker for horizon and scoring work, keeping the UI responsive |
 | Build | Vite static build (`dist/`), deployed on GitHub Pages |
-| Tests | Vitest: 246 application tests in 17 files plus 8 MCP tests |
+| Tests | Vitest: 261 application tests in 19 files plus 24 MCP tests |
 | Data | Pre-computed NASA datasets: LOLA terrain, JPL Horizons ephemerides, Moon Trek layer catalogue |
 
 Method in one pass over a scenario:
@@ -122,7 +122,7 @@ Method in one pass over a scenario:
 - Real NASA datasets shipped and consumed by the application: 10 curated POIs, 10
   JPL Horizons ephemeris files (2,928 samples each), two LOLA source polar DEM regions (plus four derived DEM area presets) and 21
   verified Moon Trek WMTS layers.
-- Automated test suite: 246 application tests in 17 files plus 8 MCP tests, all
+- Automated test suite: 261 application tests in 19 files plus 24 MCP tests, all
   passing; CI green; production build green.
 - Live deployment on GitHub Pages with post-deploy verification (entry point, favicon, NASA
   data files, terrain binary, SPA rewrite, cache headers) and an interactive live
@@ -220,11 +220,13 @@ shipped and validated.
 
 - **What it is:** NASA's Moon Trek portal for lunar data visualisation and mission
   planning.
-- **Real contribution:** 21 verified south-polar WMTS layers (LOLA relief and slope,
-  LROC imagery, illumination percentage, Earth visibility, permanently shadowed
-  regions, Diviner temperature, Artemis III site mosaics) shown in the application,
-  plus Moon Trek deep links in the JSON brief so a planner can continue in the
-  authoritative tool.
+- **Real contribution:** 33 verified south-polar WMTS layers shown in the
+  application, covering LOLA relief and slope masks/roughness, LROC NAC imagery down
+  to 0.67 m/px and NAC slope, the PSR mosaic, Diviner temperature and rock abundance,
+  illumination/Earth/sky visibility and Artemis III site mosaics, plus Moon Trek deep
+  links in the JSON brief so a planner can continue in the authoritative tool.
+- **Attribution:** *NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL
+  products — 30+ verified layers* (partner layers grouped, not listed individually).
 - **Link:** [NASA Moon Trek](https://trek.nasa.gov/moon/).
 
 ### 4.4 LROC QuickMap (complementary)

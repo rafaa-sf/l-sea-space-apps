@@ -20,7 +20,8 @@ const OUT_FILE = path.join(ROOT, 'public', 'data', 'layers.json')
 
 const TREK = 'https://trek.nasa.gov'
 const WMTS_BASE = `${TREK}/tiles/Moon`
-const ATTRIBUTION = 'NASA/GSFC/ASU — Moon Trek (trek.nasa.gov) and LRO/LOLA/LROC teams'
+const ATTRIBUTION =
+  'NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL products — 30+ verified layers'
 const VIEWER_URL = `${TREK}/moon/`
 
 const PROJECTION = {
@@ -184,6 +185,94 @@ const LAYER_DEFS = [
     label: 'Site06_final_adj_5mpp_ColorHillshade',
     name: 'Artemis III site mosaic — Nobile Rim 1 (5 m/px)',
     description: '5 m/px LOLA color hillshade over the Nobile Rim 1 region.',
+    kind: 'site',
+  },
+  // Additional official NASA Moon Trek products (task-54): sharper terrain,
+  // hazard masks and derived products added after the initial 21-layer set.
+  {
+    id: 'lola-color-slope-5m',
+    label: 'ColorSlope_LRO_LOLA_DEM_SPole875_5mp_v04',
+    name: 'LOLA 87.5S 5 m/px — color slope',
+    description:
+      'Colorized slope map derived from the high-resolution LOLA 87.5S-90S DEM; ' +
+      'finer hazard screening than the 120 m slope layer.',
+    kind: 'hazard',
+  },
+  {
+    id: 'lola-slope-below-5deg-5m',
+    label: 'ColorSlope_05below_LRO_LOLA_DEM_SPole875_5m',
+    name: 'LOLA 87.5S 5 m/px — slope below 5 degrees',
+    description: 'Binary colorized mask of terrain with slope below 5 degrees in the inner polar region.',
+    kind: 'hazard',
+  },
+  {
+    id: 'lola-slope-below-10deg-5m',
+    label: 'ColorSlope_10below_LRO_LOLA_DEM_SPole875_5m',
+    name: 'LOLA 87.5S 5 m/px — slope below 10 degrees',
+    description: 'Binary colorized mask of terrain with slope below 10 degrees in the inner polar region.',
+    kind: 'hazard',
+  },
+  {
+    id: 'lola-roughness-240m',
+    label: 'LRO_LOLA_ClrRoughness_SPole75S_240m',
+    name: 'LOLA 75S-90S 240 m/px — color roughness',
+    description: 'Colorized terrain roughness for the south polar region, from LOLA topography.',
+    kind: 'hazard',
+  },
+  {
+    id: 'diviner-rock-abundance-171m',
+    label: 'Diviner_avg_RockAbundance_SP',
+    name: 'Diviner rock abundance ~171 m/px',
+    description: 'Average rock abundance from the Diviner Lunar Radiometer; colorized.',
+    kind: 'derived',
+  },
+  {
+    id: 'lroc-nac-color-hillshade-3_5m-landing-site',
+    label: 'LRO_NAC_ColorHillshade_3_5mpp_IM_1_LandingSite_SP',
+    name: 'LROC NAC 3.5 m/px — color hillshade (landing site)',
+    description: '3.5 m/px NAC color hillshade mosaic at a candidate landing site.',
+    kind: 'imagery',
+  },
+  {
+    id: 'lroc-nac-mosaic-0_67m-malapert',
+    label: 'LRO_NAC_Mosaic_0_67mpp_Malapert_Massif_SP',
+    name: 'LROC NAC 0.67 m/px — Malapert Massif mosaic',
+    description: 'Sub-metre NAC image mosaic of the Malapert Massif candidate region.',
+    kind: 'imagery',
+  },
+  {
+    id: 'lroc-nac-slope-3m-malapert',
+    label: 'LRO_NAC_Slope_86S356E_3mp',
+    name: 'LROC DEM 3 m/px — Malapert slope',
+    description: 'Slope map at 3 m/px derived from the LROC stereo DEM around Malapert (86S 356E).',
+    kind: 'hazard',
+  },
+  {
+    id: 'lroc-nac-psr-20m',
+    label: 'NAC_POLE_PSR_SOUTH_STRETCH',
+    name: 'LROC NAC PSR mosaic 20 m/px',
+    description: 'Contrast-stretched NAC image mosaic of the south-polar permanently shadowed regions.',
+    kind: 'imagery',
+  },
+  {
+    id: 'average-earth-visibility-120m',
+    label: 'ClrAVGVISIB_75S_120M_201608_EARTH_SP',
+    name: 'Average Earth visibility 120 m/px',
+    description: 'Fraction of time the Earth is visible above the local horizon, from LOLA topography.',
+    kind: 'derived',
+  },
+  {
+    id: 'sky-visibility-240m',
+    label: 'ClrSKYV_65S_240M_SP',
+    name: 'Sky visibility 240 m/px',
+    description: 'Sky visibility fraction over the south-polar terrain, derived from LOLA topography.',
+    kind: 'derived',
+  },
+  {
+    id: 'artemis-site-shoemaker',
+    label: 'Shoemaker_final_adj_5mpp_ColorHillshade',
+    name: 'Artemis III site mosaic — Shoemaker (5 m/px)',
+    description: '5 m/px LOLA color hillshade over the Shoemaker candidate region.',
     kind: 'site',
   },
 ]

@@ -165,18 +165,27 @@ writing `public/data/layers.json`.
 
 | Item | Result |
 | --- | --- |
-| Layers defined | 21 |
-| Verified (capabilities + real tile + image content type) | 21 of 21 |
+| Layers defined | 33 |
+| Verified (capabilities + real tile + image content type) | 33 of 33 |
 | CORS header present on every tile probe | yes (`*`) |
 | Known unavailable label tried | `PSR_SP` returns HTTP 404; the PSR raster is served as `LRO_LOLA_Illumination_SPole65S_240m`, which is verified and included |
 | Artemis III named-region outline | `A3_Named_regions_SP` is a catalog item, not a WMTS layer (capabilities 404), so it is not in the catalogue |
+
+The catalogue includes the initial LOLA/LROC/Diviner/illumination set plus sharper
+task-54 products verified in the same pass: 5 m LOLA color slope and <5 deg / <10 deg
+slope masks, 240 m roughness, Diviner rock abundance, 3.5 m NAC color hillshade, the
+0.67 m Malapert NAC mosaic, 3 m Malapert NAC slope, the 20 m NAC PSR mosaic, 120 m
+Earth visibility, 240 m sky visibility and the 5 m Shoemaker site mosaic. Each is
+rejected at build time if its capabilities, a real tile or the CORS header fail, so
+the shipped catalogue only contains verified layers.
 
 Each entry in `public/data/layers.json` records the layer label, name, description,
 kind, tile URL, zoom range, projection, attribution, viewer URL and the verification
 record (HTTP status, CORS header, content type, byte size, probe URL, timestamp).
 
-**Attribution:** NASA/GSFC/ASU, Moon Trek (<https://trek.nasa.gov/>), LRO/LOLA/LROC
-teams. Deep links used in the exported brief follow
+**Attribution:** NASA Moon Trek (NASA/GSFC/ASU) + LRO/LOLA/LROC/Diviner/LAMP/M3/LP/GRAIL
+products — 30+ verified layers. Partner layers are grouped in the attribution; the
+per-layer `label` in `layers.json` keeps the exact Moon Trek product name. Deep links used in the exported brief follow
 `https://trek.nasa.gov/moon/#/v1/115/0.5/0/<lon>/<lat>/-170.000/0.000/90.000/0/0/0`.
 
 ## 4. PDS Geosciences Node: LOLA polar DEMs, pre-computed
@@ -387,7 +396,7 @@ Every test used `Origin: http://localhost:5173`.
 | Path | What it is | Size |
 | --- | --- | --- |
 | `public/data/pois.json` | 10 curated lunar south-pole sites of interest | about 8 KB |
-| `public/data/layers.json` | 21 verified Moon Trek WMTS layers | about 39 KB |
+| `public/data/layers.json` | 33 verified Moon Trek WMTS layers | about 61 KB |
 | `public/data/ephemeris/` | 10 files x 2,928 topocentric Sun/Earth samples, plus index and schema | about 2.8 MB |
 | `public/data/terrain/` | 7 LOLA polar-stereographic int16 grids (2 standard regions + 4 area presets: 100, 200, 300 and 400 km at 1024 px + the 608 km @ 2048 px wide-area grid), plus index | about 27 MB |
 | `public/data/ai-usage.md` | AI use declaration served by the application | about 7 KB |
@@ -473,7 +482,7 @@ NAC photogrammetry DEMs were merged.
 
 ### Layers (Moon Trek)
 
-21 WMTS layers, each verified live (capabilities, real tile, image content type, CORS
+33 WMTS layers, each verified live (capabilities, real tile, image content type, CORS
 header). See section 3 for the service details and `public/data/layers.json` for the
 per-layer record.
 
