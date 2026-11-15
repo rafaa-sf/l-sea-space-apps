@@ -241,6 +241,8 @@ export default {
     addCustom: 'Añadir sitio',
     pointerHint: 'Pulsa el terreno del visor para capturar una posición del puntero.',
     selectedHint: 'Sitio seleccionado: {site}',
+    pointerName: 'Sitio del puntero ({lat}, {lon})',
+    clearPointer: 'Quitar puntero',
     customName: 'Sitio personalizado ({lat}, {lon})',
     empty: 'Ningún sitio coincide con la búsqueda.',
     source: {

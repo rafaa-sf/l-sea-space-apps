@@ -1387,6 +1387,11 @@ body.is-resizing-panes * {
   background: #05070b;
 }
 
+.viewport.is-initializing,
+.viewport.is-initializing * {
+  cursor: progress !important;
+}
+
 .viewport__stage {
   position: relative;
   flex: 1;
