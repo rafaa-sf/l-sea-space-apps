@@ -582,6 +582,10 @@ onBeforeUnmount(() => {
       <div class="viewport__controls">
         <label class="dem-select">
           <span class="sr-only">{{ t('dem.title') }}</span>
+          <span class="dem-select__compact" aria-hidden="true">
+            {{ t('dem.compactLabel') }}
+            <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>
+          </span>
           <select
             class="input dem-select__control"
             :value="demRegionId"
@@ -614,8 +618,17 @@ onBeforeUnmount(() => {
             {{ option.label }}
           </button>
         </div>
-        <button type="button" class="button button--quiet button--small" :title="t('viewport.resetViewHint')" @click="resetView">
-          {{ t('viewport.resetView') }}
+        <button
+          type="button"
+          class="button button--quiet button--small viewport__reset"
+          :title="t('viewport.resetViewHint')"
+          :aria-label="t('viewport.resetView')"
+          @click="resetView"
+        >
+          <svg class="viewport__reset-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5" />
+          </svg>
+          <span class="viewport__reset-label">{{ t('viewport.resetView') }}</span>
         </button>
       </div>
 

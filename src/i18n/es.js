@@ -77,6 +77,7 @@ export default {
   },
   dem: {
     area: 'Área {width} x {height} km, {resolution} m/px',
+    compactLabel: 'Mapa',
     title: 'Área del MDE LOLA',
     highDetail: 'Alta resolución - 152 km, 74 m/px',
     wide: 'Área amplia - 608 km, 594 m/px',

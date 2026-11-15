@@ -1513,6 +1513,14 @@ body.is-resizing-panes * {
   align-items: center;
 }
 
+.dem-select__compact {
+  display: none;
+}
+
+.viewport__reset-icon {
+  display: none;
+}
+
 .dem-select__control {
   max-width: 190px;
   height: 24px;
@@ -3236,5 +3244,97 @@ body.is-resizing-panes * {
   .viewport__controls .segmented {
     max-width: 100%;
     flex-wrap: wrap;
+  }
+}
+
+/* Phones: one-line viewport toolbar with a compact "Map" DEM selector and an
+   icon-only reset, so the overlay does not eat the top of the 3D map. */
+@media (max-width: 720px) {
+  .viewport__controls {
+    top: 6px;
+    left: 6px;
+    right: 6px;
+    max-width: none;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 4px;
+    padding: 3px;
+  }
+
+  .viewport__controls .dem-select {
+    position: relative;
+    flex: 0 0 auto;
+    min-width: 64px;
+  }
+
+  .dem-select__compact {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 30px;
+    padding: 0 7px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .dem-select__compact svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .viewport__controls .dem-select__control {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .dem-select:focus-within .dem-select__compact {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+  }
+
+  .viewport__controls .segmented__button {
+    min-height: 30px;
+    padding: 0 8px;
+  }
+
+  .viewport__controls .viewport__reset {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    min-height: 30px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .viewport__reset-label {
+    display: none;
+  }
+
+  .viewport__reset-icon {
+    display: block;
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 }

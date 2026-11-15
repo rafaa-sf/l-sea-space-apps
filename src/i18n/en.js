@@ -77,6 +77,7 @@ export default {
   },
   dem: {
     area: 'Area {width} x {height} km, {resolution} m/px',
+    compactLabel: 'Map',
     title: 'LOLA DEM area',
     highDetail: 'High detail - 152 km, 74 m/px',
     wide: 'Wide area - 608 km, 594 m/px',
