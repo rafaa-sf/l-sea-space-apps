@@ -33,6 +33,13 @@ checks the hard-feasibility gate against the returned margins (no false
 `score-audit.mjs` recomputes the site and zone scores from the returned components
 and checks grades, caps, ordering and reason codes; see [FINDINGS.md](FINDINGS.md).
 
+## Crater avoidance
+
+`crater-avoid-mc.mjs` runs the real crater detector and the "Avoid craters"
+zone exclusion over several DEM regions and settings (default, clearance,
+minimum diameter) and checks that no zone falls inside a crater and that the
+detected features are real depressions. See [FINDINGS.md](FINDINGS.md).
+
 ## Usage
 
 ```bash

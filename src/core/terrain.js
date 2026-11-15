@@ -1195,16 +1195,34 @@ export function findCraters(terrain, options = {}) {
       }
     }
 
-    if (rimDistances.length < Math.ceil(directions / 2)) continue
-    const meanRimDistance = rimDistances.reduce((sum, value) => sum + value, 0) / rimDistances.length
-    const meanRimElevation = rimElevations.reduce((sum, value) => sum + value, 0) / rimElevations.length
-    const diameterM = meanRimDistance * 2
-    const depthM = meanRimElevation - candidate.center
+    // A depression whose rim is found in only a few directions is usually a
+    // slope/crest artefact (a nearby massif supplies a single "rim"), not a
+    // crater: requiring coherent rim support avoids excluding peaks and
+    // foothills when `avoidCraters` is enabled.
+    const minRimSupportRatio = clamp(
+      Number.isFinite(Number(options.minRimSupportRatio)) ? Number(options.minRimSupportRatio) : 0.75,
+      0.5,
+      1,
+    )
+    const minRimSupport = Math.max(3, Math.ceil(directions * minRimSupportRatio))
+    if (rimDistances.length < minRimSupport) continue
+    // Robust radius: use the median rim distance and drop directions that
+    // disagree with it by more than ~2x (overlapping craters, far ridges).
+    const sortedDistances = [...rimDistances].sort((a, b) => a - b)
+    const medianRimDistance = sortedDistances[Math.floor(sortedDistances.length / 2)]
+    const consistent = rimDistances.filter(
+      (distance) => distance >= medianRimDistance * 0.5 && distance <= medianRimDistance * 1.8,
+    ).length
+    if (consistent < minRimSupport) continue
+    const sortedElevations = [...rimElevations].sort((a, b) => a - b)
+    const medianRimElevation = sortedElevations[Math.floor(sortedElevations.length / 2)]
+    const diameterM = medianRimDistance * 2
+    const depthM = medianRimElevation - candidate.center
     if (depthM < minDepthM) continue
     if (diameterM < minDiameterM || diameterM > maxDiameterM) continue
 
     const confidence = clamp(
-      (rimDistances.length / directions) * clamp(depthM / (minDepthM * 3), 0, 1),
+      (consistent / directions) * clamp(depthM / (minDepthM * 3), 0, 1),
       0,
       1,
     )
@@ -1213,7 +1231,7 @@ export function findCraters(terrain, options = {}) {
       lon: candidate.lon,
       diameterM,
       depthM,
-      rimElevationM: meanRimElevation,
+      rimElevationM: medianRimElevation,
       centerElevationM: candidate.center,
       confidence,
     })

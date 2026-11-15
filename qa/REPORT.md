@@ -1,3 +1,13 @@
+> **Historical snapshot (2026-11-14, commit `285ef29`).** This digest documents
+> the executed runs at that revision. Current status is maintained in
+> [`docs/qa.md`](../docs/qa.md); newer benches live in
+> [`qa/autopilot/FINDINGS.md`](autopilot/FINDINGS.md) and are not part of this
+> snapshot.
+>
+> Current (2026-11-15): 16 test files / 243 tests, the device matrix on the merged
+> state, the autopilot/ranking/feasibility Monte Carlo benches and the GitHub Pages
+> deployment are described in the current docs instead of this historical digest.
+
 # Monte Carlo test bench — executed results
 
 Digest of the runs executed on **2026-11-14** against the application build at
